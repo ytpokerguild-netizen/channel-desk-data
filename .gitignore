@@ -1,0 +1,10 @@
+# Python
+__pycache__/
+*.pyc
+venv/
+*.egg-info/
+
+# ローカル認証（絶対にコミットしない）
+client_secret.json
+token.json
+.env
