@@ -1,8 +1,8 @@
 {
   "meta": {
     "channel_id": "UCkefUKbpdEoMy7sGDrKixqg",
-    "fetched_at": "2026-06-27T10:10:48.813751+00:00",
-    "data_through": "2026-06-24",
+    "fetched_at": "2026-06-28T21:45:10.840271+00:00",
+    "data_through": "2026-06-25",
     "since": "2025-06-25"
   },
   "daily": [
@@ -3648,6 +3648,16 @@
     },
     {
       "date": "2026-06-24",
+      "views": 0,
+      "watch_minutes": 0,
+      "subscribers_gained": 0,
+      "subscribers_lost": 0,
+      "likes": 0,
+      "comments": 0,
+      "revenue_jpy": 0
+    },
+    {
+      "date": "2026-06-25",
       "views": 0,
       "watch_minutes": 0,
       "subscribers_gained": 0,
