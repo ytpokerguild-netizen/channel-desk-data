@@ -133,7 +133,11 @@ body{
   padding:20px 20px 16px;
   margin-bottom:14px;
 }
-.chart-box-main{position:relative;height:320px}
+.chart-title{font-size:11.5px;color:var(--muted);letter-spacing:.05em;margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.chart-title .ct-label{font-weight:600;color:var(--ink)}
+.chart-nodata{display:none;text-align:center;padding:60px 0;color:var(--muted-2);font-size:13px}
+.data-gap-note{font-size:10.5px;color:var(--muted-2);margin-top:8px}
+.chart-box-main{position:relative;height:300px}
 
 /* ── Compare strip ── */
 .compare-strip{
@@ -238,8 +242,13 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
 
     <!-- Main chart -->
     <div class="chart-card">
-      <div class="chart-box-main"><canvas id="mainChart"></canvas></div>
+      <div class="chart-title"><span class="ct-label" id="chartLabel">再生数</span><span id="chartSubLabel" style="color:var(--muted-2)"></span></div>
+      <div class="chart-box-main">
+        <canvas id="mainChart"></canvas>
+        <div class="chart-nodata" id="chartNoData">このperiodのデータがありません</div>
+      </div>
       <div class="chart-legend" id="chartLegend"></div>
+      <div class="data-gap-note" id="dataGapNote"></div>
     </div>
 
     <!-- Compare table -->
@@ -434,14 +443,10 @@ function toggleCompare(){
 }
 
 function initPeriod(){
-  const all = allViewData();
-  if(!all.length) return;
-  const to = all[all.length-1].date;
-  filterFrom = dateNDaysAgo(to, 28);
-  filterTo   = to;
-  document.getElementById('dateFrom').value = filterFrom;
-  document.getElementById('dateTo').value   = filterTo;
-  document.querySelector('#quickSeg button:nth-child(2)').classList.add('on'); // 28日
+  filterFrom = null; filterTo = null;
+  document.getElementById('dateFrom').value = '';
+  document.getElementById('dateTo').value   = '';
+  document.querySelector('#quickSeg button:nth-child(5)').classList.add('on'); // 全期間
 }
 
 function setMetric(key){
@@ -561,12 +566,57 @@ function renderMainChart(){
   const {daily: dA, views: vA} = filteredData(filterFrom, filterTo);
   const {daily: dB, views: vB} = compareMode ? filteredData(filterFromB, filterToB) : {};
 
-  let labels, datasets, tooltipFmt;
+  // チャートタイトル更新
+  const METRIC_LABELS = {views:'再生数（日次）', sub_delta:'登録者増減（日次）', subscribers:'登録者数（累計）'};
+  document.getElementById('chartLabel').textContent = METRIC_LABELS[activeMetric] || '';
+
+  // データ無し判定
+  const noData = (activeMetric === 'views' && !vA.length) ||
+                 (activeMetric === 'sub_delta' && dA.length < 2) ||
+                 (activeMetric === 'subscribers' && !dA.length);
+  const canvas = document.getElementById('mainChart');
+  const noDataEl = document.getElementById('chartNoData');
+  if(noData){
+    canvas.style.display = 'none';
+    noDataEl.style.display = 'block';
+    document.getElementById('dataGapNote').textContent = '';
+    document.getElementById('chartSubLabel').textContent = '';
+    if(mainChart){ mainChart.destroy(); mainChart = null; }
+    return;
+  }
+  canvas.style.display = 'block';
+  noDataEl.style.display = 'none';
+
+  // データ件数サブラベル
+  const ptCount = activeMetric === 'views' ? vA.length : (activeMetric === 'sub_delta' ? Math.max(0,dA.length-1) : dA.length);
+  document.getElementById('chartSubLabel').textContent = ptCount + '日分';
+
+  // ギャップ検出（全期間表示かつ欠損区間あり）
+  const gapEl = document.getElementById('dataGapNote');
+  if(!filterFrom && !filterTo && activeMetric === 'views'){
+    const allV = allViewData();
+    if(allV.length > 1){
+      let maxGap = 0, gapStart = '', gapEnd = '';
+      for(let i=1;i<allV.length;i++){
+        const diff = (new Date(allV[i].date) - new Date(allV[i-1].date)) / 86400000;
+        if(diff > maxGap){ maxGap = diff; gapStart = allV[i-1].date; gapEnd = allV[i].date; }
+      }
+      if(maxGap > 7){
+        gapEl.textContent = `⚠ データ欠損: ${fmtDate(gapStart)}〜${fmtDate(gapEnd)}（${Math.round(maxGap)}日間）`;
+      } else { gapEl.textContent = ''; }
+    }
+  } else { gapEl.textContent = ''; }
+
+  let labels, datasets, tooltipFmt, titleDate = '';
 
   if(activeMetric === 'views'){
     if(!compareMode){
       labels   = vA.map(d => d.date.slice(5));
-      datasets = [buildViewsDataset(vA, 'rgba(91,214,138,1)', '期間A')];
+      datasets = [buildViewsDataset(vA, 'rgba(91,214,138,1)', '再生数')];
+      tooltipFmt = ctx => {
+        const date = vA[ctx.dataIndex]?.date || '';
+        return ` ${fmtFull(ctx.raw)}回 (${fmtDate(date)})`;
+      };
     } else {
       const len = Math.max(vA.length, (vB||[]).length);
       labels   = Array.from({length:len}, (_,i) => `Day ${i+1}`);
@@ -577,21 +627,32 @@ function renderMainChart(){
           data: Array.from({length:len}, (_,i) => (vB||[])[i]?.views ?? null),
           borderDash: [5,3] }
       ];
+      tooltipFmt = ctx => {
+        const isA = ctx.datasetIndex === 0;
+        const src = isA ? vA : (vB||[]);
+        const d = src[ctx.dataIndex];
+        return ` ${ctx.dataset.label}${d ? ' ('+fmtDate(d.date)+')' : ''}: ${fmtFull(ctx.raw)}回`;
+      };
     }
-    tooltipFmt = ctx => ` ${ctx.dataset.label}: ${fmtFull(ctx.raw)}回`;
 
   } else if(activeMetric === 'sub_delta'){
     if(!compareMode){
       const vals = dA.slice(1).map((d,i) => d.subscribers - dA[i].subscribers);
-      labels   = dA.slice(1).map(d => d.date.slice(5));
+      const dates = dA.slice(1);
+      labels   = dates.map(d => d.date.slice(5));
       datasets = [{
-        label:'期間A', type:'bar', data:vals,
+        label:'登録者増減', type:'bar', data:vals,
         backgroundColor: vals.map(v => v >= 0 ? 'rgba(91,214,138,.7)' : 'rgba(226,112,110,.7)'),
         borderWidth:0, borderRadius:3,
       }];
+      tooltipFmt = ctx => {
+        const d = dates[ctx.dataIndex];
+        return ` ${fmtDate(d?.date||'')}: ${(ctx.raw??0) >= 0 ? '+' : ''}${fmtFull(ctx.raw??0)}人`;
+      };
     } else {
-      const valsA = dA.slice(1).map((d,i) => d.subscribers - dA[i].subscribers);
-      const valsB = dB ? dB.slice(1).map((d,i) => d.subscribers - dB[i].subscribers) : [];
+      const datesA = dA.slice(1), datesB = dB ? dB.slice(1) : [];
+      const valsA = datesA.map((d,i) => d.subscribers - dA[i].subscribers);
+      const valsB = datesB.map((d,i) => d.subscribers - dB[i].subscribers);
       const len = Math.max(valsA.length, valsB.length);
       labels = Array.from({length:len}, (_,i) => `Day ${i+1}`);
       datasets = [
@@ -604,13 +665,22 @@ function renderMainChart(){
           backgroundColor: valsB.map(v => v >= 0 ? 'rgba(201,162,39,.6)' : 'rgba(226,112,110,.4)'),
           borderWidth:0, borderRadius:3 }
       ];
+      tooltipFmt = ctx => {
+        const isA = ctx.datasetIndex === 0;
+        const src = isA ? datesA : datesB;
+        const d = src[ctx.dataIndex];
+        return ` ${ctx.dataset.label}${d ? ' ('+fmtDate(d.date)+')' : ''}: ${(ctx.raw??0) >= 0 ? '+' : ''}${fmtFull(ctx.raw??0)}人`;
+      };
     }
-    tooltipFmt = ctx => ` ${ctx.dataset.label}: ${(ctx.raw??0) >= 0 ? '+' : ''}${fmtFull(ctx.raw??0)}人`;
 
-  } else { // subscribers (absolute)
+  } else { // subscribers
     if(!compareMode){
       labels   = dA.map(d => d.date.slice(5));
-      datasets = [buildSubDataset(dA, 'rgba(201,162,39,1)', '期間A')];
+      datasets = [buildSubDataset(dA, 'rgba(201,162,39,1)', '登録者数')];
+      tooltipFmt = ctx => {
+        const d = dA[ctx.dataIndex];
+        return ` ${fmtDate(d?.date||'')}: ${fmtFull(ctx.raw)}人`;
+      };
     } else {
       const len = Math.max(dA.length, (dB||[]).length);
       labels = Array.from({length:len}, (_,i) => `Day ${i+1}`);
@@ -621,20 +691,29 @@ function renderMainChart(){
           data: Array.from({length:len}, (_,i) => (dB||[])[i]?.subscribers ?? null),
           borderDash: [5,3] }
       ];
+      tooltipFmt = ctx => {
+        const isA = ctx.datasetIndex === 0;
+        const src = isA ? dA : (dB||[]);
+        const d = src[ctx.dataIndex];
+        return ` ${ctx.dataset.label}${d ? ' ('+fmtDate(d.date)+')' : ''}: ${fmtFull(ctx.raw)}人`;
+      };
     }
-    tooltipFmt = ctx => ` ${ctx.dataset.label}: ${fmtFull(ctx.raw)}人`;
   }
 
   if(mainChart) mainChart.destroy();
-  mainChart = new Chart(document.getElementById('mainChart'), {
+  mainChart = new Chart(canvas, {
     type: 'line',
     data: { labels, datasets },
     options: {
       ...CHART_OPT_BASE,
       plugins: {
         ...CHART_OPT_BASE.plugins,
-        tooltip: { ...CHART_OPT_BASE.plugins.tooltip,
-          callbacks: { label: tooltipFmt }
+        tooltip: {
+          ...CHART_OPT_BASE.plugins.tooltip,
+          callbacks: {
+            title: items => items[0]?.label || '',
+            label: tooltipFmt
+          }
         }
       }
     }
@@ -718,12 +797,17 @@ function renderOverview(){
   const weekSub   = e7 ? latest.subscribers - e7.subscribers : null;
   const weekRate  = (e7 && e7.subscribers) ? (weekSub / e7.subscribers * 100) : null;
 
+  // データ期間はanalyticsとスナップショット両方を考慮
+  const allV = allViewData();
+  const dataStart = allV.length ? allV[0].date : (daily.length ? daily[0].date : '');
+  const dataEnd   = allV.length ? allV[allV.length-1].date : '';
+
   const items = [
     { label:'登録者数', val: fmtFull(latest.subscribers), sub:'人' },
     { label:'週間再生数', val: weekViews !== null ? fmt(weekViews) : '—', sub: weekViews !== null ? fmtFull(weekViews)+'回' : '' },
     { label:'登録者増加率（週）', val: weekRate !== null ? (weekRate >= 0 ? '+' : '') + weekRate.toFixed(2) + '%' : '—', sub: weekSub !== null ? (weekSub >= 0 ? '+' : '') + weekSub.toLocaleString() + '人' : '' },
     { label:'動画本数', val: latest.video_count.toLocaleString(), sub:'本' },
-    { label:'データ期間', val: daily.length + '日', sub: fmtDate(daily[0].date) + '〜' },
+    { label:'データ期間', val: allV.length + '日', sub: fmtDate(dataStart) + '〜' + fmtDate(dataEnd) },
   ];
 
   document.getElementById('overviewBar').innerHTML = items.map(it => `
