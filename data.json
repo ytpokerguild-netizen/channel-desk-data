@@ -2,7 +2,7 @@
   "meta": {
     "channel_id": "UCnGhxFzP6V4TczZCs63rXgQ",
     "channel_title": "りいポーカーチャンネル【PokerGuild】",
-    "fetched_at": "2026-06-29T03:17:13.341992+00:00",
+    "fetched_at": "2026-06-29T03:32:51.350074+00:00",
     "data_through": "2026-06-29",
     "since": "2025-06-25",
     "data_source": "youtube_data_api_v3",
@@ -3718,7 +3718,7 @@
       "video_id": "e7kenz_nNf4",
       "title": "えっ、田中圭！？賞金6000万円を賭けたガチすぎるポーカー勝負がアツい！",
       "published_at": "2026-03-09",
-      "views": 449926,
+      "views": 449965,
       "likes": 2940,
       "comments": 115,
       "watch_minutes": 0,
@@ -3728,8 +3728,8 @@
       "video_id": "EwwFrb6kMow",
       "title": "【ポーカー】WSOPメイン15億円ヘッズアップ決着！",
       "published_at": "2025-07-17",
-      "views": 443363,
-      "likes": 1484,
+      "views": 443396,
+      "likes": 1485,
       "comments": 32,
       "watch_minutes": 0,
       "revenue_jpy": 0
@@ -3748,7 +3748,7 @@
       "video_id": "OELPsXNcfmI",
       "title": "【歴史的瞬間】一撃16億円。ポーカー史上最高額のポットが生まれた、伝説のハンド",
       "published_at": "2025-09-28",
-      "views": 343513,
+      "views": 343543,
       "likes": 1507,
       "comments": 65,
       "watch_minutes": 0,
@@ -3758,8 +3758,8 @@
       "video_id": "3Sgx1JIyscs",
       "title": "KKでレイズせずコール。JOPT Day2で起きた、あまりにも無慈悲なハンド",
       "published_at": "2025-12-17",
-      "views": 321395,
-      "likes": 2254,
+      "views": 321414,
+      "likes": 2255,
       "comments": 92,
       "watch_minutes": 0,
       "revenue_jpy": 0
@@ -3825,16 +3825,6 @@
       "revenue_jpy": 0
     },
     {
-      "video_id": "nTTIXnxn7gk",
-      "title": "みさわのこのコールが生涯年収を変える。ポーカー大会トリトン・ミステリーバウンティの衝撃",
-      "published_at": "2025-09-14",
-      "views": 244331,
-      "likes": 960,
-      "comments": 34,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
       "video_id": "ZgvKcFiBacM",
       "title": "あなたのポーカーIQが試される。みさわさんの思考をトレースせよ！",
       "published_at": "2025-10-14",
@@ -3845,42 +3835,12 @@
       "revenue_jpy": 0
     },
     {
-      "video_id": "X7Fb2doPwKA",
-      "title": "【心臓鉄製】バブルで5betオールイン！？みさわ、1500万円大会で見せた「命懸けのブラフ」",
-      "published_at": "2026-01-07",
-      "views": 229245,
-      "likes": 729,
-      "comments": 118,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
-      "video_id": "c2kXvRTAOUo",
-      "title": "【歴史的瞬間】3330人の頂点へ！JOPT新王者が誕生した、運命のオールイン",
-      "published_at": "2025-12-20",
-      "views": 208778,
-      "likes": 602,
-      "comments": 56,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
       "video_id": "HTRxTcwO7lQ",
       "title": "【WSOP】賞金3億目前で詩菜さんが…！？AAが「フォーカード」に粉砕される悪夢のオールイン",
       "published_at": "2026-04-09",
       "views": 205967,
       "likes": 855,
       "comments": 75,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
-      "video_id": "E18o1ZKJtLU",
-      "title": "「これは終わった…」セット vs ツーペアが、まさかの決着に。ポーカーの悪魔が見せた最悪の結末。",
-      "published_at": "2026-01-01",
-      "views": 204773,
-      "likes": 524,
-      "comments": 59,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -3915,42 +3875,12 @@
       "revenue_jpy": 0
     },
     {
-      "video_id": "Vc5cKGAMNI0",
-      "title": "ポーカー女王の称号は伊達じゃない。海外トッププロを沈めた衝撃のラストハンド",
-      "published_at": "2025-10-21",
-      "views": 201398,
-      "likes": 955,
-      "comments": 59,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
-      "video_id": "1aycBjoCXp4",
-      "title": "【究極の2択】2億円を賭けたオールイン。あなたならこの「ワンペア」でコールできる？",
-      "published_at": "2025-10-04",
-      "views": 191905,
-      "likes": 503,
-      "comments": 86,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
       "video_id": "ssk71tgaY9o",
       "title": "「さすが世界のヨコサワ！」絶体絶命のオールインから、魔法のように逆転する瞬間",
       "published_at": "2025-12-15",
       "views": 191886,
       "likes": 694,
       "comments": 34,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
-      "video_id": "5jyru2DNWL4",
-      "title": "JOPT会場騒然！しいなの「狂気オールイン」が相手のツーペアを捨てさせる！",
-      "published_at": "2026-01-03",
-      "views": 190725,
-      "likes": 731,
-      "comments": 83,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -4045,16 +3975,6 @@
       "revenue_jpy": 0
     },
     {
-      "video_id": "5mOVH2T0Bbw",
-      "title": "【ポーカーVLOG】私のAKが炸裂！渋谷ポーカーフェスでマックスバリュー取ってきた！",
-      "published_at": "2025-10-02",
-      "views": 166266,
-      "likes": 392,
-      "comments": 68,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
       "video_id": "Ro__i-Mdf6c",
       "title": "「スリーカードだけど降りる…」相手はAQ！たかしプロの異常な危機察知能力がヤバい！",
       "published_at": "2026-04-07",
@@ -4098,6 +4018,16 @@
       "video_id": "GyLKgLz4mQc",
       "title": "優勝賞金2億円を賭けた運命のフリップ。ポーカーYouTuber じぇいそるの挑戦",
       "published_at": "2025-09-08",
+      "views": 150700,
+      "likes": 385,
+      "comments": 12,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
+      "video_id": "GyLKgLz4mQc",
+      "title": "優勝賞金2億円を賭けた運命のフリップ。ポーカーYouTuber じぇいそるの挑戦",
+      "published_at": "2025-09-08",
       "views": 150699,
       "likes": 385,
       "comments": 12,
@@ -4121,16 +4051,6 @@
       "views": 146359,
       "likes": 583,
       "comments": 36,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
-      "video_id": "UP-rwYptgUs",
-      "title": "「負けられない」ポーカー界の女王対決。Aを巡る攻防を制したのは…",
-      "published_at": "2026-01-04",
-      "views": 145636,
-      "likes": 394,
-      "comments": 40,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -4161,16 +4081,6 @@
       "views": 142591,
       "likes": 472,
       "comments": 35,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
-      "video_id": "g0H5F_ZYPpM",
-      "title": "賞金3000万円か、破産か。運命のバブルでKKを持った男の末路",
-      "published_at": "2025-12-23",
-      "views": 135651,
-      "likes": 323,
-      "comments": 37,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -4251,26 +4161,6 @@
       "views": 116172,
       "likes": 360,
       "comments": 73,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
-      "video_id": "bq6opQ2CN4k",
-      "title": "【閲覧注意】1億円がテーブルの上で動く。これが超高額キャッシュゲームの世界ハンド2",
-      "published_at": "2026-01-03",
-      "views": 115643,
-      "likes": 318,
-      "comments": 13,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
-      "video_id": "lOc54UGXoa0",
-      "title": "「なぜ降りれる？」トップヒットを捨てる。これがトッププロの「危険察知」",
-      "published_at": "2026-01-08",
-      "views": 115561,
-      "likes": 387,
-      "comments": 41,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -4398,19 +4288,19 @@
       "video_id": "MY74PZGG_gs",
       "title": "回避率0%！？4カードでマックスバリュー【WSOP2026/ポーカー】",
       "published_at": "2026-06-14",
-      "views": 99862,
-      "likes": 634,
+      "views": 99882,
+      "likes": 635,
       "comments": 37,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
     {
-      "video_id": "OIe7laOsA3M",
-      "title": "天国か地獄か。9000万円を賭けた魂のオールイン",
-      "published_at": "2026-01-05",
-      "views": 98364,
-      "likes": 376,
-      "comments": 13,
+      "video_id": "dw7anOiZ4aM",
+      "title": "KKなのに…【ポーカー】",
+      "published_at": "2025-08-26",
+      "views": 97904,
+      "likes": 349,
+      "comments": 24,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -4515,6 +4405,26 @@
       "revenue_jpy": 0
     },
     {
+      "video_id": "4bVlDUImnsc",
+      "title": "こんなハンドでオールイン出来る！？【ポーカー】",
+      "published_at": "2025-08-18",
+      "views": 91718,
+      "likes": 333,
+      "comments": 20,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
+      "video_id": "xyhzpMK3awI",
+      "title": "トナメのAAって緊張するよね…【ポーカー】",
+      "published_at": "2025-08-25",
+      "views": 91184,
+      "likes": 322,
+      "comments": 20,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
       "video_id": "xyhzpMK3awI",
       "title": "トナメのAAって緊張するよね…【ポーカー】",
       "published_at": "2025-08-25",
@@ -4538,7 +4448,7 @@
       "video_id": "Yw_8pqOEtak",
       "title": "【神ブラフ】AAを降ろす凄すぎるプレイ！これがポーカー世界大会WSOP",
       "published_at": "2026-06-13",
-      "views": 88430,
+      "views": 88453,
       "likes": 541,
       "comments": 67,
       "watch_minutes": 0,
@@ -4551,16 +4461,6 @@
       "views": 88430,
       "likes": 435,
       "comments": 53,
-      "watch_minutes": 0,
-      "revenue_jpy": 0
-    },
-    {
-      "video_id": "FjHgvzD-ywI",
-      "title": "【ポーカー史上最悪の悲劇】KK vs KK、確率0.02%で7000万円の夢が散った日",
-      "published_at": "2025-12-31",
-      "views": 88142,
-      "likes": 341,
-      "comments": 5,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -4895,6 +4795,16 @@
       "revenue_jpy": 0
     },
     {
+      "video_id": "pxl1cpyCnnQ",
+      "title": "ポーカー世界大会で日本人が優勝目前！？",
+      "published_at": "2025-08-29",
+      "views": 63793,
+      "likes": 233,
+      "comments": 35,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
       "video_id": "Kg0mgjYP714",
       "title": "【究極の女流対決】女王しいなのWバレルブラフを、ななちゃらの選択は？",
       "published_at": "2025-11-20",
@@ -4908,7 +4818,7 @@
       "video_id": "xWf3SXONKDU",
       "title": "日本人初の快挙！競馬YouTuberナーツの1億を懸けたオールイン【ポーカーWSOP2026】",
       "published_at": "2026-06-03",
-      "views": 62639,
+      "views": 62647,
       "likes": 290,
       "comments": 13,
       "watch_minutes": 0,
@@ -5015,6 +4925,16 @@
       "revenue_jpy": 0
     },
     {
+      "video_id": "wYtqcoUDfOg",
+      "title": "「うそでしょ…」誰もが声を失った、日本人の悲劇的なラストハンド",
+      "published_at": "2025-09-10",
+      "views": 56754,
+      "likes": 221,
+      "comments": 22,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
       "video_id": "bofXVMK5bl8",
       "title": "これが世界1位の戦い方。ポーカー賞金王が見せた魂のブラフキャッチ！",
       "published_at": "2025-10-13",
@@ -5085,12 +5005,42 @@
       "revenue_jpy": 0
     },
     {
+      "video_id": "3Y1BmizFujs",
+      "title": "女性ポーカープレイヤーが見せたブラフがすごすぎる",
+      "published_at": "2025-09-01",
+      "views": 52471,
+      "likes": 158,
+      "comments": 18,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
       "video_id": "5Wy_OSBNB70",
       "title": "トッププロが頭を抱えたキングスの使い方。賞金4000万円のプレッシャーがヤバすぎる",
       "published_at": "2025-09-09",
       "views": 51030,
       "likes": 185,
       "comments": 25,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
+      "video_id": "5Wy_OSBNB70",
+      "title": "トッププロが頭を抱えたキングスの使い方。賞金4000万円のプレッシャーがヤバすぎる",
+      "published_at": "2025-09-09",
+      "views": 51030,
+      "likes": 185,
+      "comments": 25,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
+      "video_id": "jP22U6KTusI",
+      "title": "せっかくAAが来たのに…【ポーカー】",
+      "published_at": "2025-08-27",
+      "views": 50802,
+      "likes": 216,
+      "comments": 17,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -5175,6 +5125,16 @@
       "revenue_jpy": 0
     },
     {
+      "video_id": "4GXgp2tE5-o",
+      "title": "ポーカー世界大会で50万円獲得してきた！",
+      "published_at": "2025-08-28",
+      "views": 47423,
+      "likes": 166,
+      "comments": 32,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
       "video_id": "WMfl98VQAjM",
       "title": "ポーカープロのブラフがヤバすぎた【WSOP】",
       "published_at": "2025-08-17",
@@ -5215,6 +5175,16 @@
       "revenue_jpy": 0
     },
     {
+      "video_id": "Ni5ZJoO_s_M",
+      "title": "【異次元の読み合い】ブラフもキャッチも凄すぎる…！WSOPヘッズアップで起きた死闘",
+      "published_at": "2026-06-12",
+      "views": 43814,
+      "likes": 192,
+      "comments": 13,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
       "video_id": "U8hZwCIARCI",
       "title": "ポーカー女王しいなさんがWSOPメインに出場！",
       "published_at": "2025-08-22",
@@ -5225,12 +5195,12 @@
       "revenue_jpy": 0
     },
     {
-      "video_id": "Ni5ZJoO_s_M",
-      "title": "【異次元の読み合い】ブラフもキャッチも凄すぎる…！WSOPヘッズアップで起きた死闘",
-      "published_at": "2026-06-12",
-      "views": 43796,
-      "likes": 192,
-      "comments": 13,
+      "video_id": "U8hZwCIARCI",
+      "title": "ポーカー女王しいなさんがWSOPメインに出場！",
+      "published_at": "2025-08-22",
+      "views": 43810,
+      "likes": 161,
+      "comments": 2,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -5285,6 +5255,16 @@
       "revenue_jpy": 0
     },
     {
+      "video_id": "rCGvsCmXCG4",
+      "title": "これは神コール？参加費300万円大会でスーパープレー！",
+      "published_at": "2025-09-04",
+      "views": 40640,
+      "likes": 128,
+      "comments": 5,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
       "video_id": "UC3uecVbw4s",
       "title": "【WSOP】会場総立ち！AA・QQ・JJの大勝負、結末がヤバすぎた",
       "published_at": "2026-04-30",
@@ -5321,6 +5301,16 @@
       "views": 37827,
       "likes": 179,
       "comments": 16,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
+      "video_id": "lgfvC_D0h0U",
+      "title": "バニーガールがポーカーしてみたら…",
+      "published_at": "2025-08-21",
+      "views": 37389,
+      "likes": 145,
+      "comments": 6,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
@@ -5538,7 +5528,7 @@
       "video_id": "5uf99Z4matY",
       "title": "【悲劇】セットオーバーセットからのフルハウス！？これがWSOPのえぐすぎるワンハンド",
       "published_at": "2026-06-23",
-      "views": 20916,
+      "views": 20937,
       "likes": 127,
       "comments": 23,
       "watch_minutes": 0,
@@ -5578,7 +5568,7 @@
       "video_id": "2jUeotuqihI",
       "title": "【理不尽すぎる結末】KKとJJに「64」でコール！？天才ホルツが魅せた、えぐすぎるダブルノックアウト！",
       "published_at": "2026-06-27",
-      "views": 15952,
+      "views": 16011,
       "likes": 135,
       "comments": 5,
       "watch_minutes": 0,
@@ -5591,6 +5581,16 @@
       "views": 15112,
       "likes": 95,
       "comments": 2,
+      "watch_minutes": 0,
+      "revenue_jpy": 0
+    },
+    {
+      "video_id": "F8PtMPITIEM",
+      "title": "EPTバルセロナ しいなさん優勝の瞬間！",
+      "published_at": "2025-08-31",
+      "views": 14221,
+      "likes": 104,
+      "comments": 4,
       "watch_minutes": 0,
       "revenue_jpy": 0
     },
