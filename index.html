@@ -213,7 +213,7 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
         <div class="chart-box"><canvas id="subChart"></canvas></div>
       </div>
       <div class="card">
-        <h3><span class="dot"></span>総再生数推移</h3>
+        <h3><span class="dot" style="background:var(--up)"></span>日次再生数（差分）</h3>
         <div class="chart-box"><canvas id="viewChart"></canvas></div>
       </div>
     </div>
@@ -300,16 +300,33 @@ async function loadData(){
   }
 }
 
+// ── 週次ヘルパー ──
+function entryNDaysAgo(daily, latestDate, n){
+  const d = new Date(latestDate + 'T00:00:00');
+  d.setDate(d.getDate() - n);
+  const dstr = d.toISOString().slice(0, 10);
+  return [...daily].reverse().find(e => e.date <= dstr) || null;
+}
+
 // ── KPI ──
 function renderKPI(){
-  const daily = G.daily;
+  const daily  = allDaily();
   const latest = daily[daily.length-1];
   const prev   = daily.length >= 2 ? daily[daily.length-2] : null;
 
-  const delta = (key) => {
-    if(!prev || !prev[key]) return null;
-    return latest[key] - prev[key];
-  };
+  // 7日前エントリ
+  const e7 = entryNDaysAgo(daily, latest.date, 7);
+
+  // 週間再生数（スナップショット差分）
+  const weekViews = e7 ? Math.max(0, latest.total_views - e7.total_views) : null;
+  const weekViewsPrev = (e7 && daily.length >= 2) ? (() => {
+    const e14 = entryNDaysAgo(daily, e7.date, 7);
+    return e14 ? Math.max(0, e7.total_views - e14.total_views) : null;
+  })() : null;
+
+  // 登録者増加率（週）
+  const weekSubDiff = e7 ? latest.subscribers - e7.subscribers : null;
+  const weekSubRate = (e7 && e7.subscribers) ? (weekSubDiff / e7.subscribers * 100) : null;
 
   const cards = [
     {
@@ -319,11 +336,18 @@ function renderKPI(){
       suffix: '前日比'
     },
     {
-      label:'累積総再生数', icon:'▶',
-      val: fmt(latest.total_views), unit:'',
-      sub: fmtFull(latest.total_views) + ' 回',
-      delta: prev ? latest.total_views - prev.total_views : null,
-      suffix: '前日'
+      label:'登録者増加率（週）', icon:'📈',
+      val: weekSubRate !== null ? (weekSubRate >= 0 ? '+' : '') + weekSubRate.toFixed(2) : '—',
+      unit: weekSubRate !== null ? '%' : '',
+      sub: weekSubDiff !== null ? '直近7日 ' + (weekSubDiff >= 0 ? '+' : '') + weekSubDiff.toLocaleString() + '人' : '',
+      delta: null
+    },
+    {
+      label:'週間再生数', icon:'▶',
+      val: weekViews !== null ? fmt(weekViews) : '—', unit:'',
+      sub: weekViews !== null ? fmtFull(weekViews) + ' 回（直近7日）' : 'データ不足',
+      delta: (weekViews !== null && weekViewsPrev !== null) ? weekViews - weekViewsPrev : null,
+      suffix: '前週比'
     },
     {
       label:'動画本数', icon:'🎬',
@@ -497,21 +521,25 @@ function renderSubChart(){
 }
 
 function renderViewChart(){
-  const data   = filteredDaily();
-  const labels = data.map(d=>d.date.slice(5));
-  const vals   = data.map(d=>d.total_views);
+  const data = filteredDaily();
+  if(data.length < 2){
+    if(viewChart){ viewChart.destroy(); viewChart = null; }
+    return;
+  }
+  // 連続スナップショット差分で日次再生数を計算
+  const labels = data.slice(1).map(d => d.date.slice(5));
+  const vals   = data.slice(1).map((d,i) => Math.max(0, d.total_views - data[i].total_views));
 
   if(viewChart) viewChart.destroy();
   viewChart = new Chart(document.getElementById('viewChart'), {
-    type:'line',
+    type:'bar',
     data:{
       labels,
       datasets:[{
         data:vals,
-        borderColor:'#5BD68A', borderWidth:2,
-        backgroundColor:'rgba(91,214,138,.08)',
-        fill:true, tension:.35, pointRadius:0, pointHoverRadius:4,
-        pointHoverBackgroundColor:'#5BD68A'
+        backgroundColor:'rgba(91,214,138,.45)',
+        borderColor:'rgba(91,214,138,.8)',
+        borderWidth:1, borderRadius:3,
       }]
     },
     options:{ ...chartDefaults,
