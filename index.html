@@ -909,29 +909,45 @@ function renderVideoTable(){
   const from = filterFrom || null;
   const to   = filterTo   || null;
   const isPeriod = from && to;
-  const vdv  = G.video_daily_views || {}; // {video_id: [{date,views}]}
-  const hasVdv = Object.keys(vdv).length > 0;
+  // video_period_views: {"7":{vid:views},"28":...} - Analytics API 期間合計
+  const vpv = G.video_period_views || {};
+  // video_daily_views: {vid:[{date,views}]} - 旧構造（後方互換）
+  const vdv = G.video_daily_views  || {};
 
   let videos;
   let subLabel = '';
 
-  if(isPeriod && hasVdv){
-    // 期間内の再生数で集計してランキング
-    videos = G.videos.map(v => {
-      const dailyData   = vdv[v.video_id] || [];
-      const periodViews = dailyData
-        .filter(e => e.date >= from && e.date <= to)
-        .reduce((s, e) => s + e.views, 0);
-      return {...v, period_views: periodViews};
-    }).filter(v => v.period_views > 0)
-      .sort((a, b) => b.period_views - a.period_views);
-    subLabel = `${fmtDate(from)}〜${fmtDate(to)} 期間内再生数順`;
-  } else if(isPeriod){
-    // video_daily_views未取得 → 公開日フィルタにフォールバック
-    videos = G.videos
-      .filter(v => v.published_at >= from && v.published_at <= to)
-      .map(v => ({...v, period_views: null}));
-    subLabel = `${fmtDate(from)}〜${fmtDate(to)} 公開`;
+  if(isPeriod){
+    const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+    // プリセット期間に対応するデータを探す（±1日の誤差を許容）
+    const presetKey = [7, 28, 90, 365].find(d => Math.abs(days - d) <= 1);
+    const periodData = presetKey ? vpv[String(presetKey)] : null;
+
+    if(periodData && Object.keys(periodData).length > 0){
+      // Analytics API の期間合計データを使用
+      videos = G.videos.map(v => ({
+        ...v, period_views: periodData[v.video_id] || 0,
+      })).filter(v => v.period_views > 0)
+        .sort((a, b) => b.period_views - a.period_views);
+      subLabel = `${fmtDate(from)}〜${fmtDate(to)} 期間内再生数順`;
+    } else if(Object.keys(vdv).length > 0){
+      // 旧構造フォールバック
+      videos = G.videos.map(v => {
+        const dailyData   = vdv[v.video_id] || [];
+        const periodViews = dailyData
+          .filter(e => e.date >= from && e.date <= to)
+          .reduce((s, e) => s + e.views, 0);
+        return {...v, period_views: periodViews};
+      }).filter(v => v.period_views > 0)
+        .sort((a, b) => b.period_views - a.period_views);
+      subLabel = `${fmtDate(from)}〜${fmtDate(to)} 期間内再生数順`;
+    } else {
+      // データなし → 公開日フィルタ
+      videos = G.videos
+        .filter(v => v.published_at >= from && v.published_at <= to)
+        .map(v => ({...v, period_views: null}));
+      subLabel = `${fmtDate(from)}〜${fmtDate(to)} 公開`;
+    }
   } else {
     videos   = G.videos.map(v => ({...v, period_views: null}));
     subLabel = '全期間・再生数順';
