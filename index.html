@@ -179,8 +179,85 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
 .title-cell{max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .video-info{display:flex;align-items:center;gap:10px}
 .thumb{width:60px;height:34px;border-radius:4px;object-fit:cover;background:var(--panel-2);border:1px solid var(--line);flex-shrink:0}
+/* ── Video cards ── */
+.video-list{display:flex;flex-direction:column;gap:10px}
+.video-card{
+  display:flex;align-items:center;gap:14px;
+  padding:12px 14px;border-radius:10px;
+  background:var(--panel-2);border:1px solid var(--line);
+  transition:border-color .15s;
+}
+.video-card:hover{border-color:var(--line-strong)}
+.vc-rank{
+  font-family:"Oswald",sans-serif;font-size:18px;font-weight:600;
+  color:var(--gold);min-width:32px;text-align:center;flex-shrink:0;
+}
+.vc-rank.top3{font-size:22px}
+.vc-thumb{
+  width:120px;height:68px;border-radius:6px;object-fit:cover;
+  background:var(--panel);border:1px solid var(--line);flex-shrink:0;
+}
+.vc-body{flex:1;min-width:0}
+.vc-title{
+  font-size:13px;font-weight:500;color:var(--ink);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  overflow:hidden;line-height:1.45;margin-bottom:6px;
+}
+.vc-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.vc-stat{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
+.vc-stat strong{color:var(--ink);font-weight:600}
+.vc-date{font-size:11px;color:var(--muted-2);margin-left:auto;white-space:nowrap}
 
 .foot{color:var(--muted-2);font-size:11px;text-align:center;margin-top:30px;letter-spacing:.04em}
+
+/* ── Video detail modal ── */
+.vmodal-overlay{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;opacity:0;pointer-events:none;transition:opacity .2s;
+}
+.vmodal-overlay.open{opacity:1;pointer-events:auto}
+.vmodal{
+  background:var(--panel);border:1px solid var(--line-strong);
+  border-radius:16px;width:100%;max-width:560px;
+  box-shadow:0 24px 64px rgba(0,0,0,.6);
+  transform:translateY(12px);transition:transform .2s;
+  overflow:hidden;
+}
+.vmodal-overlay.open .vmodal{transform:translateY(0)}
+.vmodal-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--line);
+}
+.vmodal-header span{font-size:12px;color:var(--muted);font-family:"Oswald",sans-serif;letter-spacing:.08em}
+.vmodal-close{
+  background:none;border:none;color:var(--muted);font-size:20px;
+  cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;
+  transition:color .15s;
+}
+.vmodal-close:hover{color:var(--ink)}
+.vmodal-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--panel-2)}
+.vmodal-body{padding:16px 18px 20px}
+.vmodal-title{font-size:15px;font-weight:700;line-height:1.5;margin-bottom:12px;color:var(--ink)}
+.vmodal-stats{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;
+}
+.vmodal-stat{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
+  padding:10px 12px;text-align:center;
+}
+.vmodal-stat .label{font-size:11px;color:var(--muted);margin-bottom:4px}
+.vmodal-stat .value{font-size:18px;font-family:"Oswald",sans-serif;font-weight:500;color:var(--ink)}
+.vmodal-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted-2);margin-bottom:16px}
+.vmodal-link{
+  display:block;text-align:center;padding:10px;border-radius:10px;
+  background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.3);
+  color:var(--gold-soft);font-size:13px;font-weight:600;text-decoration:none;
+  transition:background .15s;
+}
+.vmodal-link:hover{background:rgba(201,162,39,.22)}
+.video-card{cursor:pointer}
 
 /* ── Legend ── */
 .chart-legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
@@ -266,26 +343,33 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
         動画ランキング（再生数順）
         <span style="margin-left:auto;font-size:11px;color:var(--muted-2);text-transform:none;font-family:'Noto Sans JP',sans-serif" id="videoCount"></span>
       </h3>
-      <div style="overflow-x:auto">
-        <table id="videoTable">
-          <thead>
-            <tr>
-              <th style="width:28px">#</th>
-              <th>動画</th>
-              <th class="num">再生数</th>
-              <th class="num">高評価</th>
-              <th class="num">コメント</th>
-              <th class="num">公開日</th>
-            </tr>
-          </thead>
-          <tbody id="videoBody"></tbody>
-        </table>
-      </div>
+      <div class="video-list" id="videoBody"></div>
     </div>
 
   </div><!-- /mainContent -->
 
   <div class="foot" id="footNote"><!-- analytics: 2025-01-01 to 2026-06-27 --></div>
+</div>
+
+<!-- Video detail modal -->
+<div class="vmodal-overlay" id="vmodalOverlay" onclick="closeVideoModal(event)">
+  <div class="vmodal">
+    <div class="vmodal-header">
+      <span id="vmodalRank"></span>
+      <button class="vmodal-close" onclick="closeVideoModal()">×</button>
+    </div>
+    <img class="vmodal-thumb" id="vmodalThumb" src="" alt="">
+    <div class="vmodal-body">
+      <div class="vmodal-title" id="vmodalTitle"></div>
+      <div class="vmodal-stats">
+        <div class="vmodal-stat"><div class="label">再生数</div><div class="value" id="vmodalViews"></div></div>
+        <div class="vmodal-stat"><div class="label">高評価</div><div class="value" id="vmodalLikes"></div></div>
+        <div class="vmodal-stat"><div class="label">コメント</div><div class="value" id="vmodalComments"></div></div>
+      </div>
+      <div class="vmodal-meta" id="vmodalMeta"></div>
+      <a class="vmodal-link" id="vmodalLink" href="" target="_blank" rel="noopener">▶ YouTubeで開く</a>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -822,25 +906,56 @@ function renderOverview(){
 function renderVideoTable(){
   const videos = G.videos;
   document.getElementById('videoCount').textContent = videos.length + '本';
-  const rows = videos.slice(0,100).map((v,i) => `
-    <tr>
-      <td class="rank">${i+1}</td>
-      <td>
-        <div class="video-info">
-          <img class="thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
-          <div>
-            <div class="title-cell" title="${v.title.replace(/"/g,'&quot;')}">${v.title}</div>
-            <div style="font-size:11px;color:var(--muted-2);margin-top:2px">${fmtDate(v.published_at)}</div>
-          </div>
+  const cards = videos.slice(0,100).map((v,i) => {
+    const n = i + 1;
+    const rankCls = n <= 3 ? 'vc-rank top3' : 'vc-rank';
+    const medal = n === 1 ? '🥇' : n === 2 ? '🥈' : n === 3 ? '🥉' : n;
+    return `
+    <div class="video-card" onclick="openVideoModal(${i})">
+      <div class="${rankCls}">${medal}</div>
+      <img class="vc-thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+      <div class="vc-body">
+        <div class="vc-title">${v.title}</div>
+        <div class="vc-meta">
+          <span class="vc-stat">👁 <strong>${fmtFull(v.views)}</strong></span>
+          <span class="vc-stat">👍 <strong>${fmtFull(v.likes)}</strong></span>
+          <span class="vc-stat">💬 <strong>${fmtFull(v.comments)}</strong></span>
+          <span class="vc-date">${fmtDate(v.published_at)}</span>
         </div>
-      </td>
-      <td class="num">${fmtFull(v.views)}</td>
-      <td class="num">${fmtFull(v.likes)}</td>
-      <td class="num">${fmtFull(v.comments)}</td>
-      <td class="num" style="white-space:nowrap">${fmtDate(v.published_at)}</td>
-    </tr>`).join('');
-  document.getElementById('videoBody').innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">動画データなし</td></tr>';
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('videoBody').innerHTML = cards || '<div style="text-align:center;color:var(--muted);padding:30px">動画データなし</div>';
 }
+
+function openVideoModal(idx){
+  const v = G.videos[idx];
+  if(!v) return;
+  const n = idx + 1;
+  const medal = n === 1 ? '🥇 1位' : n === 2 ? '🥈 2位' : n === 3 ? '🥉 3位' : `#${n}`;
+  document.getElementById('vmodalRank').textContent = medal;
+  document.getElementById('vmodalThumb').src = `https://i.ytimg.com/vi/${v.video_id}/maxresdefault.jpg`;
+  document.getElementById('vmodalThumb').onerror = function(){ this.src = `https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg`; };
+  document.getElementById('vmodalTitle').textContent = v.title;
+  document.getElementById('vmodalViews').textContent = fmtFull(v.views);
+  document.getElementById('vmodalLikes').textContent = fmtFull(v.likes);
+  document.getElementById('vmodalComments').textContent = fmtFull(v.comments);
+  document.getElementById('vmodalMeta').innerHTML =
+    `<span>📅 公開日: ${fmtDate(v.published_at)}</span>` +
+    `<span>🆔 ${v.video_id}</span>`;
+  const url = `https://www.youtube.com/watch?v=${v.video_id}`;
+  document.getElementById('vmodalLink').href = url;
+  document.getElementById('vmodalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeVideoModal(e){
+  if(e && e.target !== document.getElementById('vmodalOverlay')) return;
+  document.getElementById('vmodalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if(e.key === 'Escape') closeVideoModal(); });
 
 // ── rangeInfo 更新 ──
 function updateRangeInfo(){
