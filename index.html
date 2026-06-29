@@ -221,7 +221,10 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
 </div>
 
 <script>
-const DATA_URL = "https://raw.githubusercontent.com/ytpokerguild-netizen/channel-desk-data/main/data.json";
+// Netlify: 同一サイトの /data.json を取得。ローカルではGitHub rawにフォールバック。
+const DATA_URL = window.location.protocol === 'file:'
+  ? "https://raw.githubusercontent.com/ytpokerguild-netizen/channel-desk-data/main/data.json"
+  : "/data.json";
 
 let G = null; // global data
 let subChart = null, viewChart = null;
