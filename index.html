@@ -98,7 +98,7 @@ body{
 /* ── Metric tile row ── */
 .metric-tiles{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
   gap:1px;
   background:var(--line-strong);
   border:1px solid var(--line-strong);
@@ -148,7 +148,7 @@ body{
 /* ── Overview bar ── */
 .overview-bar{
   display:grid;
-  grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
   gap:1px;background:var(--line-strong);
   border:1px solid var(--line-strong);border-radius:var(--radius);
   overflow:hidden;margin-bottom:14px;
@@ -309,9 +309,10 @@ async function loadData(){
     const r = await fetch(DATA_URL + '?t=' + Date.now());
     if(!r.ok) throw new Error('HTTP ' + r.status);
     G = await r.json();
-    render();
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
+    render();
+    if(mainChart) mainChart.resize();
     document.getElementById('statusDot').className = 'status-dot live';
     document.getElementById('updatedLabel').textContent = '更新: ' + G.meta.data_through.replace(/-/g,'/');
     document.getElementById('footNote').textContent = 'channel-desk-data · ' + G.meta.channel_id + ' · ' + G.meta.data_through;
