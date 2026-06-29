@@ -21,8 +21,8 @@
   --gold-soft:#E0C45C;
   --up:#5BD68A;
   --down:#E2706E;
+  --blue:#5BA6D6;
   --radius:14px;
-  --shadow:0 12px 40px rgba(0,0,0,.35);
 }
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{min-height:100vh}
@@ -74,6 +74,22 @@ body{
 #errorState{display:none;text-align:center;padding:60px 20px;color:var(--down)}
 #mainContent{display:none}
 
+/* ── Tab nav ── */
+.tab-nav{
+  display:flex;gap:2px;
+  border-bottom:1px solid var(--line-strong);
+  margin-bottom:16px;
+}
+.tab-nav button{
+  background:none;border:none;
+  font-family:"Noto Sans JP",sans-serif;font-size:13px;font-weight:500;
+  color:var(--muted);padding:10px 18px;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:color .15s,border-color .15s;
+}
+.tab-nav button:hover{color:var(--ink)}
+.tab-nav button.on{color:var(--gold-soft);border-bottom-color:var(--gold)}
+
 /* ── Period bar ── */
 .period-bar{
   display:flex;align-items:center;gap:8px;flex-wrap:wrap;
@@ -95,7 +111,7 @@ body{
 }
 .range-info{font-size:11.5px;color:var(--muted-2);margin-left:auto;white-space:nowrap}
 
-/* ── Metric tile row ── */
+/* ── Metric tiles ── */
 .metric-tiles{
   display:grid;
   grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
@@ -107,12 +123,9 @@ body{
   overflow:hidden;
 }
 .metric-tile{
-  background:var(--panel);
-  padding:16px 20px;
-  cursor:pointer;
-  border-bottom:3px solid transparent;
+  background:var(--panel);padding:16px 20px;
+  cursor:pointer;border-bottom:3px solid transparent;
   transition:background .15s,border-color .15s;
-  position:relative;
 }
 .metric-tile:hover{background:var(--panel-2)}
 .metric-tile.active{border-bottom-color:var(--gold);background:var(--panel-2)}
@@ -120,24 +133,23 @@ body{
 .tile-val{font-family:"Oswald",sans-serif;font-size:26px;font-weight:400;line-height:1}
 .tile-unit{font-size:12px;color:var(--muted);margin-left:3px}
 .tile-change{margin-top:5px;font-size:11.5px;font-weight:500;display:flex;align-items:center;gap:4px}
-.tile-change.up{color:var(--up)}
-.tile-change.down{color:var(--down)}
-.tile-change.flat{color:var(--muted)}
+.tile-change.up{color:var(--up)} .tile-change.down{color:var(--down)} .tile-change.flat{color:var(--muted)}
 
-/* ── Main chart card ── */
+/* ── Chart card ── */
 .chart-card{
-  background:var(--panel);
-  border:1px solid var(--line-strong);
-  border-top:none;
-  border-radius:0 0 var(--radius) var(--radius);
-  padding:20px 20px 16px;
-  margin-bottom:14px;
+  background:var(--panel);border:1px solid var(--line-strong);
+  border-top:none;border-radius:0 0 var(--radius) var(--radius);
+  padding:20px 20px 16px;margin-bottom:14px;
 }
+.chart-card.standalone{border-top:1px solid var(--line-strong);border-radius:var(--radius);margin-bottom:14px}
 .chart-title{font-size:11.5px;color:var(--muted);letter-spacing:.05em;margin-bottom:12px;display:flex;align-items:center;gap:10px}
 .chart-title .ct-label{font-weight:600;color:var(--ink)}
 .chart-nodata{display:none;text-align:center;padding:60px 0;color:var(--muted-2);font-size:13px}
 .data-gap-note{font-size:10.5px;color:var(--muted-2);margin-top:8px}
-.chart-box-main{position:relative;height:300px}
+.chart-box{position:relative;height:280px}
+.chart-legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+.legend-dot{width:10px;height:3px;border-radius:2px}
 
 /* ── Compare strip ── */
 .compare-strip{
@@ -162,30 +174,37 @@ body{
 .ov-val{font-family:"Oswald",sans-serif;font-size:20px;font-weight:400;line-height:1}
 .ov-sub{font-size:10.5px;color:var(--muted-2);margin-top:3px}
 
-/* ── Video table ── */
-.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+/* ── Card ── */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
 .card h3{
   font-family:"Oswald",sans-serif;font-weight:400;letter-spacing:.08em;font-size:13px;
   color:var(--muted);margin-bottom:14px;text-transform:uppercase;
   display:flex;align-items:center;gap:8px;
 }
 .card h3 .dot{width:7px;height:7px;border-radius:50%;background:var(--gold)}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line)}
-th{color:var(--muted);font-weight:500;font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
-td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:"Oswald",sans-serif}
-tbody tr:hover{background:rgba(255,255,255,.025)}
-.rank{color:var(--gold);font-family:"Oswald",sans-serif;width:30px}
-.title-cell{max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.video-info{display:flex;align-items:center;gap:10px}
-.thumb{width:60px;height:34px;border-radius:4px;object-fit:cover;background:var(--panel-2);border:1px solid var(--line);flex-shrink:0}
+
+/* ── Week vs Week summary ── */
+.week-summary{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:1px;background:var(--line-strong);
+  border:1px solid var(--line-strong);border-radius:var(--radius);
+  overflow:hidden;margin-bottom:14px;
+}
+.ws-item{background:var(--panel);padding:14px 18px}
+.ws-label{font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.04em}
+.ws-row{display:flex;align-items:baseline;gap:10px}
+.ws-val{font-family:"Oswald",sans-serif;font-size:22px}
+.ws-delta{font-size:12px;font-weight:600}
+.ws-delta.up{color:var(--up)} .ws-delta.down{color:var(--down)} .ws-delta.flat{color:var(--muted)}
+.ws-sub{font-size:10.5px;color:var(--muted-2);margin-top:3px}
+
 /* ── Video cards ── */
 .video-list{display:flex;flex-direction:column;gap:10px}
 .video-card{
   display:flex;align-items:center;gap:14px;
   padding:12px 14px;border-radius:10px;
   background:var(--panel-2);border:1px solid var(--line);
-  transition:border-color .15s;
+  transition:border-color .15s;cursor:pointer;
 }
 .video-card:hover{border-color:var(--line-strong)}
 .vc-rank{
@@ -203,14 +222,35 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
   overflow:hidden;line-height:1.45;margin-bottom:6px;
 }
-.vc-meta{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+.vc-meta{display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center}
 .vc-stat{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px}
 .vc-stat strong{color:var(--ink);font-weight:600}
-.vc-date{font-size:11px;color:var(--muted-2);margin-left:auto;white-space:nowrap}
+.vc-bar-wrap{width:100%;background:rgba(255,255,255,.06);border-radius:3px;height:3px;margin-top:6px;overflow:hidden}
+.vc-bar{height:100%;border-radius:3px;background:var(--gold);transition:width .4s}
+.vc-date{font-size:11px;color:var(--muted-2);margin-left:auto;white-space:nowrap;flex-shrink:0}
 
-.foot{color:var(--muted-2);font-size:11px;text-align:center;margin-top:30px;letter-spacing:.04em}
+/* ── Growth badge ── */
+.growth-badge{
+  font-size:11px;font-weight:700;padding:2px 7px;border-radius:20px;
+  display:inline-flex;align-items:center;gap:3px;flex-shrink:0;
+}
+.growth-badge.up{background:rgba(91,214,138,.15);color:var(--up)}
+.growth-badge.down{background:rgba(226,112,110,.12);color:var(--down)}
+.growth-badge.new{background:rgba(201,162,39,.15);color:var(--gold-soft)}
 
-/* ── Video detail modal ── */
+/* ── Period seg ── */
+.period-seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.period-seg button{
+  background:transparent;border:none;color:var(--muted);
+  font-family:"Noto Sans JP",sans-serif;font-size:12px;padding:7px 16px;cursor:pointer;
+  transition:background .12s,color .12s;
+}
+.period-seg button.on{background:var(--panel-2);color:var(--gold-soft);font-weight:600}
+
+/* ── No data ── */
+.no-data{text-align:center;color:var(--muted-2);padding:40px 20px;font-size:13px;line-height:1.7}
+
+/* ── Modal ── */
 .vmodal-overlay{
   position:fixed;inset:0;z-index:1000;
   background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
@@ -220,10 +260,9 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
 .vmodal-overlay.open{opacity:1;pointer-events:auto}
 .vmodal{
   background:var(--panel);border:1px solid var(--line-strong);
-  border-radius:16px;width:100%;max-width:560px;
+  border-radius:16px;width:100%;max-width:580px;
   box-shadow:0 24px 64px rgba(0,0,0,.6);
-  transform:translateY(12px);transition:transform .2s;
-  overflow:hidden;
+  transform:translateY(12px);transition:transform .2s;overflow:hidden;
 }
 .vmodal-overlay.open .vmodal{transform:translateY(0)}
 .vmodal-header{
@@ -231,25 +270,16 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
   padding:14px 16px;border-bottom:1px solid var(--line);
 }
 .vmodal-header span{font-size:12px;color:var(--muted);font-family:"Oswald",sans-serif;letter-spacing:.08em}
-.vmodal-close{
-  background:none;border:none;color:var(--muted);font-size:20px;
-  cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;
-  transition:color .15s;
-}
+.vmodal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;transition:color .15s}
 .vmodal-close:hover{color:var(--ink)}
 .vmodal-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--panel-2)}
 .vmodal-body{padding:16px 18px 20px}
-.vmodal-title{font-size:15px;font-weight:700;line-height:1.5;margin-bottom:12px;color:var(--ink)}
-.vmodal-stats{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px;
-}
-.vmodal-stat{
-  background:var(--panel-2);border:1px solid var(--line);border-radius:10px;
-  padding:10px 12px;text-align:center;
-}
+.vmodal-title{font-size:15px;font-weight:700;line-height:1.5;margin-bottom:12px}
+.vmodal-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:14px}
+.vmodal-stat{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center}
 .vmodal-stat .label{font-size:11px;color:var(--muted);margin-bottom:4px}
-.vmodal-stat .value{font-size:18px;font-family:"Oswald",sans-serif;font-weight:500;color:var(--ink)}
-.vmodal-meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted-2);margin-bottom:16px}
+.vmodal-stat .value{font-size:16px;font-family:"Oswald",sans-serif;font-weight:500}
+.vmodal-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted-2);margin-bottom:14px}
 .vmodal-link{
   display:block;text-align:center;padding:10px;border-radius:10px;
   background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.3);
@@ -257,12 +287,8 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
   transition:background .15s;
 }
 .vmodal-link:hover{background:rgba(201,162,39,.22)}
-.video-card{cursor:pointer}
 
-/* ── Legend ── */
-.chart-legend{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap}
-.legend-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
-.legend-dot{width:10px;height:3px;border-radius:2px}
+.foot{color:var(--muted-2);font-size:11px;text-align:center;margin-top:30px;letter-spacing:.04em}
 </style>
 </head>
 <body>
@@ -287,68 +313,107 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
 
   <div id="mainContent">
 
-    <!-- Period bar -->
-    <div class="period-bar">
-      <div class="seg" id="quickSeg">
-        <button onclick="setQuick(7,this)">7日</button>
-        <button onclick="setQuick(28,this)">28日</button>
-        <button onclick="setQuick(90,this)">90日</button>
-        <button onclick="setQuick(365,this)">365日</button>
-        <button onclick="setQuick(0,this)">全期間</button>
+    <!-- Tab nav -->
+    <nav class="tab-nav">
+      <button onclick="switchTab('overview')"  id="tab-overview"  class="on">📊 概要</button>
+      <button onclick="switchTab('growth')"    id="tab-growth"        >📈 伸び率</button>
+      <button onclick="switchTab('weekly')"    id="tab-weekly"        >📅 今週 vs 先週</button>
+      <button onclick="switchTab('videos')"    id="tab-videos"        >🎬 動画一覧</button>
+    </nav>
+
+    <!-- ════════════════════════ TAB: 概要 ════════════════════════ -->
+    <div id="pane-overview">
+
+      <!-- Period bar -->
+      <div class="period-bar">
+        <div class="seg" id="quickSeg">
+          <button onclick="setQuick(7,this)">7日</button>
+          <button onclick="setQuick(28,this)">28日</button>
+          <button onclick="setQuick(90,this)">90日</button>
+          <button onclick="setQuick(365,this)">365日</button>
+          <button onclick="setQuick(0,this)">全期間</button>
+        </div>
+        <div class="divider"></div>
+        <label>A</label>
+        <input type="date" id="dateFrom" onchange="onDateChange()">
+        <label>〜</label>
+        <input type="date" id="dateTo" onchange="onDateChange()">
+        <button class="btn" id="compareBtn" onclick="toggleCompare()">比較</button>
+        <span class="range-info" id="rangeInfo"></span>
       </div>
-      <div class="divider"></div>
-      <label>A</label>
-      <input type="date" id="dateFrom" onchange="onDateChange()">
-      <label>〜</label>
-      <input type="date" id="dateTo" onchange="onDateChange()">
-      <button class="btn" id="compareBtn" onclick="toggleCompare()">比較</button>
-      <span class="range-info" id="rangeInfo"></span>
-    </div>
 
-    <!-- Period B (compare) -->
-    <div class="period-bar" id="periodBBar" style="display:none">
-      <label style="color:var(--gold);font-weight:600;min-width:10px">B</label>
-      <input type="date" id="dateFromB" onchange="onDateChangeB()">
-      <label>〜</label>
-      <input type="date" id="dateToB" onchange="onDateChangeB()">
-      <span class="range-info" id="rangeInfoB"></span>
-    </div>
-
-    <!-- Metric tiles -->
-    <div class="metric-tiles" id="metricTiles"></div>
-
-    <!-- Main chart -->
-    <div class="chart-card">
-      <div class="chart-title"><span class="ct-label" id="chartLabel">再生数</span><span id="chartSubLabel" style="color:var(--muted-2)"></span></div>
-      <div class="chart-box-main">
-        <canvas id="mainChart"></canvas>
-        <div class="chart-nodata" id="chartNoData">このperiodのデータがありません</div>
+      <!-- Period B -->
+      <div class="period-bar" id="periodBBar" style="display:none">
+        <label style="color:var(--gold);font-weight:600;min-width:10px">B</label>
+        <input type="date" id="dateFromB" onchange="onDateChangeB()">
+        <label>〜</label>
+        <input type="date" id="dateToB" onchange="onDateChangeB()">
+        <span class="range-info" id="rangeInfoB"></span>
       </div>
-      <div class="chart-legend" id="chartLegend"></div>
-      <div class="data-gap-note" id="dataGapNote"></div>
+
+      <!-- Metric tiles -->
+      <div class="metric-tiles" id="metricTiles"></div>
+
+      <!-- Main chart -->
+      <div class="chart-card">
+        <div class="chart-title"><span class="ct-label" id="chartLabel">再生数</span><span id="chartSubLabel" style="color:var(--muted-2)"></span></div>
+        <div class="chart-box"><canvas id="mainChart"></canvas><div class="chart-nodata" id="chartNoData">このperiodのデータがありません</div></div>
+        <div class="chart-legend" id="chartLegend"></div>
+        <div class="data-gap-note" id="dataGapNote"></div>
+      </div>
+
+      <!-- Compare strip -->
+      <div class="compare-strip" id="compareStrip" style="display:none"><div id="compareContent"></div></div>
+
+      <!-- Overview bar -->
+      <div class="overview-bar" id="overviewBar"></div>
+
+    </div><!-- /pane-overview -->
+
+    <!-- ════════════════════════ TAB: 伸び率 ════════════════════════ -->
+    <div id="pane-growth" style="display:none">
+      <div class="period-seg" id="growthSeg">
+        <button onclick="setGrowthPeriod(7,this)"   class="on">7日</button>
+        <button onclick="setGrowthPeriod(28,this)"        >28日</button>
+        <button onclick="setGrowthPeriod(90,this)"        >90日</button>
+        <button onclick="setGrowthPeriod(365,this)"       >365日</button>
+      </div>
+
+      <div id="growthContent"></div>
     </div>
 
-    <!-- Compare table -->
-    <div class="compare-strip" id="compareStrip" style="display:none">
-      <div id="compareContent"></div>
+    <!-- ════════════════════════ TAB: 今週 vs 先週 ════════════════════════ -->
+    <div id="pane-weekly" style="display:none">
+
+      <div class="week-summary" id="weekSummary"></div>
+
+      <div class="chart-card standalone">
+        <div class="chart-title"><span class="ct-label">日次再生数 — 今週 vs 先週</span></div>
+        <div class="chart-box"><canvas id="weekChart"></canvas><div class="chart-nodata" id="weekChartNoData">データが不足しています（7日分以上蓄積後に表示）</div></div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--up)"></div>今週</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--gold);opacity:.6"></div>先週</div>
+        </div>
+      </div>
+
+      <div class="chart-card standalone">
+        <div class="chart-title"><span class="ct-label">視聴時間（分）— 今週 vs 先週</span></div>
+        <div class="chart-box"><canvas id="watchChart"></canvas><div class="chart-nodata" id="watchChartNoData">Analytics データなし（GitHub Secrets 設定後に自動取得）</div></div>
+      </div>
+
     </div>
 
-    <!-- Overview bar -->
-    <div class="overview-bar" id="overviewBar"></div>
-
-    <!-- Video ranking -->
-    <div class="card">
-      <h3>
-        <span class="dot"></span>
-        <span id="videoRankLabel">動画ランキング（再生数順）</span>
-        <span style="margin-left:auto;font-size:11px;color:var(--muted-2);text-transform:none;font-family:'Noto Sans JP',sans-serif" id="videoCount"></span>
-      </h3>
-      <div class="video-list" id="videoBody"></div>
+    <!-- ════════════════════════ TAB: 動画一覧 ════════════════════════ -->
+    <div id="pane-videos" style="display:none">
+      <div class="card">
+        <h3><span class="dot"></span><span id="videoRankLabel">動画ランキング</span><span style="margin-left:auto;font-size:11px;color:var(--muted-2);text-transform:none;font-family:'Noto Sans JP',sans-serif" id="videoCount"></span></h3>
+        <div class="video-list" id="videoBody"></div>
+      </div>
     </div>
 
   </div><!-- /mainContent -->
 
-  <div class="foot" id="footNote"><!-- analytics: 2025-01-01 to 2026-06-27 --></div>
+  <div class="foot" id="footNote"></div>
 </div>
 
 <!-- Video detail modal -->
@@ -361,11 +426,7 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
     <img class="vmodal-thumb" id="vmodalThumb" src="" alt="">
     <div class="vmodal-body">
       <div class="vmodal-title" id="vmodalTitle"></div>
-      <div class="vmodal-stats">
-        <div class="vmodal-stat"><div class="label">再生数</div><div class="value" id="vmodalViews"></div></div>
-        <div class="vmodal-stat"><div class="label">高評価</div><div class="value" id="vmodalLikes"></div></div>
-        <div class="vmodal-stat"><div class="label">コメント</div><div class="value" id="vmodalComments"></div></div>
-      </div>
+      <div class="vmodal-stats" id="vmodalStats"></div>
       <div class="vmodal-meta" id="vmodalMeta"></div>
       <a class="vmodal-link" id="vmodalLink" href="" target="_blank" rel="noopener">▶ YouTubeで開く</a>
     </div>
@@ -378,22 +439,27 @@ const DATA_URL = window.location.protocol === 'file:'
   : "/data.json";
 
 let G = null;
-let mainChart = null;
+let mainChart = null, weekChart = null, watchChart = null;
 let filterFrom = null, filterTo = null;
 let compareMode = false;
 let filterFromB = null, filterToB = null;
-let activeMetric = 'views'; // 'views' | 'sub_delta' | 'subscribers'
+let activeMetric = 'views';
+let activeTab = 'overview';
+let growthPeriod = 7;
+let _rankVideos = [];
 
-// ── フォーマット ──
-function fmt(n){
-  if(n >= 10000) return (n/10000).toFixed(1).replace(/\.0$/,'') + '万';
-  return n.toLocaleString('ja-JP');
-}
+// ════════════════════════════════
+// フォーマット
+// ════════════════════════════════
+function fmt(n){ return n>=10000 ? (n/10000).toFixed(1).replace(/\.0$/,'')+'万' : n.toLocaleString('ja-JP'); }
 function fmtFull(n){ return (n??0).toLocaleString('ja-JP'); }
-function fmtDate(s){ return s.replace(/-/g,'/'); }
-function sign(n){ return n > 0 ? '+' : ''; }
+function fmtDate(s){ return s ? s.replace(/-/g,'/') : ''; }
+function fmtMin(m){ return m >= 60 ? Math.round(m/60).toLocaleString()+'時間' : m.toLocaleString()+'分'; }
+function fmtDur(s){ if(!s) return '—'; const m=Math.floor(s/60), sec=s%60; return `${m}:${String(sec).padStart(2,'0')}`; }
 
-// ── データ読み込み ──
+// ════════════════════════════════
+// データ読み込み
+// ════════════════════════════════
 async function loadData(){
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('mainContent').style.display = 'none';
@@ -404,11 +470,12 @@ async function loadData(){
     G = await r.json();
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
-    render();
-    requestAnimationFrame(() => { if(mainChart) mainChart.update(); });
     document.getElementById('statusDot').className = 'status-dot live';
-    document.getElementById('updatedLabel').textContent = '更新: ' + G.meta.data_through.replace(/-/g,'/');
-    document.getElementById('footNote').textContent = 'channel-desk-data · ' + G.meta.channel_id + ' · ' + G.meta.data_through;
+    document.getElementById('updatedLabel').textContent = '更新: ' + fmtDate(G.meta.data_through);
+    document.getElementById('footNote').textContent =
+      'channel-desk-data · ' + G.meta.channel_id + ' · ' + G.meta.data_through;
+    initPeriod();
+    renderAll();
   } catch(e) {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
@@ -417,56 +484,52 @@ async function loadData(){
   }
 }
 
-// ── データ処理ヘルパー ──
+// ════════════════════════════════
+// タブ切り替え
+// ════════════════════════════════
+function switchTab(name){
+  activeTab = name;
+  ['overview','growth','weekly','videos'].forEach(t => {
+    document.getElementById('pane-'+t).style.display = t === name ? '' : 'none';
+    document.getElementById('tab-'+t).classList.toggle('on', t === name);
+  });
+  if(name === 'growth')  renderGrowth();
+  if(name === 'weekly')  renderWeekly();
+  if(name === 'videos')  renderVideoList();
+}
+
+// ════════════════════════════════
+// データヘルパー
+// ════════════════════════════════
 function dedupeByDate(arr){
-  const map = new Map();
-  arr.forEach(d => map.set(d.date, d));
-  return [...map.values()].sort((a,b) => a.date.localeCompare(b.date));
+  const m = new Map();
+  arr.forEach(d => m.set(d.date, d));
+  return [...m.values()].sort((a,b)=>a.date.localeCompare(b.date));
 }
-
-function allDaily(){
-  return dedupeByDate(G.daily.filter(d => d.subscribers > 0 || d.total_views > 0));
-}
-
+function allDaily(){ return dedupeByDate((G.daily||[]).filter(d=>d.subscribers>0||d.total_views>0)); }
 function allViewData(){
   const map = new Map();
-  (G.analytics_daily_views || []).forEach(d => {
-    if(d.views > 0) map.set(d.date, {date:d.date, views:d.views});
-  });
+  // Analytics 日次を優先
+  (G.analytics_daily||[]).forEach(d=>{if(d.views>0) map.set(d.date,{date:d.date,views:d.views});});
+  // フォールバック: スナップショット差分
   const daily = allDaily();
-  for(let i = 1; i < daily.length; i++){
+  for(let i=1;i<daily.length;i++){
     const delta = Math.max(0, daily[i].total_views - daily[i-1].total_views);
-    map.set(daily[i].date, {date:daily[i].date, views:delta});
+    if(!map.has(daily[i].date)) map.set(daily[i].date,{date:daily[i].date,views:delta});
   }
-  return [...map.values()].sort((a,b) => a.date.localeCompare(b.date));
+  return [...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
+}
+function filteredData(from,to){
+  const daily = allDaily().filter(d=>(!from||d.date>=from)&&(!to||d.date<=to));
+  const views  = allViewData().filter(d=>(!from||d.date>=from)&&(!to||d.date<=to));
+  return {daily, views};
 }
 
-function filteredData(from, to){
-  const daily = allDaily().filter(d => (!from || d.date >= from) && (!to || d.date <= to));
-  const views  = allViewData().filter(d => (!from || d.date >= from) && (!to || d.date <= to));
-  return { daily, views };
-}
-
-function dateNDaysAgo(baseDate, n){
-  const d = new Date(baseDate + 'T00:00:00');
-  d.setDate(d.getDate() - n + 1);
-  return d.toISOString().slice(0,10);
-}
-
-// ── メトリクス計算 ──
-function calcMetrics(from, to){
-  const {daily, views} = filteredData(from, to);
-  const totalViews = views.reduce((s,d) => s + d.views, 0);
-  const subFirst = daily.length ? daily[0].subscribers : null;
-  const subLast  = daily.length ? daily[daily.length-1].subscribers : null;
-  const subDelta = (subFirst !== null && subLast !== null) ? subLast - subFirst : null;
-  const subLatest = subLast;
-  return { totalViews, subDelta, subLatest, days: views.length };
-}
-
-// ── 期間設定 ──
+// ════════════════════════════════
+// 期間設定（概要タブ）
+// ════════════════════════════════
 function setQuick(days, btn){
-  document.querySelectorAll('#quickSeg button').forEach(b => b.classList.remove('on'));
+  document.querySelectorAll('#quickSeg button').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
   const all = allViewData();
   if(!all.length) return;
@@ -476,577 +539,644 @@ function setQuick(days, btn){
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value   = '';
   } else {
-    filterFrom = dateNDaysAgo(to, days);
-    filterTo   = to;
+    const d = new Date(to+'T00:00:00'); d.setDate(d.getDate()-days+1);
+    filterFrom = d.toISOString().slice(0,10); filterTo = to;
     document.getElementById('dateFrom').value = filterFrom;
     document.getElementById('dateTo').value   = filterTo;
   }
-  renderAll();
+  renderOverview();
 }
-
 function onDateChange(){
-  filterFrom = document.getElementById('dateFrom').value || null;
-  filterTo   = document.getElementById('dateTo').value   || null;
-  document.querySelectorAll('#quickSeg button').forEach(b => b.classList.remove('on'));
-  renderAll();
+  filterFrom = document.getElementById('dateFrom').value||null;
+  filterTo   = document.getElementById('dateTo').value||null;
+  document.querySelectorAll('#quickSeg button').forEach(b=>b.classList.remove('on'));
+  renderOverview();
 }
-
 function onDateChangeB(){
-  filterFromB = document.getElementById('dateFromB').value || null;
-  filterToB   = document.getElementById('dateToB').value   || null;
-  renderAll();
+  filterFromB = document.getElementById('dateFromB').value||null;
+  filterToB   = document.getElementById('dateToB').value||null;
+  renderOverview();
 }
-
 function toggleCompare(){
   compareMode = !compareMode;
-  const btn = document.getElementById('compareBtn');
-  const bar = document.getElementById('periodBBar');
-  if(compareMode){
-    btn.classList.add('active');
-    bar.style.display = 'flex';
-    // 期間Aと同じ日数を前にずらして期間B自動設定
-    if(filterFrom && filterTo){
-      const msA = new Date(filterTo) - new Date(filterFrom);
-      const days = Math.round(msA / 86400000) + 1;
-      const toB   = new Date(filterFrom + 'T00:00:00');
-      toB.setDate(toB.getDate() - 1);
-      const fromB = new Date(toB);
-      fromB.setDate(fromB.getDate() - days + 1);
-      filterFromB = fromB.toISOString().slice(0,10);
-      filterToB   = toB.toISOString().slice(0,10);
-      document.getElementById('dateFromB').value = filterFromB;
-      document.getElementById('dateToB').value   = filterToB;
-    }
-  } else {
-    btn.classList.remove('active');
-    bar.style.display = 'none';
+  document.getElementById('compareBtn').classList.toggle('active', compareMode);
+  document.getElementById('periodBBar').style.display = compareMode ? 'flex' : 'none';
+  if(compareMode && filterFrom && filterTo){
+    const ms = new Date(filterTo)-new Date(filterFrom);
+    const days = Math.round(ms/86400000)+1;
+    const toB = new Date(filterFrom+'T00:00:00'); toB.setDate(toB.getDate()-1);
+    const fromB = new Date(toB); fromB.setDate(fromB.getDate()-days+1);
+    filterFromB = fromB.toISOString().slice(0,10);
+    filterToB   = toB.toISOString().slice(0,10);
+    document.getElementById('dateFromB').value = filterFromB;
+    document.getElementById('dateToB').value   = filterToB;
+  } else if(!compareMode){
     filterFromB = null; filterToB = null;
     document.getElementById('compareStrip').style.display = 'none';
   }
-  renderAll();
+  renderOverview();
 }
-
 function initPeriod(){
   filterFrom = null; filterTo = null;
   document.getElementById('dateFrom').value = '';
   document.getElementById('dateTo').value   = '';
-  document.querySelector('#quickSeg button:nth-child(5)').classList.add('on'); // 全期間
+  document.querySelector('#quickSeg button:nth-child(5)').classList.add('on');
+}
+function setMetric(key){ activeMetric = key; renderOverview(); }
+
+// ════════════════════════════════
+// 概要タブ: メトリクスタイル
+// ════════════════════════════════
+function calcMetrics(from,to){
+  const {daily, views} = filteredData(from,to);
+  const totalViews = views.reduce((s,d)=>s+d.views,0);
+  const totalWatchMin = (G.analytics_daily||[])
+    .filter(d=>(!from||d.date>=from)&&(!to||d.date<=to))
+    .reduce((s,d)=>s+(d.watch_min||0),0);
+  const subFirst = daily.length ? daily[0].subscribers : null;
+  const subLast  = daily.length ? daily[daily.length-1].subscribers : null;
+  const subDelta = (subFirst!==null&&subLast!==null) ? subLast-subFirst : null;
+  return { totalViews, totalWatchMin, subDelta, subLatest:subLast, days:views.length };
 }
 
-function setMetric(key){
-  activeMetric = key;
-  renderAll();
-}
-
-// ── メトリクスタイル描画 ──
 function renderTiles(){
   const mA = calcMetrics(filterFrom, filterTo);
   const mB = compareMode ? calcMetrics(filterFromB, filterToB) : null;
 
   const metrics = [
-    {
-      key:'views', label:'再生数',
-      valA: mA.totalViews, unitA:'回',
-      valB: mB ? mB.totalViews : null,
-      fmt: n => fmt(n)
-    },
-    {
-      key:'sub_delta', label:'登録者増減',
-      valA: mA.subDelta, unitA:'人',
-      valB: mB ? mB.subDelta : null,
-      fmt: n => (n >= 0 ? '+' : '') + fmtFull(n)
-    },
-    {
-      key:'subscribers', label:'登録者数',
-      valA: mA.subLatest, unitA:'人',
-      valB: mB ? mB.subLatest : null,
-      fmt: n => fmtFull(n)
-    }
+    { key:'views',      label:'再生数',    valA:mA.totalViews,    unit:'回',   fmtFn:n=>fmt(n) },
+    { key:'watch_min',  label:'視聴時間',  valA:mA.totalWatchMin, unit:'',     fmtFn:n=>fmtMin(n) },
+    { key:'sub_delta',  label:'登録者増減', valA:mA.subDelta,      unit:'人',   fmtFn:n=>(n>=0?'+':'')+fmtFull(n) },
+    { key:'subscribers',label:'登録者数',  valA:mA.subLatest,     unit:'人',   fmtFn:n=>fmtFull(n) },
   ];
 
   const html = metrics.map(m => {
     const isActive = m.key === activeMetric;
-    const valStr = m.valA !== null ? m.fmt(m.valA) : '—';
-
+    const valStr = m.valA !== null ? m.fmtFn(m.valA) : '—';
     let changeHtml = '';
-    if(m.valB !== null && m.valA !== null){
-      const diff = m.valA - m.valB;
-      const pct  = m.valB !== 0 ? (diff / Math.abs(m.valB) * 100) : null;
-      const cls  = diff > 0 ? 'up' : diff < 0 ? 'down' : 'flat';
-      const diffStr = (diff >= 0 ? '+' : '') + fmtFull(diff);
-      const pctStr  = pct !== null ? ' (' + (pct >= 0 ? '+' : '') + pct.toFixed(1) + '%)' : '';
-      changeHtml = `<div class="tile-change ${cls}">${diffStr}${m.unitA}${pctStr} vs B</div>`;
+    const mBval = mB ? (m.key==='views'?mB.totalViews : m.key==='watch_min'?mB.totalWatchMin : m.key==='sub_delta'?mB.subDelta : mB.subLatest) : null;
+    if(mBval !== null && m.valA !== null){
+      const diff = m.valA - mBval;
+      const pct  = mBval!==0 ? diff/Math.abs(mBval)*100 : null;
+      const cls  = diff>0?'up':diff<0?'down':'flat';
+      changeHtml = `<div class="tile-change ${cls}">${diff>=0?'+':''}${fmtFull(diff)}${m.unit}${pct!==null?' ('+(pct>=0?'+':'')+pct.toFixed(1)+'%)':''} vs B</div>`;
     } else if(!compareMode){
-      // 期間変化なし表示（前期間比は計算しない）
-      changeHtml = `<div class="tile-change flat" style="color:var(--muted-2);font-size:10.5px">${filterFrom ? fmtDate(filterFrom)+'〜'+fmtDate(filterTo||'') : '全期間'}</div>`;
+      changeHtml = `<div class="tile-change flat" style="color:var(--muted-2);font-size:10.5px">${filterFrom?fmtDate(filterFrom)+'〜'+fmtDate(filterTo||''):'全期間'}</div>`;
     }
-
-    return `
-      <div class="metric-tile ${isActive ? 'active' : ''}" onclick="setMetric('${m.key}')">
-        <div class="tile-label">${m.label}</div>
-        <div class="tile-val">${valStr}<span class="tile-unit">${m.unitA}</span></div>
-        ${changeHtml}
-      </div>`;
+    return `<div class="metric-tile ${isActive?'active':''}" onclick="setMetric('${m.key}')">
+      <div class="tile-label">${m.label}</div>
+      <div class="tile-val">${valStr}<span class="tile-unit">${m.unit}</span></div>
+      ${changeHtml}</div>`;
   }).join('');
-
   document.getElementById('metricTiles').innerHTML = html;
 }
 
-// ── メインチャート描画 ──
-const CHART_OPT_BASE = {
-  responsive: true, maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      backgroundColor:'#1B2E23', borderColor:'rgba(255,255,255,.12)', borderWidth:1,
-      titleColor:'#8FA396', bodyColor:'#E8EDE9', padding:10,
+// ════════════════════════════════
+// 概要タブ: メインチャート
+// ════════════════════════════════
+const CHART_BASE = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{
+    legend:{display:false},
+    tooltip:{
+      backgroundColor:'#1B2E23',borderColor:'rgba(255,255,255,.12)',borderWidth:1,
+      titleColor:'#8FA396',bodyColor:'#E8EDE9',padding:10,
     }
   },
   scales:{
-    x:{ grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#5E726A',font:{size:10},maxTicksLimit:10} },
-    y:{ grid:{color:'rgba(255,255,255,.06)'}, ticks:{color:'#5E726A',font:{size:10}, callback:v=>fmt(v)} }
+    x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5E726A',font:{size:10},maxTicksLimit:10}},
+    y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:10},callback:v=>fmt(v)}}
   }
 };
 
-function buildViewsDataset(data, color, label){
-  return {
-    label, type:'line',
-    data: data.map(d => d.views),
-    borderColor: color,
-    borderWidth: 2,
-    backgroundColor: color.replace('1)', '.12)').replace('rgb(', 'rgba('),
-    fill: true,
-    tension: .4,
-    pointRadius: 0,
-    pointHoverRadius: 4,
-    pointHoverBackgroundColor: color,
-  };
-}
-
-function buildSubDeltaDataset(data, colorPos, colorNeg, label){
-  const vals = data.slice(1).map((d,i) => d.subscribers - data[i].subscribers);
-  return {
-    label, type:'bar',
-    data: vals,
-    backgroundColor: vals.map(v => v >= 0 ? colorPos : colorNeg),
-    borderWidth: 0, borderRadius: 3,
-  };
-}
-
-function buildSubDataset(data, color, label){
-  return {
-    label, type:'line',
-    data: data.map(d => d.subscribers),
-    borderColor: color,
-    borderWidth: 2,
-    backgroundColor: color.replace('1)', '.10)').replace('rgb(', 'rgba('),
-    fill: true, tension: .4,
-    pointRadius: 0, pointHoverRadius: 4,
-    pointHoverBackgroundColor: color,
-  };
-}
-
 function renderMainChart(){
-  const {daily: dA, views: vA} = filteredData(filterFrom, filterTo);
-  const {daily: dB, views: vB} = compareMode ? filteredData(filterFromB, filterToB) : {};
+  const {daily:dA, views:vA} = filteredData(filterFrom, filterTo);
+  const {daily:dB, views:vB} = compareMode ? filteredData(filterFromB, filterToB) : {};
+  const LABELS = {views:'再生数（日次）',watch_min:'視聴時間（日次）',sub_delta:'登録者増減（日次）',subscribers:'登録者数（累計）'};
+  document.getElementById('chartLabel').textContent = LABELS[activeMetric]||'';
 
-  // チャートタイトル更新
-  const METRIC_LABELS = {views:'再生数（日次）', sub_delta:'登録者増減（日次）', subscribers:'登録者数（累計）'};
-  document.getElementById('chartLabel').textContent = METRIC_LABELS[activeMetric] || '';
+  const analyticsDaily = G.analytics_daily || [];
+  const adMap = new Map(analyticsDaily.map(d=>[d.date,d]));
+  const adA = vA.map(d=>({...d, watch_min:(adMap.get(d.date)||{}).watch_min||0}));
 
-  // データ無し判定
-  const noData = (activeMetric === 'views' && !vA.length) ||
-                 (activeMetric === 'sub_delta' && dA.length < 2) ||
-                 (activeMetric === 'subscribers' && !dA.length);
-  const canvas = document.getElementById('mainChart');
-  const noDataEl = document.getElementById('chartNoData');
-  if(noData){
-    canvas.style.display = 'none';
-    noDataEl.style.display = 'block';
-    document.getElementById('dataGapNote').textContent = '';
-    document.getElementById('chartSubLabel').textContent = '';
-    if(mainChart){ mainChart.destroy(); mainChart = null; }
-    return;
-  }
-  canvas.style.display = 'block';
-  noDataEl.style.display = 'none';
-
-  // データ件数サブラベル
-  const ptCount = activeMetric === 'views' ? vA.length : (activeMetric === 'sub_delta' ? Math.max(0,dA.length-1) : dA.length);
-  document.getElementById('chartSubLabel').textContent = ptCount + '日分';
-
-  // ギャップ検出（全期間表示かつ欠損区間あり）
-  const gapEl = document.getElementById('dataGapNote');
-  if(!filterFrom && !filterTo && activeMetric === 'views'){
-    const allV = allViewData();
-    if(allV.length > 1){
-      let maxGap = 0, gapStart = '', gapEnd = '';
-      for(let i=1;i<allV.length;i++){
-        const diff = (new Date(allV[i].date) - new Date(allV[i-1].date)) / 86400000;
-        if(diff > maxGap){ maxGap = diff; gapStart = allV[i-1].date; gapEnd = allV[i].date; }
-      }
-      if(maxGap > 7){
-        gapEl.textContent = `⚠ データ欠損: ${fmtDate(gapStart)}〜${fmtDate(gapEnd)}（${Math.round(maxGap)}日間）`;
-      } else { gapEl.textContent = ''; }
-    }
-  } else { gapEl.textContent = ''; }
-
-  let labels, datasets, tooltipFmt, titleDate = '';
+  let labels, datasets, ttFmt;
 
   if(activeMetric === 'views'){
-    if(!compareMode){
-      labels   = vA.map(d => d.date.slice(5));
-      datasets = [buildViewsDataset(vA, 'rgba(91,214,138,1)', '再生数')];
-      tooltipFmt = ctx => {
-        const date = vA[ctx.dataIndex]?.date || '';
-        return ` ${fmtFull(ctx.raw)}回 (${fmtDate(date)})`;
-      };
-    } else {
-      const len = Math.max(vA.length, (vB||[]).length);
-      labels   = Array.from({length:len}, (_,i) => `Day ${i+1}`);
-      datasets = [
-        { ...buildViewsDataset(vA, 'rgba(91,214,138,1)', '期間A'),
-          data: Array.from({length:len}, (_,i) => vA[i]?.views ?? null) },
-        { ...buildViewsDataset(vB||[], 'rgba(201,162,39,1)', '期間B'),
-          data: Array.from({length:len}, (_,i) => (vB||[])[i]?.views ?? null),
-          borderDash: [5,3] }
-      ];
-      tooltipFmt = ctx => {
-        const isA = ctx.datasetIndex === 0;
-        const src = isA ? vA : (vB||[]);
-        const d = src[ctx.dataIndex];
-        return ` ${ctx.dataset.label}${d ? ' ('+fmtDate(d.date)+')' : ''}: ${fmtFull(ctx.raw)}回`;
-      };
+    if(!vA.length){
+      document.getElementById('mainChart').style.display='none';
+      document.getElementById('chartNoData').style.display='block';
+      if(mainChart){mainChart.destroy();mainChart=null;}
+      return;
     }
-
+    if(!compareMode){
+      labels   = vA.map(d=>d.date.slice(5));
+      datasets = [{label:'再生数',type:'line',data:vA.map(d=>d.views),borderColor:'rgba(91,214,138,1)',borderWidth:2,backgroundColor:'rgba(91,214,138,.10)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4}];
+      ttFmt = ctx=>`${fmtFull(ctx.raw)}回 (${fmtDate(vA[ctx.dataIndex]?.date||'')})`;
+    } else {
+      const len=Math.max(vA.length,(vB||[]).length);
+      labels=Array.from({length:len},(_,i)=>`Day ${i+1}`);
+      datasets=[
+        {label:'期間A',type:'line',data:Array.from({length:len},(_,i)=>vA[i]?.views??null),borderColor:'rgba(91,214,138,1)',borderWidth:2,backgroundColor:'rgba(91,214,138,.10)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4},
+        {label:'期間B',type:'line',data:Array.from({length:len},(_,i)=>(vB||[])[i]?.views??null),borderColor:'rgba(201,162,39,1)',borderWidth:2,backgroundColor:'rgba(201,162,39,.08)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4,borderDash:[5,3]},
+      ];
+      ttFmt=ctx=>{const s=ctx.datasetIndex===0?vA:(vB||[]);const d=s[ctx.dataIndex];return `${ctx.dataset.label}${d?' ('+fmtDate(d.date)+')':''}: ${fmtFull(ctx.raw)}回`;};
+    }
+  } else if(activeMetric === 'watch_min'){
+    if(!adA.length){
+      document.getElementById('mainChart').style.display='none';
+      document.getElementById('chartNoData').style.display='block';
+      if(mainChart){mainChart.destroy();mainChart=null;}
+      return;
+    }
+    labels   = adA.map(d=>d.date.slice(5));
+    datasets = [{label:'視聴時間',type:'bar',data:adA.map(d=>d.watch_min),backgroundColor:'rgba(91,166,214,.6)',borderWidth:0,borderRadius:3}];
+    ttFmt=ctx=>`${fmtMin(ctx.raw)} (${fmtDate(adA[ctx.dataIndex]?.date||'')})`;
   } else if(activeMetric === 'sub_delta'){
-    if(!compareMode){
-      const vals = dA.slice(1).map((d,i) => d.subscribers - dA[i].subscribers);
-      const dates = dA.slice(1);
-      labels   = dates.map(d => d.date.slice(5));
-      datasets = [{
-        label:'登録者増減', type:'bar', data:vals,
-        backgroundColor: vals.map(v => v >= 0 ? 'rgba(91,214,138,.7)' : 'rgba(226,112,110,.7)'),
-        borderWidth:0, borderRadius:3,
-      }];
-      tooltipFmt = ctx => {
-        const d = dates[ctx.dataIndex];
-        return ` ${fmtDate(d?.date||'')}: ${(ctx.raw??0) >= 0 ? '+' : ''}${fmtFull(ctx.raw??0)}人`;
-      };
-    } else {
-      const datesA = dA.slice(1), datesB = dB ? dB.slice(1) : [];
-      const valsA = datesA.map((d,i) => d.subscribers - dA[i].subscribers);
-      const valsB = datesB.map((d,i) => d.subscribers - dB[i].subscribers);
-      const len = Math.max(valsA.length, valsB.length);
-      labels = Array.from({length:len}, (_,i) => `Day ${i+1}`);
-      datasets = [
-        { label:'期間A', type:'bar',
-          data: Array.from({length:len}, (_,i) => valsA[i] ?? null),
-          backgroundColor: valsA.map(v => v >= 0 ? 'rgba(91,214,138,.7)' : 'rgba(226,112,110,.7)'),
-          borderWidth:0, borderRadius:3 },
-        { label:'期間B', type:'bar',
-          data: Array.from({length:len}, (_,i) => valsB[i] ?? null),
-          backgroundColor: valsB.map(v => v >= 0 ? 'rgba(201,162,39,.6)' : 'rgba(226,112,110,.4)'),
-          borderWidth:0, borderRadius:3 }
-      ];
-      tooltipFmt = ctx => {
-        const isA = ctx.datasetIndex === 0;
-        const src = isA ? datesA : datesB;
-        const d = src[ctx.dataIndex];
-        return ` ${ctx.dataset.label}${d ? ' ('+fmtDate(d.date)+')' : ''}: ${(ctx.raw??0) >= 0 ? '+' : ''}${fmtFull(ctx.raw??0)}人`;
-      };
+    if(dA.length<2){
+      document.getElementById('mainChart').style.display='none';
+      document.getElementById('chartNoData').style.display='block';
+      if(mainChart){mainChart.destroy();mainChart=null;}
+      return;
     }
-
+    const dates=dA.slice(1), vals=dates.map((d,i)=>d.subscribers-dA[i].subscribers);
+    labels=dates.map(d=>d.date.slice(5));
+    datasets=[{label:'増減',type:'bar',data:vals,backgroundColor:vals.map(v=>v>=0?'rgba(91,214,138,.7)':'rgba(226,112,110,.7)'),borderWidth:0,borderRadius:3}];
+    ttFmt=ctx=>`${fmtDate(dates[ctx.dataIndex]?.date||'')}: ${ctx.raw>=0?'+':''}${fmtFull(ctx.raw)}人`;
   } else { // subscribers
-    if(!compareMode){
-      labels   = dA.map(d => d.date.slice(5));
-      datasets = [buildSubDataset(dA, 'rgba(201,162,39,1)', '登録者数')];
-      tooltipFmt = ctx => {
-        const d = dA[ctx.dataIndex];
-        return ` ${fmtDate(d?.date||'')}: ${fmtFull(ctx.raw)}人`;
-      };
-    } else {
-      const len = Math.max(dA.length, (dB||[]).length);
-      labels = Array.from({length:len}, (_,i) => `Day ${i+1}`);
-      datasets = [
-        { ...buildSubDataset(dA, 'rgba(201,162,39,1)', '期間A'),
-          data: Array.from({length:len}, (_,i) => dA[i]?.subscribers ?? null) },
-        { ...buildSubDataset(dB||[], 'rgba(91,214,138,1)', '期間B'),
-          data: Array.from({length:len}, (_,i) => (dB||[])[i]?.subscribers ?? null),
-          borderDash: [5,3] }
-      ];
-      tooltipFmt = ctx => {
-        const isA = ctx.datasetIndex === 0;
-        const src = isA ? dA : (dB||[]);
-        const d = src[ctx.dataIndex];
-        return ` ${ctx.dataset.label}${d ? ' ('+fmtDate(d.date)+')' : ''}: ${fmtFull(ctx.raw)}人`;
-      };
+    if(!dA.length){
+      document.getElementById('mainChart').style.display='none';
+      document.getElementById('chartNoData').style.display='block';
+      if(mainChart){mainChart.destroy();mainChart=null;}
+      return;
     }
+    labels=dA.map(d=>d.date.slice(5));
+    datasets=[{label:'登録者',type:'line',data:dA.map(d=>d.subscribers),borderColor:'rgba(201,162,39,1)',borderWidth:2,backgroundColor:'rgba(201,162,39,.10)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4}];
+    ttFmt=ctx=>`${fmtDate(dA[ctx.dataIndex]?.date||'')}: ${fmtFull(ctx.raw)}人`;
   }
+
+  document.getElementById('mainChart').style.display='block';
+  document.getElementById('chartNoData').style.display='none';
+  document.getElementById('chartSubLabel').textContent = datasets[0]?.data?.filter(v=>v!=null).length + '日分';
 
   if(mainChart) mainChart.destroy();
-  mainChart = new Chart(canvas, {
-    type: 'line',
-    data: { labels, datasets },
-    options: {
-      ...CHART_OPT_BASE,
-      plugins: {
-        ...CHART_OPT_BASE.plugins,
-        tooltip: {
-          ...CHART_OPT_BASE.plugins.tooltip,
-          callbacks: {
-            title: items => items[0]?.label || '',
-            label: tooltipFmt
-          }
-        }
-      }
-    }
-  });
+  const opt = JSON.parse(JSON.stringify(CHART_BASE));
+  opt.plugins.tooltip.callbacks = {title:i=>i[0]?.label||'', label:ttFmt};
+  mainChart = new Chart(document.getElementById('mainChart'),{type:'line',data:{labels,datasets},options:opt});
 
-  // legend
-  const legendEl = document.getElementById('chartLegend');
-  if(compareMode && datasets.length > 1){
-    legendEl.innerHTML = datasets.map(ds => {
-      const col = Array.isArray(ds.backgroundColor) ? ds.borderColor : (ds.borderColor || ds.backgroundColor);
-      return `<div class="legend-item"><div class="legend-dot" style="background:${col};${ds.borderDash?'border-top:2px dashed '+col+';background:none;height:0':''}"></div>${ds.label}</div>`;
-    }).join('');
-  } else {
-    legendEl.innerHTML = '';
-  }
+  const lg = document.getElementById('chartLegend');
+  lg.innerHTML = compareMode && datasets.length>1
+    ? datasets.map(ds=>`<div class="legend-item"><div class="legend-dot" style="background:${ds.borderColor||ds.backgroundColor[0]}"></div>${ds.label}</div>`).join('')
+    : '';
+
+  // ギャップ検出
+  const gapEl = document.getElementById('dataGapNote');
+  if(!filterFrom && activeMetric==='views'){
+    const allV=allViewData(); let maxGap=0,gs='',ge='';
+    for(let i=1;i<allV.length;i++){const diff=(new Date(allV[i].date)-new Date(allV[i-1].date))/86400000;if(diff>maxGap){maxGap=diff;gs=allV[i-1].date;ge=allV[i].date;}}
+    gapEl.textContent = maxGap>7 ? `⚠ データ欠損: ${fmtDate(gs)}〜${fmtDate(ge)}（${Math.round(maxGap)}日間）` : '';
+  } else gapEl.textContent='';
 }
 
-// ── 比較テーブル ──
+// ════════════════════════════════
+// 概要タブ: 比較テーブル
+// ════════════════════════════════
 function renderCompareStrip(){
   const strip = document.getElementById('compareStrip');
-  if(!compareMode || !filterFromB){ strip.style.display='none'; return; }
-  strip.style.display = 'block';
-
-  const mA = calcMetrics(filterFrom, filterTo);
-  const mB = calcMetrics(filterFromB, filterToB);
-  const pA = fmtDate(filterFrom||'') + '〜' + fmtDate(filterTo||'');
-  const pB = fmtDate(filterFromB||'') + '〜' + fmtDate(filterToB||'');
-
-  function diffTd(a, b, fmtFn){
-    if(a === null || b === null) return '<td class="num" style="color:var(--muted)">—</td>';
-    const d = a - b;
-    const col = d > 0 ? 'var(--up)' : d < 0 ? 'var(--down)' : 'var(--muted)';
-    return `<td class="num" style="color:${col}">${d >= 0 ? '+' : ''}${fmtFn(d)}</td>`;
-  }
-
-  document.getElementById('compareContent').innerHTML = `
-    <table>
-      <thead><tr>
-        <th>指標</th>
-        <th class="num" style="color:var(--up)">A <span style="font-weight:400;color:var(--muted)">${pA}</span></th>
-        <th class="num" style="color:var(--gold)">B <span style="font-weight:400;color:var(--muted)">${pB}</span></th>
-        <th class="num">A − B</th>
-      </tr></thead>
-      <tbody>
-        <tr>
-          <td>再生数</td>
-          <td class="num">${fmtFull(mA.totalViews)}回</td>
-          <td class="num">${fmtFull(mB.totalViews)}回</td>
-          ${diffTd(mA.totalViews, mB.totalViews, n => fmtFull(Math.abs(n))+'回')}
-        </tr>
-        <tr>
-          <td>登録者増減</td>
-          <td class="num">${mA.subDelta !== null ? (mA.subDelta >= 0 ? '+' : '') + fmtFull(mA.subDelta) + '人' : '—'}</td>
-          <td class="num">${mB.subDelta !== null ? (mB.subDelta >= 0 ? '+' : '') + fmtFull(mB.subDelta) + '人' : '—'}</td>
-          ${mA.subDelta !== null && mB.subDelta !== null ? diffTd(mA.subDelta, mB.subDelta, n => fmtFull(Math.abs(n))+'人') : '<td class="num" style="color:var(--muted)">—</td>'}
-        </tr>
-        <tr>
-          <td>平均日次再生</td>
-          <td class="num">${mA.days ? fmtFull(Math.round(mA.totalViews/mA.days))+'回' : '—'}</td>
-          <td class="num">${mB.days ? fmtFull(Math.round(mB.totalViews/mB.days))+'回' : '—'}</td>
-          ${mA.days && mB.days ? diffTd(Math.round(mA.totalViews/mA.days), Math.round(mB.totalViews/mB.days), n => fmtFull(Math.abs(n))+'回') : '<td class="num" style="color:var(--muted)">—</td>'}
-        </tr>
-      </tbody>
-    </table>`;
+  if(!compareMode||!filterFromB){strip.style.display='none';return;}
+  strip.style.display='block';
+  const mA=calcMetrics(filterFrom,filterTo), mB=calcMetrics(filterFromB,filterToB);
+  const pA=fmtDate(filterFrom||'')+'〜'+fmtDate(filterTo||'');
+  const pB=fmtDate(filterFromB||'')+'〜'+fmtDate(filterToB||'');
+  const diffTd=(a,b,f)=>{
+    if(a===null||b===null) return '<td class="num" style="color:var(--muted)">—</td>';
+    const d=a-b, col=d>0?'var(--up)':d<0?'var(--down)':'var(--muted)';
+    return `<td class="num" style="color:${col}">${d>=0?'+':''}${f(Math.abs(d))}</td>`;
+  };
+  document.getElementById('compareContent').innerHTML=`
+    <table><thead><tr>
+      <th>指標</th>
+      <th class="num" style="color:var(--up)">A <span style="font-weight:400;color:var(--muted)">${pA}</span></th>
+      <th class="num" style="color:var(--gold)">B <span style="font-weight:400;color:var(--muted)">${pB}</span></th>
+      <th class="num">A − B</th>
+    </tr></thead><tbody>
+      <tr><td>再生数</td><td class="num">${fmtFull(mA.totalViews)}回</td><td class="num">${fmtFull(mB.totalViews)}回</td>${diffTd(mA.totalViews,mB.totalViews,n=>fmtFull(n)+'回')}</tr>
+      <tr><td>視聴時間</td><td class="num">${fmtMin(mA.totalWatchMin)}</td><td class="num">${fmtMin(mB.totalWatchMin)}</td>${diffTd(mA.totalWatchMin,mB.totalWatchMin,n=>fmtMin(n))}</tr>
+      <tr><td>登録者増減</td><td class="num">${mA.subDelta!==null?(mA.subDelta>=0?'+':'')+fmtFull(mA.subDelta)+'人':'—'}</td><td class="num">${mB.subDelta!==null?(mB.subDelta>=0?'+':'')+fmtFull(mB.subDelta)+'人':'—'}</td>${mA.subDelta!==null&&mB.subDelta!==null?diffTd(mA.subDelta,mB.subDelta,n=>fmtFull(n)+'人'):'<td class="num">—</td>'}</tr>
+    </tbody></table>`;
 }
 
-// ── Overview bar ──
-function renderOverview(){
-  const daily  = allDaily();
-  const latest = daily.length ? daily[daily.length-1] : null;
-  if(!latest){ document.getElementById('overviewBar').innerHTML=''; return; }
-
-  const e7 = (() => {
-    const d = new Date(latest.date + 'T00:00:00');
-    d.setDate(d.getDate() - 7);
-    const s = d.toISOString().slice(0,10);
-    return [...daily].reverse().find(e => e.date <= s) || null;
-  })();
-
-  const weekViews = e7 ? Math.max(0, latest.total_views - e7.total_views) : null;
-  const weekSub   = e7 ? latest.subscribers - e7.subscribers : null;
-  const weekRate  = (e7 && e7.subscribers) ? (weekSub / e7.subscribers * 100) : null;
-
-  // データ期間はanalyticsとスナップショット両方を考慮
-  const allV = allViewData();
-  const dataStart = allV.length ? allV[0].date : (daily.length ? daily[0].date : '');
-  const dataEnd   = allV.length ? allV[allV.length-1].date : '';
-
-  const items = [
-    { label:'登録者数', val: fmtFull(latest.subscribers), sub:'人' },
-    { label:'週間再生数', val: weekViews !== null ? fmt(weekViews) : '—', sub: weekViews !== null ? fmtFull(weekViews)+'回' : '' },
-    { label:'登録者増加率（週）', val: weekRate !== null ? (weekRate >= 0 ? '+' : '') + weekRate.toFixed(2) + '%' : '—', sub: weekSub !== null ? (weekSub >= 0 ? '+' : '') + weekSub.toLocaleString() + '人' : '' },
-    { label:'動画本数', val: latest.video_count.toLocaleString(), sub:'本' },
-    { label:'データ期間', val: allV.length + '日', sub: fmtDate(dataStart) + '〜' + fmtDate(dataEnd) },
-  ];
-
-  document.getElementById('overviewBar').innerHTML = items.map(it => `
-    <div class="ov-item">
-      <div class="ov-label">${it.label}</div>
-      <div class="ov-val">${it.val}</div>
-      <div class="ov-sub">${it.sub}</div>
-    </div>`).join('');
+// ════════════════════════════════
+// 概要タブ: Overview bar
+// ════════════════════════════════
+function renderOverviewBar(){
+  const daily=allDaily(), latest=daily.length?daily[daily.length-1]:null;
+  if(!latest){document.getElementById('overviewBar').innerHTML='';return;}
+  const d7 = new Date(latest.date+'T00:00:00'); d7.setDate(d7.getDate()-7);
+  const e7 = [...daily].reverse().find(e=>e.date<=d7.toISOString().slice(0,10))||null;
+  const weekViews = e7 ? Math.max(0,latest.total_views-e7.total_views) : null;
+  const weekSub   = e7 ? latest.subscribers-e7.subscribers : null;
+  const allV=allViewData();
+  const dataStart=allV.length?allV[0].date:(daily.length?daily[0].date:'');
+  const dataEnd=allV.length?allV[allV.length-1].date:'';
+  const vp=G.video_period||{};
+  const hasPeriod=Object.keys(vp).length>0;
+  document.getElementById('overviewBar').innerHTML=[
+    {label:'登録者数',val:fmtFull(latest.subscribers),sub:'人'},
+    {label:'週間再生数',val:weekViews!==null?fmt(weekViews):'—',sub:weekViews!==null?fmtFull(weekViews)+'回':''},
+    {label:'週間登録者増減',val:weekSub!==null?(weekSub>=0?'+':'')+fmtFull(weekSub):'—',sub:'人'},
+    {label:'動画本数',val:latest.video_count.toLocaleString(),sub:'本'},
+    {label:'期間データ',val:hasPeriod?'✓':'—',sub:hasPeriod?'7/28/90/365日':'Analytics未設定'},
+    {label:'データ期間',val:allV.length+'日',sub:fmtDate(dataStart)+'〜'+fmtDate(dataEnd)},
+  ].map(it=>`<div class="ov-item"><div class="ov-label">${it.label}</div><div class="ov-val">${it.val}</div><div class="ov-sub">${it.sub}</div></div>`).join('');
 }
 
-// ── 動画テーブル ──
-let _rankVideos = []; // モーダル参照用
-
-function renderVideoTable(){
-  const from = filterFrom || null;
-  const to   = filterTo   || null;
-  const isPeriod = from && to;
-  // video_period_views: {"7":{vid:views},"28":...} - Analytics API 期間合計
-  const vpv = G.video_period_views || {};
-  // video_daily_views: {vid:[{date,views}]} - 旧構造（後方互換）
-  const vdv = G.video_daily_views  || {};
-
-  let videos;
-  let subLabel = '';
-
-  if(isPeriod){
-    const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
-    // プリセット期間に対応するデータを探す（±1日の誤差を許容）
-    const presetKey = [7, 28, 90, 365].find(d => Math.abs(days - d) <= 1);
-    const periodData = presetKey ? vpv[String(presetKey)] : null;
-
-    if(periodData && Object.keys(periodData).length > 0){
-      // Analytics API の期間合計データを使用
-      videos = G.videos.map(v => ({
-        ...v, period_views: periodData[v.video_id] || 0,
-      })).filter(v => v.period_views > 0)
-        .sort((a, b) => b.period_views - a.period_views);
-      subLabel = `${fmtDate(from)}〜${fmtDate(to)} 期間内再生数順`;
-    } else if(Object.keys(vdv).length > 0){
-      // 旧構造フォールバック
-      videos = G.videos.map(v => {
-        const dailyData   = vdv[v.video_id] || [];
-        const periodViews = dailyData
-          .filter(e => e.date >= from && e.date <= to)
-          .reduce((s, e) => s + e.views, 0);
-        return {...v, period_views: periodViews};
-      }).filter(v => v.period_views > 0)
-        .sort((a, b) => b.period_views - a.period_views);
-      subLabel = `${fmtDate(from)}〜${fmtDate(to)} 期間内再生数順`;
-    } else {
-      // データなし → 公開日フィルタ
-      videos = G.videos
-        .filter(v => v.published_at >= from && v.published_at <= to)
-        .map(v => ({...v, period_views: null}));
-      subLabel = `${fmtDate(from)}〜${fmtDate(to)} 公開`;
-    }
-  } else {
-    videos   = G.videos.map(v => ({...v, period_views: null}));
-    subLabel = '全期間・再生数順';
-  }
-
-  _rankVideos = videos;
-
-  // 見出し更新
-  const labelEl = document.getElementById('videoRankLabel');
-  if(labelEl) labelEl.textContent = `動画ランキング（${subLabel}）`;
-  document.getElementById('videoCount').textContent = videos.length + '本';
-
-  const cards = videos.slice(0,100).map((v,i) => {
-    const n = i + 1;
-    const rankCls = n <= 3 ? 'vc-rank top3' : 'vc-rank';
-    const medal = n === 1 ? '🥇' : n === 2 ? '🥈' : n === 3 ? '🥉' : n;
-    return `
-    <div class="video-card" onclick="openVideoModal(${i})">
-      <div class="${rankCls}">${medal}</div>
-      <img class="vc-thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
-      <div class="vc-body">
-        <div class="vc-title">${v.title}</div>
-        <div class="vc-meta">
-          <span class="vc-stat">👁 <strong>${v.period_views !== null ? fmtFull(v.period_views)+'（期間）' : fmtFull(v.views)}</strong></span>
-          <span class="vc-stat">👍 <strong>${fmtFull(v.likes)}</strong></span>
-          <span class="vc-stat">💬 <strong>${fmtFull(v.comments)}</strong></span>
-          <span class="vc-date">${fmtDate(v.published_at)}</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-  document.getElementById('videoBody').innerHTML = cards ||
-    `<div style="text-align:center;color:var(--muted);padding:30px">
-      ${isPeriod ? 'この期間に公開された動画はありません' : '動画データなし'}
-    </div>`;
-}
-
-function openVideoModal(idx){
-  const v = _rankVideos[idx];
-  if(!v) return;
-  const n = idx + 1;
-  const medal = n === 1 ? '🥇 1位' : n === 2 ? '🥈 2位' : n === 3 ? '🥉 3位' : `#${n}`;
-  document.getElementById('vmodalRank').textContent = medal;
-  document.getElementById('vmodalThumb').src = `https://i.ytimg.com/vi/${v.video_id}/maxresdefault.jpg`;
-  document.getElementById('vmodalThumb').onerror = function(){ this.src = `https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg`; };
-  document.getElementById('vmodalTitle').textContent = v.title;
-  document.getElementById('vmodalViews').textContent = fmtFull(v.views);
-  document.getElementById('vmodalLikes').textContent = fmtFull(v.likes);
-  document.getElementById('vmodalComments').textContent = fmtFull(v.comments);
-  document.getElementById('vmodalMeta').innerHTML =
-    `<span>📅 公開日: ${fmtDate(v.published_at)}</span>` +
-    `<span>🆔 ${v.video_id}</span>`;
-  const url = `https://www.youtube.com/watch?v=${v.video_id}`;
-  document.getElementById('vmodalLink').href = url;
-  document.getElementById('vmodalOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeVideoModal(e){
-  if(e && e.target !== document.getElementById('vmodalOverlay')) return;
-  document.getElementById('vmodalOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-}
-
-document.addEventListener('keydown', e => { if(e.key === 'Escape') closeVideoModal(); });
-
-// ── rangeInfo 更新 ──
 function updateRangeInfo(){
-  const all = allViewData();
-  const el = document.getElementById('rangeInfo');
-  const from = filterFrom || (all.length ? all[0].date : '');
-  const to   = filterTo   || (all.length ? all[all.length-1].date : '');
-  if(from && to){
-    const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
-    el.textContent = fmtDate(from) + '〜' + fmtDate(to) + '（' + days + '日）';
-  } else el.textContent = '';
-
-  const elB = document.getElementById('rangeInfoB');
-  if(filterFromB && filterToB){
-    const daysB = Math.round((new Date(filterToB) - new Date(filterFromB)) / 86400000) + 1;
-    elB.textContent = fmtDate(filterFromB) + '〜' + fmtDate(filterToB) + '（' + daysB + '日）';
-  } else if(elB) elB.textContent = '';
+  const all=allViewData();
+  const from=filterFrom||(all.length?all[0].date:'');
+  const to=filterTo||(all.length?all[all.length-1].date:'');
+  const el=document.getElementById('rangeInfo');
+  if(from&&to){ const days=Math.round((new Date(to)-new Date(from))/86400000)+1; el.textContent=fmtDate(from)+'〜'+fmtDate(to)+'（'+days+'日）'; } else el.textContent='';
+  const elB=document.getElementById('rangeInfoB');
+  if(filterFromB&&filterToB){ const d=Math.round((new Date(filterToB)-new Date(filterFromB))/86400000)+1; elB.textContent=fmtDate(filterFromB)+'〜'+fmtDate(filterToB)+'（'+d+'日）'; } else if(elB) elB.textContent='';
 }
 
-// ── 全体再描画 ──
-function renderAll(){
+function renderOverview(){
   updateRangeInfo();
   renderTiles();
   renderMainChart();
   renderCompareStrip();
-  renderVideoTable();
+  renderOverviewBar();
 }
 
-// ── 初回レンダリング ──
-function render(){
-  initPeriod();
+// ════════════════════════════════
+// 伸び率タブ
+// ════════════════════════════════
+function setGrowthPeriod(days, btn){
+  growthPeriod = days;
+  document.querySelectorAll('#growthSeg button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderGrowth();
+}
+
+function renderGrowth(){
+  const vp = G.video_period || {};
+  const key = String(growthPeriod);
+  const periodData = vp[key] || {};
+  const vs = G.video_snapshots || [];
+  const container = document.getElementById('growthContent');
+
+  // 期間データがある場合: video_period を使う
+  if(Object.keys(periodData).length > 0){
+    const today = G.meta.data_through;
+    const videos = (G.videos||[]).map(v => {
+      const pd = periodData[v.video_id];
+      return pd ? {
+        ...v,
+        period_views: pd.views,
+        period_watch_min: pd.watch_min,
+        avg_dur_sec: pd.avg_dur_sec,
+      } : null;
+    }).filter(Boolean).sort((a,b)=>b.period_views-a.period_views);
+
+    if(!videos.length){ container.innerHTML = '<div class="no-data">期間データがありません。Analytics API の設定を確認してください。</div>'; return; }
+
+    const maxViews = videos[0]?.period_views || 1;
+
+    // スナップショットから伸び率を計算（あれば）
+    const snapshotGrowthMap = calcSnapshotGrowth(growthPeriod, vs);
+
+    container.innerHTML = `
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+        直近${growthPeriod}日間の再生数ランキング（Analytics API データ）
+      </div>
+      <div class="video-list">
+        ${videos.slice(0,100).map((v,i)=>{
+          const n=i+1;
+          const medal=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
+          const growth = snapshotGrowthMap[v.video_id];
+          const growthBadge = growth !== undefined
+            ? `<span class="growth-badge ${growth>=0?'up':'down'}">${growth>=0?'▲':'▼'}${Math.abs(growth).toFixed(1)}%</span>`
+            : '';
+          return `
+          <div class="video-card" onclick="openVideoModalFromGrowth('${v.video_id}',${n})">
+            <div class="vc-rank ${n<=3?'top3':''}">${medal}</div>
+            <img class="vc-thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+            <div class="vc-body">
+              <div class="vc-title">${v.title}</div>
+              <div class="vc-meta">
+                <span class="vc-stat">👁 <strong>${fmtFull(v.period_views)}</strong>回</span>
+                ${v.period_watch_min?`<span class="vc-stat">⏱ <strong>${fmtMin(v.period_watch_min)}</strong></span>`:''}
+                ${v.avg_dur_sec?`<span class="vc-stat">🎬 <strong>${fmtDur(v.avg_dur_sec)}</strong></span>`:''}
+                ${growthBadge}
+                <span class="vc-date">${fmtDate(v.published_at)}</span>
+              </div>
+              <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.round(v.period_views/maxViews*100)}%"></div></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+
+  } else if(vs.length >= 2){
+    // フォールバック: スナップショット差分
+    const snapshotGrowthMap = calcSnapshotGrowth(growthPeriod, vs);
+    if(!Object.keys(snapshotGrowthMap).length){ container.innerHTML = '<div class="no-data">スナップショットデータが不足しています。<br>毎日自動取得中です（'+growthPeriod+'日後に完成）。</div>'; return; }
+
+    const videos = (G.videos||[]).map(v=>{
+      const g = snapshotGrowthMap[v.video_id];
+      if(g===undefined) return null;
+      const gained = calcSnapshotGained(v.video_id, growthPeriod, vs);
+      return {...v, period_views:gained, growth_pct:g};
+    }).filter(v=>v&&v.period_views>0).sort((a,b)=>b.period_views-a.period_views);
+
+    const maxViews = videos[0]?.period_views||1;
+    container.innerHTML = `
+      <div style="font-size:12px;color:var(--muted-2);margin-bottom:10px">
+        ⚠ Analytics API 未接続 — スナップショット差分（暫定データ）
+      </div>
+      <div class="video-list">
+        ${videos.slice(0,100).map((v,i)=>{
+          const n=i+1;
+          const medal=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
+          return `
+          <div class="video-card" onclick="openVideoModalFromGrowth('${v.video_id}',${n})">
+            <div class="vc-rank ${n<=3?'top3':''}">${medal}</div>
+            <img class="vc-thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+            <div class="vc-body">
+              <div class="vc-title">${v.title}</div>
+              <div class="vc-meta">
+                <span class="vc-stat">👁 <strong>+${fmtFull(v.period_views)}</strong>回（${growthPeriod}日）</span>
+                <span class="growth-badge ${v.growth_pct>=0?'up':'down'}">${v.growth_pct>=0?'▲':'▼'}${Math.abs(v.growth_pct).toFixed(1)}%</span>
+                <span class="vc-date">${fmtDate(v.published_at)}</span>
+              </div>
+              <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.round(v.period_views/maxViews*100)}%"></div></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  } else {
+    container.innerHTML = `<div class="no-data">
+      データ収集中です。<br>
+      GitHub Actions が毎日自動取得しています（${growthPeriod}日分蓄積後に表示）。<br><br>
+      Analytics API を接続すると即座に表示されます。<br>
+      <span style="color:var(--muted-2);font-size:11px">GitHub Secrets: REFRESH_TOKEN / OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET</span>
+    </div>`;
+  }
+}
+
+function calcSnapshotGained(vid_id, days, snapshots){
+  if(snapshots.length < 2) return 0;
+  const sorted = [...snapshots].sort((a,b)=>a.date.localeCompare(b.date));
+  const latest = sorted[sorted.length-1];
+  const cutoffDate = new Date(latest.date+'T00:00:00');
+  cutoffDate.setDate(cutoffDate.getDate()-days);
+  const cutoff = cutoffDate.toISOString().slice(0,10);
+  const old = [...sorted].reverse().find(s=>s.date<=cutoff);
+  if(!old) return 0;
+  const latestViews = (latest.v||{})[vid_id] || 0;
+  const oldViews    = (old.v||{})[vid_id]    || 0;
+  return Math.max(0, latestViews - oldViews);
+}
+
+function calcSnapshotGrowth(days, snapshots){
+  if(snapshots.length < 2) return {};
+  const sorted = [...snapshots].sort((a,b)=>a.date.localeCompare(b.date));
+  const latest = sorted[sorted.length-1];
+  const cutoffDate = new Date(latest.date+'T00:00:00');
+  cutoffDate.setDate(cutoffDate.getDate()-days);
+  const cutoff = cutoffDate.toISOString().slice(0,10);
+  const old = [...sorted].reverse().find(s=>s.date<=cutoff);
+  if(!old) return {};
+  const result = {};
+  const latestV = latest.v || {};
+  const oldV    = old.v    || {};
+  for(const vid_id of Object.keys(latestV)){
+    const now = latestV[vid_id]||0;
+    const prev = oldV[vid_id]||0;
+    if(prev > 0) result[vid_id] = (now-prev)/prev*100;
+  }
+  return result;
+}
+
+function openVideoModalFromGrowth(vid_id, rank){
+  const v = (G.videos||[]).find(v=>v.video_id===vid_id);
+  if(!v) return;
+  const vp = G.video_period || {};
+  const pd = (vp[String(growthPeriod)]||{})[vid_id] || {};
+  openVideoModalData(v, rank, pd);
+}
+
+// ════════════════════════════════
+// 今週 vs 先週タブ
+// ════════════════════════════════
+function getWeekDates(referenceDate, offsetWeeks){
+  // referenceDate からさかのぼってその週の月〜日を返す
+  const d = new Date(referenceDate+'T00:00:00');
+  const dow = d.getDay(); // 0=日, 1=月...
+  const mondayOffset = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(d); monday.setDate(d.getDate()+mondayOffset-(offsetWeeks*7));
+  const dates = [];
+  for(let i=0;i<7;i++){const dd=new Date(monday);dd.setDate(monday.getDate()+i);dates.push(dd.toISOString().slice(0,10));}
+  return dates;
+}
+
+function renderWeekly(){
+  const ad = G.analytics_daily || [];
+  const daily = allDaily();
+  const today = G.meta.data_through;
+
+  // 今週・先週の日付リスト
+  const thisWeek = getWeekDates(today, 0);
+  const lastWeek = getWeekDates(today, 1);
+
+  // Analytics daily Map
+  const adMap = new Map(ad.map(d=>[d.date,d]));
+  // fallback: snapshot diff map
+  const allV = allViewData();
+  const vMap = new Map(allV.map(d=>[d.date,d]));
+
+  const getViews = (dates) => dates.map(date=>{
+    if(adMap.has(date)) return adMap.get(date).views;
+    return vMap.get(date)?.views||0;
+  });
+  const getWatchMin = (dates) => dates.map(date=>(adMap.get(date)||{}).watch_min||0);
+  const getSubsGained = (dates) => dates.map(date=>(adMap.get(date)||{}).subs_gained||0);
+  const getSubsLost   = (dates) => dates.map(date=>(adMap.get(date)||{}).subs_lost||0);
+
+  const thisViews = getViews(thisWeek);
+  const lastViews = getViews(lastWeek);
+  const thisWatch = getWatchMin(thisWeek);
+  const lastWatch = getWatchMin(lastWeek);
+  const thisSubs  = getSubsGained(thisWeek).reduce((s,v)=>s+v,0);
+  const lastSubs  = getSubsGained(lastWeek).reduce((s,v)=>s+v,0);
+  const thisSubsL = getSubsLost(thisWeek).reduce((s,v)=>s+v,0);
+  const lastSubsL = getSubsLost(lastWeek).reduce((s,v)=>s+v,0);
+
+  const totalThis = thisViews.reduce((s,v)=>s+v,0);
+  const totalLast = lastViews.reduce((s,v)=>s+v,0);
+  const watchThis = thisWatch.reduce((s,v)=>s+v,0);
+  const watchLast = lastWatch.reduce((s,v)=>s+v,0);
+  const netSubsThis = thisSubs - thisSubsL;
+  const netSubsLast = lastSubs - lastSubsL;
+
+  const diffBadge = (a,b,fmtFn) => {
+    const d=a-b, cls=d>0?'up':d<0?'down':'flat';
+    return `<span class="ws-delta ${cls}">${d>=0?'▲':'▼'} ${fmtFn(Math.abs(d))}</span>`;
+  };
+
+  const wsItems = [
+    {label:'今週 再生数',   thisVal:fmtFull(totalThis), diff:diffBadge(totalThis,totalLast,n=>fmtFull(n)+'回'), sub:`先週: ${fmtFull(totalLast)}回`},
+    {label:'今週 視聴時間', thisVal:fmtMin(watchThis),  diff:watchThis||watchLast?diffBadge(watchThis,watchLast,n=>fmtMin(n)):'<span class="ws-delta flat">—</span>', sub:watchLast?`先週: ${fmtMin(watchLast)}`:'Analytics未接続'},
+    {label:'今週 登録者増',  thisVal:(netSubsThis>=0?'+':'')+fmtFull(netSubsThis), diff:netSubsThis||netSubsLast?diffBadge(netSubsThis,netSubsLast,n=>fmtFull(n)+'人'):'<span class="ws-delta flat">—</span>', sub:netSubsLast?`先週: ${netSubsLast>=0?'+':''}${fmtFull(netSubsLast)}人`:'Analytics未接続'},
+  ];
+
+  document.getElementById('weekSummary').innerHTML = wsItems.map(it=>`
+    <div class="ws-item">
+      <div class="ws-label">${it.label}</div>
+      <div class="ws-row"><span class="ws-val">${it.thisVal}</span>${it.diff}</div>
+      <div class="ws-sub">${it.sub}</div>
+    </div>`).join('');
+
+  // 曜日ラベル
+  const DOW = ['月','火','水','木','金','土','日'];
+  const labels = thisWeek.map((d,i)=>DOW[i]+'('+d.slice(5)+')');
+
+  // 再生数チャート
+  const hasData = totalThis>0||totalLast>0;
+  document.getElementById('weekChartNoData').style.display = hasData?'none':'block';
+  document.getElementById('weekChart').style.display = hasData?'block':'none';
+  if(weekChart){weekChart.destroy();weekChart=null;}
+  if(hasData){
+    weekChart = new Chart(document.getElementById('weekChart'),{
+      type:'bar',
+      data:{labels,datasets:[
+        {label:'今週',data:thisViews,backgroundColor:'rgba(91,214,138,.75)',borderWidth:0,borderRadius:4},
+        {label:'先週',data:lastViews,backgroundColor:'rgba(201,162,39,.45)',borderWidth:0,borderRadius:4},
+      ]},
+      options:{
+        ...CHART_BASE,
+        plugins:{...CHART_BASE.plugins,
+          legend:{display:true,labels:{color:'#8FA396',font:{size:11}}},
+          tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtFull(ctx.raw)}回`}}
+        },
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5E726A',font:{size:11}}},
+          y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:10},callback:v=>fmt(v)}}
+        }
+      }
+    });
+  }
+
+  // 視聴時間チャート
+  const hasWatch = watchThis>0||watchLast>0;
+  document.getElementById('watchChartNoData').style.display = hasWatch?'none':'block';
+  document.getElementById('watchChart').style.display = hasWatch?'block':'none';
+  if(watchChart){watchChart.destroy();watchChart=null;}
+  if(hasWatch){
+    watchChart = new Chart(document.getElementById('watchChart'),{
+      type:'bar',
+      data:{labels,datasets:[
+        {label:'今週',data:thisWatch,backgroundColor:'rgba(91,166,214,.75)',borderWidth:0,borderRadius:4},
+        {label:'先週',data:lastWatch,backgroundColor:'rgba(91,166,214,.3)',borderWidth:0,borderRadius:4},
+      ]},
+      options:{
+        ...CHART_BASE,
+        plugins:{...CHART_BASE.plugins,
+          legend:{display:true,labels:{color:'#8FA396',font:{size:11}}},
+          tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtMin(ctx.raw)}`}}
+        },
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5E726A',font:{size:11}}},
+          y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:10},callback:v=>fmtMin(v)}}
+        }
+      }
+    });
+  }
+}
+
+// ════════════════════════════════
+// 動画一覧タブ
+// ════════════════════════════════
+function renderVideoList(){
+  const videos = (G.videos||[]).map(v=>({...v})).sort((a,b)=>b.views-a.views);
+  _rankVideos = videos;
+  document.getElementById('videoRankLabel').textContent = '動画ランキング（総再生数順）';
+  document.getElementById('videoCount').textContent = videos.length+'本';
+
+  const maxViews = videos[0]?.views||1;
+  document.getElementById('videoBody').innerHTML = videos.slice(0,200).map((v,i)=>{
+    const n=i+1, medal=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
+    // 伸び率バッジ（video_periodの7日データがあれば）
+    const vp7 = ((G.video_period||{})['7']||{})[v.video_id];
+    const growthBadge = vp7
+      ? `<span class="growth-badge up">▲${fmtFull(vp7.views)}回/7日</span>`
+      : '';
+    return `
+    <div class="video-card" onclick="openVideoModal(${i})">
+      <div class="vc-rank ${n<=3?'top3':''}">${medal}</div>
+      <img class="vc-thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+      <div class="vc-body">
+        <div class="vc-title">${v.title}</div>
+        <div class="vc-meta">
+          <span class="vc-stat">👁 <strong>${fmt(v.views)}</strong></span>
+          <span class="vc-stat">👍 <strong>${fmtFull(v.likes)}</strong></span>
+          <span class="vc-stat">💬 <strong>${fmtFull(v.comments)}</strong></span>
+          ${v.duration_sec?`<span class="vc-stat">🎬 <strong>${fmtDur(v.duration_sec)}</strong></span>`:''}
+          ${growthBadge}
+          <span class="vc-date">${fmtDate(v.published_at)}</span>
+        </div>
+        <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.round(v.views/maxViews*100)}%"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ════════════════════════════════
+// モーダル
+// ════════════════════════════════
+function openVideoModal(idx){
+  const v = _rankVideos[idx]; if(!v) return;
+  const vp7 = ((G.video_period||{})['7']||{})[v.video_id]||{};
+  openVideoModalData(v, idx+1, vp7);
+}
+function openVideoModalData(v, rank, pd){
+  const n=rank, medal=n===1?'🥇 1位':n===2?'🥈 2位':n===3?'🥉 3位':`#${n}`;
+  document.getElementById('vmodalRank').textContent = medal;
+  document.getElementById('vmodalThumb').src = `https://i.ytimg.com/vi/${v.video_id}/maxresdefault.jpg`;
+  document.getElementById('vmodalThumb').onerror = function(){ this.src=`https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg`; };
+  document.getElementById('vmodalTitle').textContent = v.title;
+  const stats = [
+    {label:'総再生数', value:fmtFull(v.views)},
+    {label:'高評価',   value:fmtFull(v.likes)},
+    {label:'コメント', value:fmtFull(v.comments)},
+  ];
+  if(pd.views)     stats.push({label:'7日再生数',   value:fmtFull(pd.views)+'回'});
+  if(pd.watch_min) stats.push({label:'7日視聴時間', value:fmtMin(pd.watch_min)});
+  if(pd.avg_dur_sec) stats.push({label:'平均視聴時間', value:fmtDur(pd.avg_dur_sec)});
+  document.getElementById('vmodalStats').innerHTML = stats.map(s=>`<div class="vmodal-stat"><div class="label">${s.label}</div><div class="value">${s.value}</div></div>`).join('');
+  document.getElementById('vmodalMeta').innerHTML =
+    `<span>📅 公開日: ${fmtDate(v.published_at)}</span>`+
+    (v.duration_sec?`<span>⏱ 動画時間: ${fmtDur(v.duration_sec)}</span>`:'')+
+    `<span>🆔 ${v.video_id}</span>`;
+  document.getElementById('vmodalLink').href = `https://www.youtube.com/watch?v=${v.video_id}`;
+  document.getElementById('vmodalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeVideoModal(e){
+  if(e && e.target!==document.getElementById('vmodalOverlay')) return;
+  document.getElementById('vmodalOverlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeVideoModal(); });
+
+// ════════════════════════════════
+// 全体レンダリング
+// ════════════════════════════════
+function renderAll(){
   renderOverview();
-  renderVideoTable();
-  renderAll();
+  // 開いているタブだけ描画
+  if(activeTab==='growth')  renderGrowth();
+  if(activeTab==='weekly')  renderWeekly();
+  if(activeTab==='videos')  renderVideoList();
 }
 
 loadData();

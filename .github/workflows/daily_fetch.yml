@@ -9,6 +9,7 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'fetch.py'
       - '.github/workflows/daily_fetch.yml'
 
 jobs:
@@ -26,12 +27,12 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: echo "No extra dependencies needed (urllib only)"
-
       - name: Fetch YouTube data
         env:
-          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          YOUTUBE_API_KEY:     ${{ secrets.YOUTUBE_API_KEY }}
+          REFRESH_TOKEN:       ${{ secrets.REFRESH_TOKEN }}
+          OAUTH_CLIENT_ID:     ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
         run: python fetch.py
 
       - name: Commit and push data.json
