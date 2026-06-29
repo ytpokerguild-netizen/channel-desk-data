@@ -312,7 +312,7 @@ async function loadData(){
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     render();
-    if(mainChart) mainChart.resize();
+    requestAnimationFrame(() => { if(mainChart) mainChart.update(); });
     document.getElementById('statusDot').className = 'status-dot live';
     document.getElementById('updatedLabel').textContent = '更新: ' + G.meta.data_through.replace(/-/g,'/');
     document.getElementById('footNote').textContent = 'channel-desk-data · ' + G.meta.channel_id + ' · ' + G.meta.data_through;
