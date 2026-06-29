@@ -5,6 +5,11 @@ on:
     # 毎朝 3:00 JST（= UTC 18:00 前日）に実行
     - cron: "0 18 * * *"
   workflow_dispatch:  # 手動実行も可能
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - '.github/workflows/daily_fetch.yml'
 
 jobs:
   fetch:
