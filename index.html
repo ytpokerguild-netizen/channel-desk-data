@@ -431,13 +431,23 @@ function onDateChange(){
 function initPeriodBar(){
   const all = allDaily();
   if(!all.length) return;
-  const to   = all[all.length-1].date;
-  const from = dateNDaysAgo(to, 30);
-  filterFrom = from; filterTo = to;
-  document.getElementById('dateFrom').value = from;
-  document.getElementById('dateTo').value   = to;
-  document.querySelector('#quickSeg button:nth-child(2)').classList.add('on');
-  document.querySelector('#quickSeg button:first-child').classList.remove('on');
+  const to = all[all.length-1].date;
+
+  // データが30件未満なら全期間を自動選択
+  if(all.length < 30){
+    filterFrom = null; filterTo = null;
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value   = '';
+    document.querySelectorAll('#quickSeg button').forEach(b=>b.classList.remove('on'));
+    document.querySelector('#quickSeg button:nth-child(4)').classList.add('on'); // 全期間
+  } else {
+    const from = dateNDaysAgo(to, 30);
+    filterFrom = from; filterTo = to;
+    document.getElementById('dateFrom').value = from;
+    document.getElementById('dateTo').value   = to;
+    document.querySelectorAll('#quickSeg button').forEach(b=>b.classList.remove('on'));
+    document.querySelector('#quickSeg button:nth-child(2)').classList.add('on'); // 30日
+  }
 }
 
 // ── グラフ描画 ──
