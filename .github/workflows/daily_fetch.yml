@@ -22,13 +22,11 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install google-auth-oauthlib google-api-python-client
+        run: echo "No extra dependencies needed (urllib only)"
 
-      - name: Fetch YouTube Analytics data
+      - name: Fetch YouTube data
         env:
-          GOOGLE_CLIENT_ID:     ${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_REFRESH_TOKEN: ${{ secrets.GOOGLE_REFRESH_TOKEN }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python fetch.py
 
       - name: Commit and push data.json
