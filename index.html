@@ -218,6 +218,16 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
       </div>
     </div>
 
+    <!-- Daily views chart (YouTube Studio data) -->
+    <div class="card" id="dailyViewsCard" style="margin-bottom:16px;display:none">
+      <h3>
+        <span class="dot" style="background:var(--up)"></span>
+        日次視聴数推移
+        <span style="margin-left:auto;font-size:11px;color:var(--muted-2);text-transform:none;font-family:'Noto Sans JP',sans-serif">YouTube Studio エクスポート</span>
+      </h3>
+      <div class="chart-box tall"><canvas id="dailyViewChart"></canvas></div>
+    </div>
+
     <!-- Video ranking -->
     <div class="card" style="margin-bottom:16px">
       <h3>
@@ -454,6 +464,7 @@ function initPeriodBar(){
 function renderCharts(){
   renderSubChart();
   renderViewChart();
+  renderDailyViewChart();
   updateRangeLabel();
 }
 
@@ -542,11 +553,55 @@ function renderVideoTable(){
   document.getElementById('videoBody').innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">動画データなし</td></tr>';
 }
 
+// ── 日次視聴数チャート（YouTube Studio analytics_daily_views） ──
+let dailyViewChart = null;
+function renderDailyViewChart(){
+  const avData = G.analytics_daily_views;
+  if(!avData || !avData.length){
+    document.getElementById('dailyViewsCard').style.display = 'none';
+    return;
+  }
+  document.getElementById('dailyViewsCard').style.display = 'block';
+
+  // 期間フィルター適用
+  let data = avData;
+  if(filterFrom) data = data.filter(d => d.date >= filterFrom);
+  if(filterTo)   data = data.filter(d => d.date <= filterTo);
+  if(!data.length) data = avData; // フィルター外なら全期間表示
+
+  const labels = data.map(d => d.date.slice(5));
+  const vals   = data.map(d => d.views);
+
+  if(dailyViewChart) dailyViewChart.destroy();
+  dailyViewChart = new Chart(document.getElementById('dailyViewChart'), {
+    type:'bar',
+    data:{
+      labels,
+      datasets:[{
+        data: vals,
+        backgroundColor:'rgba(91,214,138,.45)',
+        borderColor:'rgba(91,214,138,.8)',
+        borderWidth:1,
+        borderRadius:2,
+      }]
+    },
+    options:{
+      ...chartDefaults,
+      plugins:{ ...chartDefaults.plugins,
+        tooltip:{ ...chartDefaults.plugins.tooltip,
+          callbacks:{ label: ctx => ' ' + fmtFull(ctx.raw) + '回' }
+        }
+      }
+    }
+  });
+}
+
 // ── メインレンダリング ──
 function render(){
   renderKPI();
   initPeriodBar();
   renderCharts();
+  renderDailyViewChart();
   renderVideoTable();
 }
 

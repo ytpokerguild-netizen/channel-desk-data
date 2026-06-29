@@ -121,9 +121,10 @@ def fetch_video_details(api_key, video_ids):
 # 既存 data.json からスナップショットを読み込む
 # （subscribersフィールドを持つ行のみ保持。デルタ形式は除去）
 # ──────────────────────────────────────────
-def load_existing_snapshots():
+def load_existing_data():
+    """既存data.jsonからスナップショットとanalytics_daily_viewsを返す。"""
     if not os.path.exists(OUTPUT_FILE):
-        return []
+        return [], []
     try:
         with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
             existing = json.load(f)
@@ -131,10 +132,11 @@ def load_existing_snapshots():
             d for d in existing.get("daily", [])
             if "subscribers" in d and d.get("subscribers", 0) > 0
         ]
-        return snapshots
+        analytics = existing.get("analytics_daily_views", [])
+        return snapshots, analytics
     except Exception as e:
         print(f"[WARN] 既存データの読み込みに失敗: {e}")
-        return []
+        return [], []
 
 # ──────────────────────────────────────────
 # メイン
@@ -152,8 +154,8 @@ def main():
     videos = fetch_video_details(api_key, ids)
     print(f"  動画 {len(videos)} 本取得")
 
-    # 既存スナップショットを読み込み（デルタ形式・ゼロ埋め行を除去）
-    existing = load_existing_snapshots()
+    # 既存データを読み込み（スナップショット＋analytics_daily_views）
+    existing, analytics_daily_views = load_existing_data()
     print(f"[INFO] 既存スナップショット: {len(existing)} 日分")
 
     # 今日以外を保持し、今日分を追加（上書き）
@@ -176,9 +178,10 @@ def main():
             "data_source":   "youtube_data_api_v3",
             "note":          "daily はスナップショット蓄積。watch_minutes/revenue_jpy は Analytics API 必要のため常に0。",
         },
-        "daily":     daily,
-        "videos":    videos,
-        "breakdown": {"device": [], "country": [], "traffic_source": []},
+        "daily":                daily,
+        "analytics_daily_views": analytics_daily_views,
+        "videos":               videos,
+        "breakdown":            {"device": [], "country": [], "traffic_source": []},
     }
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
