@@ -199,17 +199,30 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
         <button onclick="setQuick(0,this)">全期間</button>
       </div>
       <div class="divider"></div>
-      <label>開始</label>
+      <label>A</label>
       <input type="date" id="dateFrom" onchange="onDateChange()">
       <label>〜</label>
       <input type="date" id="dateTo" onchange="onDateChange()">
+      <button class="btn" id="compareBtn" onclick="toggleCompare()" style="margin-left:4px;font-size:11px;padding:5px 11px">比較</button>
       <span class="range-label" id="rangeLabel"></span>
+    </div>
+    <div class="period-bar" id="periodB" style="display:none;margin-top:8px">
+      <label style="font-size:12px;color:var(--gold);font-weight:600;margin-right:4px">B</label>
+      <input type="date" id="dateFromB" onchange="onDateChangeB()">
+      <label>〜</label>
+      <input type="date" id="dateToB" onchange="onDateChangeB()">
+      <span class="range-label" id="rangeLabelB"></span>
+    </div>
+    <!-- Compare card -->
+    <div class="card" id="compareCard" style="margin-bottom:14px;display:none">
+      <h3><span class="dot" style="background:var(--gold)"></span>期間比較</h3>
+      <div id="compareContent"></div>
     </div>
 
     <!-- Charts row -->
     <div class="grid2">
       <div class="card">
-        <h3><span class="dot"></span>登録者推移</h3>
+        <h3><span class="dot"></span>日次登録者増減</h3>
         <div class="chart-box"><canvas id="subChart"></canvas></div>
       </div>
       <div class="card">
@@ -218,15 +231,6 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
       </div>
     </div>
 
-    <!-- Daily views chart (YouTube Studio data) -->
-    <div class="card" id="dailyViewsCard" style="margin-bottom:16px;display:none">
-      <h3>
-        <span class="dot" style="background:var(--up)"></span>
-        日次視聴数推移
-        <span style="margin-left:auto;font-size:11px;color:var(--muted-2);text-transform:none;font-family:'Noto Sans JP',sans-serif">YouTube Studio エクスポート</span>
-      </h3>
-      <div class="chart-box tall"><canvas id="dailyViewChart"></canvas></div>
-    </div>
 
     <!-- Video ranking -->
     <div class="card" style="margin-bottom:16px">
@@ -266,6 +270,8 @@ const DATA_URL = window.location.protocol === 'file:'
 let G = null; // global data
 let subChart = null, viewChart = null;
 let filterFrom = null, filterTo = null; // ISO date strings or null
+let compareMode = false;
+let filterFromB = null, filterToB = null;
 
 // ── フォーマット ──
 function fmt(n){
@@ -289,8 +295,7 @@ async function loadData(){
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     document.getElementById('statusDot').className = 'status-dot live';
-    const ft = new Date(G.meta.fetched_at);
-    document.getElementById('updatedLabel').textContent = '更新: ' + ft.toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    document.getElementById('updatedLabel').textContent = '更新: ' + G.meta.data_through.replace(/-/g, '/');
     document.getElementById('footNote').textContent = 'channel-desk-data · ' + G.meta.channel_id + ' · ' + G.meta.fetched_at.slice(0,10);
   } catch(e) {
     document.getElementById('loadingState').style.display = 'none';
@@ -488,64 +493,131 @@ function initPeriodBar(){
 function renderCharts(){
   renderSubChart();
   renderViewChart();
-  renderDailyViewChart();
+  renderCompare();
   updateRangeLabel();
+  updateRangeLabelB();
+}
+
+function filteredDailyB(){
+  let data = allDaily();
+  if(filterFromB) data = data.filter(d => d.date >= filterFromB);
+  if(filterToB)   data = data.filter(d => d.date <= filterToB);
+  return data;
 }
 
 function renderSubChart(){
-  const data   = filteredDaily();
-  const labels = data.map(d=>d.date.slice(5));
-  const vals   = data.map(d=>d.subscribers);
+  const dataA = filteredDaily();
+  if(dataA.length < 2){ if(subChart){ subChart.destroy(); subChart=null; } return; }
+
+  const valsA   = dataA.slice(1).map((d,i) => d.subscribers - dataA[i].subscribers);
+  let chartLabels = dataA.slice(1).map(d => d.date.slice(5));
+
+  let datasets = [{
+    label:'期間 A',
+    data: valsA,
+    backgroundColor: valsA.map(v => v >= 0 ? 'rgba(201,162,39,.6)' : 'rgba(226,112,110,.6)'),
+    borderColor:     valsA.map(v => v >= 0 ? 'rgba(201,162,39,.9)' : 'rgba(226,112,110,.9)'),
+    borderWidth:1, borderRadius:3,
+  }];
+
+  if(compareMode && filterFromB){
+    const dataB = filteredDailyB();
+    if(dataB.length >= 2){
+      const valsB = dataB.slice(1).map((d,i) => d.subscribers - dataB[i].subscribers);
+      const maxLen = Math.max(valsA.length, valsB.length);
+      chartLabels = Array.from({length:maxLen}, (_,i) => `Day ${i+1}`);
+      datasets[0].data = Array.from({length:maxLen}, (_,i) => valsA[i] ?? null);
+      datasets.push({
+        label:'期間 B',
+        data: Array.from({length:maxLen}, (_,i) => valsB[i] ?? null),
+        backgroundColor: valsB.map(v => v >= 0 ? 'rgba(91,214,138,.6)' : 'rgba(226,112,110,.4)'),
+        borderColor:     valsB.map(v => v >= 0 ? 'rgba(91,214,138,.9)' : 'rgba(226,112,110,.7)'),
+        borderWidth:1, borderRadius:3,
+      });
+    }
+  }
 
   if(subChart) subChart.destroy();
   subChart = new Chart(document.getElementById('subChart'), {
-    type:'line',
-    data:{
-      labels,
-      datasets:[{
-        data:vals,
-        borderColor:'#C9A227', borderWidth:2,
-        backgroundColor:'rgba(201,162,39,.10)',
-        fill:true, tension:.35, pointRadius:0, pointHoverRadius:4,
-        pointHoverBackgroundColor:'#C9A227'
-      }]
-    },
+    type:'bar',
+    data:{ labels:chartLabels, datasets },
     options:{ ...chartDefaults,
       plugins:{ ...chartDefaults.plugins,
+        legend:{ display: compareMode && datasets.length > 1, labels:{ color:'#8FA396', font:{size:11} } },
         tooltip:{ ...chartDefaults.plugins.tooltip,
-          callbacks:{ label: ctx => ' ' + fmtFull(ctx.raw) + '人' }
+          callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${(ctx.raw??0) >= 0 ? '+' : ''}${fmtFull(ctx.raw??0)}人` }
         }
       }
     }
   });
 }
 
-function renderViewChart(){
-  const data = filteredDaily();
-  if(data.length < 2){
-    if(viewChart){ viewChart.destroy(); viewChart = null; }
-    return;
+// ── 統合ビューデータ（analytics_daily_views 2025 + スナップショット差分 2026）──
+function allViewData(){
+  const map = new Map();
+  (G.analytics_daily_views || []).forEach(d => {
+    if(d.views > 0) map.set(d.date, {date:d.date, views:d.views});
+  });
+  const daily = allDaily();
+  for(let i=1; i<daily.length; i++){
+    const delta = Math.max(0, daily[i].total_views - daily[i-1].total_views);
+    map.set(daily[i].date, {date:daily[i].date, views:delta});
   }
-  // 連続スナップショット差分で日次再生数を計算
-  const labels = data.slice(1).map(d => d.date.slice(5));
-  const vals   = data.slice(1).map((d,i) => Math.max(0, d.total_views - data[i].total_views));
+  return [...map.values()].sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function filteredViewData(){
+  let d = allViewData();
+  if(filterFrom) d = d.filter(v => v.date >= filterFrom);
+  if(filterTo)   d = d.filter(v => v.date <= filterTo);
+  return d;
+}
+
+function filteredViewDataB(){
+  let d = allViewData();
+  if(filterFromB) d = d.filter(v => v.date >= filterFromB);
+  if(filterToB)   d = d.filter(v => v.date <= filterToB);
+  return d;
+}
+
+function renderViewChart(){
+  const dataA = filteredViewData();
+  if(!dataA.length){ if(viewChart){ viewChart.destroy(); viewChart=null; } return; }
+
+  let chartLabels = dataA.map(d => d.date.slice(5));
+  let datasets = [{
+    label:'期間 A',
+    data: dataA.map(d => d.views),
+    backgroundColor:'rgba(91,214,138,.45)',
+    borderColor:'rgba(91,214,138,.8)',
+    borderWidth:1, borderRadius:2,
+  }];
+
+  if(compareMode && filterFromB){
+    const dataB = filteredViewDataB();
+    if(dataB.length){
+      const maxLen = Math.max(dataA.length, dataB.length);
+      chartLabels = Array.from({length:maxLen}, (_,i) => `Day ${i+1}`);
+      datasets[0].data = Array.from({length:maxLen}, (_,i) => dataA[i]?.views ?? null);
+      datasets.push({
+        label:'期間 B',
+        data: Array.from({length:maxLen}, (_,i) => dataB[i]?.views ?? null),
+        backgroundColor:'rgba(201,162,39,.45)',
+        borderColor:'rgba(201,162,39,.8)',
+        borderWidth:1, borderRadius:2,
+      });
+    }
+  }
 
   if(viewChart) viewChart.destroy();
   viewChart = new Chart(document.getElementById('viewChart'), {
     type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        data:vals,
-        backgroundColor:'rgba(91,214,138,.45)',
-        borderColor:'rgba(91,214,138,.8)',
-        borderWidth:1, borderRadius:3,
-      }]
-    },
+    data:{ labels:chartLabels, datasets },
     options:{ ...chartDefaults,
       plugins:{ ...chartDefaults.plugins,
+        legend:{ display: compareMode && datasets.length > 1, labels:{ color:'#8FA396', font:{size:11} } },
         tooltip:{ ...chartDefaults.plugins.tooltip,
-          callbacks:{ label: ctx => ' ' + fmtFull(ctx.raw) + '回' }
+          callbacks:{ label: ctx => ` ${ctx.dataset.label}: ${fmtFull(ctx.raw??0)}回` }
         }
       }
     }
@@ -581,47 +653,100 @@ function renderVideoTable(){
   document.getElementById('videoBody').innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:30px">動画データなし</td></tr>';
 }
 
-// ── 日次視聴数チャート（YouTube Studio analytics_daily_views） ──
-let dailyViewChart = null;
-function renderDailyViewChart(){
-  const avData = G.analytics_daily_views;
-  if(!avData || !avData.length){
-    document.getElementById('dailyViewsCard').style.display = 'none';
-    return;
-  }
-  document.getElementById('dailyViewsCard').style.display = 'block';
-
-  // 期間フィルター適用
-  let data = avData;
-  if(filterFrom) data = data.filter(d => d.date >= filterFrom);
-  if(filterTo)   data = data.filter(d => d.date <= filterTo);
-  if(!data.length) data = avData; // フィルター外なら全期間表示
-
-  const labels = data.map(d => d.date.slice(5));
-  const vals   = data.map(d => d.views);
-
-  if(dailyViewChart) dailyViewChart.destroy();
-  dailyViewChart = new Chart(document.getElementById('dailyViewChart'), {
-    type:'bar',
-    data:{
-      labels,
-      datasets:[{
-        data: vals,
-        backgroundColor:'rgba(91,214,138,.45)',
-        borderColor:'rgba(91,214,138,.8)',
-        borderWidth:1,
-        borderRadius:2,
-      }]
-    },
-    options:{
-      ...chartDefaults,
-      plugins:{ ...chartDefaults.plugins,
-        tooltip:{ ...chartDefaults.plugins.tooltip,
-          callbacks:{ label: ctx => ' ' + fmtFull(ctx.raw) + '回' }
-        }
-      }
+// ── 比較モード ──
+function toggleCompare(){
+  compareMode = !compareMode;
+  const btn = document.getElementById('compareBtn');
+  const periodB = document.getElementById('periodB');
+  if(compareMode){
+    btn.style.borderColor = 'var(--gold)';
+    btn.style.background  = 'rgba(201,162,39,.15)';
+    periodB.style.display = 'flex';
+    // 期間Bを期間Aの直前の同じ日数に自動設定
+    if(filterFrom && filterTo){
+      const daysA = Math.round((new Date(filterTo) - new Date(filterFrom)) / 86400000) + 1;
+      const toB   = new Date(filterFrom + 'T00:00:00');
+      toB.setDate(toB.getDate() - 1);
+      const fromB = new Date(toB);
+      fromB.setDate(fromB.getDate() - daysA + 1);
+      filterFromB = fromB.toISOString().slice(0,10);
+      filterToB   = toB.toISOString().slice(0,10);
+      document.getElementById('dateFromB').value = filterFromB;
+      document.getElementById('dateToB').value   = filterToB;
     }
-  });
+  } else {
+    btn.style.borderColor = '';
+    btn.style.background  = '';
+    periodB.style.display = 'none';
+    document.getElementById('compareCard').style.display = 'none';
+    filterFromB = null; filterToB = null;
+  }
+  renderCharts();
+}
+
+function onDateChangeB(){
+  filterFromB = document.getElementById('dateFromB').value || null;
+  filterToB   = document.getElementById('dateToB').value   || null;
+  updateRangeLabelB();
+  renderCharts();
+}
+
+function updateRangeLabelB(){
+  const el = document.getElementById('rangeLabelB');
+  if(!el) return;
+  if(!filterFromB && !filterToB){ el.textContent=''; return; }
+  const from = filterFromB || '';
+  const to   = filterToB   || '';
+  el.textContent = from.replace(/-/g,'/') + ' 〜 ' + to.replace(/-/g,'/');
+}
+
+function renderCompare(){
+  const card = document.getElementById('compareCard');
+  if(!compareMode || !filterFromB){ card.style.display='none'; return; }
+  card.style.display = 'block';
+
+  const avA = filteredViewData();
+  const avB = filteredViewDataB();
+  const dA  = filteredDaily();
+  const dB  = filteredDailyB();
+
+  const totalA = avA.reduce((s,d) => s+d.views, 0);
+  const totalB = avB.reduce((s,d) => s+d.views, 0);
+  const avgA   = avA.length ? Math.round(totalA/avA.length) : 0;
+  const avgB   = avB.length ? Math.round(totalB/avB.length) : 0;
+  const subA   = dA.length >= 2 ? dA[dA.length-1].subscribers - dA[0].subscribers : null;
+  const subB   = dB.length >= 2 ? dB[dB.length-1].subscribers - dB[0].subscribers : null;
+
+  const pA = (filterFrom||'').replace(/-/g,'/') + '〜' + (filterTo||'').replace(/-/g,'/');
+  const pB = (filterFromB||'').replace(/-/g,'/') + '〜' + (filterToB||'').replace(/-/g,'/');
+
+  function diffTd(a, b, fmtFn){
+    if(a===null||b===null) return '<td class="num" style="color:var(--muted)">—</td>';
+    const d = b - a;
+    const col = d > 0 ? 'var(--up)' : d < 0 ? 'var(--down)' : 'var(--muted)';
+    const sign = d > 0 ? '+' : '';
+    return `<td class="num" style="color:${col}">${sign}${fmtFn(d)}</td>`;
+  }
+
+  document.getElementById('compareContent').innerHTML = `
+    <table>
+      <thead><tr>
+        <th>指標</th>
+        <th class="num" style="color:var(--up)">A&nbsp;<span style="font-size:10px;font-weight:400;color:var(--muted)">${pA}</span></th>
+        <th class="num" style="color:var(--gold)">B&nbsp;<span style="font-size:10px;font-weight:400;color:var(--muted)">${pB}</span></th>
+        <th class="num">B−A</th>
+      </tr></thead>
+      <tbody>
+        <tr><td>日数</td><td class="num">${avA.length}日</td><td class="num">${avB.length}日</td><td class="num" style="color:var(--muted)">—</td></tr>
+        <tr><td>総再生数</td><td class="num">${fmtFull(totalA)}回</td><td class="num">${fmtFull(totalB)}回</td>${diffTd(totalA,totalB,n=>fmtFull(Math.abs(n))+'回')}</tr>
+        <tr><td>平均日次再生</td><td class="num">${fmtFull(avgA)}回</td><td class="num">${fmtFull(avgB)}回</td>${diffTd(avgA,avgB,n=>fmtFull(Math.abs(n))+'回')}</tr>
+        <tr><td>登録者増減</td>
+          <td class="num">${subA!==null?(subA>=0?'+':'')+subA.toLocaleString()+'人':'—'}</td>
+          <td class="num">${subB!==null?(subB>=0?'+':'')+subB.toLocaleString()+'人':'—'}</td>
+          ${subA!==null&&subB!==null?diffTd(subA,subB,n=>Math.abs(n).toLocaleString()+'人'):'<td class="num" style="color:var(--muted)">—</td>'}
+        </tr>
+      </tbody>
+    </table>`;
 }
 
 // ── メインレンダリング ──
@@ -629,7 +754,6 @@ function render(){
   renderKPI();
   initPeriodBar();
   renderCharts();
-  renderDailyViewChart();
   renderVideoTable();
 }
 
