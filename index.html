@@ -322,7 +322,7 @@ function renderKPI(){
     },
     {
       label:'収集日数', icon:'📅',
-      val: daily.length, unit:'日',
+      val: [...new Set(daily.map(d=>d.date))].length, unit:'日',
       sub: daily[0].date.replace(/-/g,'/') + ' 〜',
       delta: null
     },
@@ -371,11 +371,29 @@ const chartDefaults = {
 };
 
 // ── 期間フィルター ──
+// 同日複数エントリを日付でdedup（最後のエントリを使用）
+function dedupeByDate(arr){
+  const map = new Map();
+  arr.forEach(d => map.set(d.date, d));
+  return [...map.values()].sort((a,b) => a.date.localeCompare(b.date));
+}
+
+function allDaily(){
+  return dedupeByDate(G.daily.filter(d => d.subscribers > 0 || d.total_views > 0));
+}
+
 function filteredDaily(){
-  let data = G.daily.filter(d => d.subscribers > 0 || d.total_views > 0);
+  let data = allDaily();
   if(filterFrom) data = data.filter(d => d.date >= filterFrom);
   if(filterTo)   data = data.filter(d => d.date <= filterTo);
   return data;
+}
+
+// N日前のISO日付を返す（カレンダー日付ベース）
+function dateNDaysAgo(baseDate, n){
+  const d = new Date(baseDate + 'T00:00:00');
+  d.setDate(d.getDate() - n + 1);
+  return d.toISOString().slice(0, 10);
 }
 
 function updateRangeLabel(){
@@ -388,14 +406,14 @@ function updateRangeLabel(){
 function setQuick(days, btn){
   document.querySelectorAll('#quickSeg button').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  const all = G.daily.filter(d => d.subscribers > 0 || d.total_views > 0);
-  if(days === 0){
+  const all = allDaily();
+  if(days === 0 || !all.length){
     filterFrom = null; filterTo = null;
     document.getElementById('dateFrom').value = '';
     document.getElementById('dateTo').value = '';
   } else {
-    const to   = all[all.length-1]?.date || '';
-    const from = all.length >= days ? all[all.length-days].date : all[0]?.date || '';
+    const to   = all[all.length-1].date;
+    const from = dateNDaysAgo(to, days);
     filterFrom = from; filterTo = to;
     document.getElementById('dateFrom').value = from;
     document.getElementById('dateTo').value   = to;
@@ -406,19 +424,15 @@ function setQuick(days, btn){
 function onDateChange(){
   filterFrom = document.getElementById('dateFrom').value || null;
   filterTo   = document.getElementById('dateTo').value   || null;
-  // クイックボタンの選択を解除
   document.querySelectorAll('#quickSeg button').forEach(b=>b.classList.remove('on'));
   renderCharts();
 }
 
 function initPeriodBar(){
-  // 初期: 全期間
-  const all = G.daily.filter(d => d.subscribers > 0 || d.total_views > 0);
+  const all = allDaily();
   if(!all.length) return;
-  // デフォルト30日
-  const days = 30;
   const to   = all[all.length-1].date;
-  const from = all.length >= days ? all[all.length-days].date : all[0].date;
+  const from = dateNDaysAgo(to, 30);
   filterFrom = from; filterTo = to;
   document.getElementById('dateFrom').value = from;
   document.getElementById('dateTo').value   = to;
