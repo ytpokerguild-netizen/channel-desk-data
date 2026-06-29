@@ -116,9 +116,28 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
 .video-info{display:flex;align-items:center;gap:10px}
 
 /* ── Seg control ── */
-.seg{display:inline-flex;margin-left:auto;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
 .seg button{background:transparent;border:none;color:var(--muted);font-family:"Noto Sans JP",sans-serif;font-size:11px;padding:5px 12px;cursor:pointer}
 .seg button.on{background:var(--gold);color:#1a1206;font-weight:700}
+
+/* ── Period bar ── */
+.period-bar{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:10px 14px;margin-bottom:14px;
+}
+.period-bar .seg{margin:0}
+.period-bar .divider{width:1px;height:20px;background:var(--line-strong);flex-shrink:0}
+.period-bar label{font-size:12px;color:var(--muted);white-space:nowrap}
+.period-bar input[type=date]{
+  background:var(--panel-2);color:var(--ink);border:1px solid var(--line-strong);
+  border-radius:7px;padding:5px 9px;font-family:"Noto Sans JP",sans-serif;font-size:12px;
+  color-scheme:dark;
+}
+.period-bar .range-label{
+  font-family:"Oswald",sans-serif;font-size:12px;color:var(--muted-2);
+  letter-spacing:.04em;margin-left:auto;white-space:nowrap;
+}
 
 /* ── Notice ── */
 .notice{
@@ -171,18 +190,26 @@ tbody tr:hover{background:rgba(255,255,255,.025)}
     <!-- KPI -->
     <div class="kpis" id="kpiGrid"></div>
 
+    <!-- Period bar -->
+    <div class="period-bar">
+      <div class="seg" id="quickSeg">
+        <button class="on" onclick="setQuick(7,this)">7日</button>
+        <button onclick="setQuick(30,this)">30日</button>
+        <button onclick="setQuick(90,this)">90日</button>
+        <button onclick="setQuick(0,this)">全期間</button>
+      </div>
+      <div class="divider"></div>
+      <label>開始</label>
+      <input type="date" id="dateFrom" onchange="onDateChange()">
+      <label>〜</label>
+      <input type="date" id="dateTo" onchange="onDateChange()">
+      <span class="range-label" id="rangeLabel"></span>
+    </div>
+
     <!-- Charts row -->
     <div class="grid2">
       <div class="card">
-        <h3>
-          <span class="dot"></span>
-          登録者推移
-          <div class="seg" id="subSeg">
-            <button class="on" data-days="30" onclick="setSubRange(30,this)">30日</button>
-            <button data-days="90" onclick="setSubRange(90,this)">90日</button>
-            <button data-days="0" onclick="setSubRange(0,this)">全期間</button>
-          </div>
-        </h3>
+        <h3><span class="dot"></span>登録者推移</h3>
         <div class="chart-box"><canvas id="subChart"></canvas></div>
       </div>
       <div class="card">
@@ -228,7 +255,7 @@ const DATA_URL = window.location.protocol === 'file:'
 
 let G = null; // global data
 let subChart = null, viewChart = null;
-let subDays = 30;
+let filterFrom = null, filterTo = null; // ISO date strings or null
 
 // ── フォーマット ──
 function fmt(n){
@@ -343,19 +370,71 @@ const chartDefaults = {
   }
 };
 
-// ── 登録者グラフ ──
-function setSubRange(days, btn){
-  subDays = days;
-  document.querySelectorAll('#subSeg button').forEach(b=>b.classList.remove('on'));
+// ── 期間フィルター ──
+function filteredDaily(){
+  let data = G.daily.filter(d => d.subscribers > 0 || d.total_views > 0);
+  if(filterFrom) data = data.filter(d => d.date >= filterFrom);
+  if(filterTo)   data = data.filter(d => d.date <= filterTo);
+  return data;
+}
+
+function updateRangeLabel(){
+  const data = filteredDaily();
+  const el = document.getElementById('rangeLabel');
+  if(!data.length){ el.textContent = ''; return; }
+  el.textContent = data[0].date.replace(/-/g,'/') + ' 〜 ' + data[data.length-1].date.replace(/-/g,'/') + '（' + data.length + '日）';
+}
+
+function setQuick(days, btn){
+  document.querySelectorAll('#quickSeg button').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
+  const all = G.daily.filter(d => d.subscribers > 0 || d.total_views > 0);
+  if(days === 0){
+    filterFrom = null; filterTo = null;
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value = '';
+  } else {
+    const to   = all[all.length-1]?.date || '';
+    const from = all.length >= days ? all[all.length-days].date : all[0]?.date || '';
+    filterFrom = from; filterTo = to;
+    document.getElementById('dateFrom').value = from;
+    document.getElementById('dateTo').value   = to;
+  }
+  renderCharts();
+}
+
+function onDateChange(){
+  filterFrom = document.getElementById('dateFrom').value || null;
+  filterTo   = document.getElementById('dateTo').value   || null;
+  // クイックボタンの選択を解除
+  document.querySelectorAll('#quickSeg button').forEach(b=>b.classList.remove('on'));
+  renderCharts();
+}
+
+function initPeriodBar(){
+  // 初期: 全期間
+  const all = G.daily.filter(d => d.subscribers > 0 || d.total_views > 0);
+  if(!all.length) return;
+  // デフォルト30日
+  const days = 30;
+  const to   = all[all.length-1].date;
+  const from = all.length >= days ? all[all.length-days].date : all[0].date;
+  filterFrom = from; filterTo = to;
+  document.getElementById('dateFrom').value = from;
+  document.getElementById('dateTo').value   = to;
+  document.querySelector('#quickSeg button:nth-child(2)').classList.add('on');
+  document.querySelector('#quickSeg button:first-child').classList.remove('on');
+}
+
+// ── グラフ描画 ──
+function renderCharts(){
   renderSubChart();
+  renderViewChart();
+  updateRangeLabel();
 }
 
 function renderSubChart(){
-  const daily = G.daily;
-  let data = daily.filter(d=>d.subscribers > 0);
-  if(subDays > 0 && data.length > subDays) data = data.slice(-subDays);
-
+  const data   = filteredDaily();
   const labels = data.map(d=>d.date.slice(5));
   const vals   = data.map(d=>d.subscribers);
 
@@ -382,11 +461,10 @@ function renderSubChart(){
   });
 }
 
-// ── 総再生数グラフ ──
 function renderViewChart(){
-  const daily = G.daily.filter(d=>d.total_views > 0);
-  const labels = daily.map(d=>d.date.slice(5));
-  const vals   = daily.map(d=>d.total_views);
+  const data   = filteredDaily();
+  const labels = data.map(d=>d.date.slice(5));
+  const vals   = data.map(d=>d.total_views);
 
   if(viewChart) viewChart.destroy();
   viewChart = new Chart(document.getElementById('viewChart'), {
@@ -443,8 +521,8 @@ function renderVideoTable(){
 // ── メインレンダリング ──
 function render(){
   renderKPI();
-  renderSubChart();
-  renderViewChart();
+  initPeriodBar();
+  renderCharts();
   renderVideoTable();
 }
 
