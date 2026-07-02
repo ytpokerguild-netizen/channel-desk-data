@@ -2010,7 +2010,7 @@ function renderAll(){
 }
 
 // ── パスワードゲート ──
-const PW_HASH = 'REPLACE_ME_HASH';  // set_password.sh で設定
+const PW_HASH = 'aa0316214deed9d4bb93e14e46dec14343210cbf679b0348cde5330fc6e47308';  // set_password.sh で設定
 async function sha256hex(str){
   const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
   return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
