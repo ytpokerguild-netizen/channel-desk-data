@@ -1142,10 +1142,19 @@ function renderGrowth(){
         ${videos.slice(0,100).map((v,i)=>{
           const n=i+1;
           const medal=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
-          const growth = snapshotGrowthMap[v.video_id];
-          const growthBadge = growth !== undefined
-            ? `<span class="growth-badge ${growth>=0?'up':'down'}">${growth>=0?'▲':'▼'}${Math.abs(growth).toFixed(1)}%</span>`
-            : '';
+          // 伸び率: スナップショット優先。不足時は 期間再生数÷期間前累計 で算出
+          let growth = snapshotGrowthMap[v.video_id];
+          let isNew = false;
+          if(growth === undefined && v.period_views > 0){
+            const base = (v.views||0) - v.period_views;  // 期間開始時点の推定累計
+            if(base > 0) growth = v.period_views / base * 100;
+            else isNew = true;  // 期間内の再生がほぼ全て = 期間中に投稿された動画
+          }
+          const growthBadge = isNew
+            ? `<span class="growth-badge new">NEW</span>`
+            : growth !== undefined
+              ? `<span class="growth-badge ${growth>=0?'up':'down'}">${growth>=0?'▲':'▼'}${Math.abs(growth).toFixed(1)}%</span>`
+              : '';
           return `
           <div class="video-card" onclick="openVideoModalFromGrowth('${v.video_id}',${n})">
             <div class="vc-rank ${n<=3?'top3':''}">${medal}</div>
