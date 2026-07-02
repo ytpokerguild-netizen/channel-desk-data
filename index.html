@@ -516,7 +516,7 @@ body{
           <div class="chart-box" style="height:220px"><canvas id="dowChart"></canvas></div>
         </div>
         <div class="chart-card standalone">
-          <div class="chart-title"><span class="ct-label">動画尺別 平均再生数</span></div>
+          <div class="chart-title"><span class="ct-label">動画尺別 平均再生数（ショートのみ）</span></div>
           <div class="chart-box" style="height:220px"><canvas id="durationChart"></canvas></div>
         </div>
       </div>
@@ -1491,16 +1491,19 @@ function renderOps(){
 
   // ── 動画尺別 平均再生数 ──
   if(durationChart){ durationChart.destroy(); durationChart=null; }
+  // ショート（3分以内）のみを対象に秒単位でバケット分割
   const durBuckets = [
-    {label:'〜3分',   min:0,    max:180},
-    {label:'3〜10分', min:180,  max:600},
-    {label:'10〜20分',min:600,  max:1200},
-    {label:'20〜30分',min:1200, max:1800},
-    {label:'30分〜',  min:1800, max:Infinity},
+    {label:'〜30秒',   min:1,   max:30},
+    {label:'30〜40秒', min:30,  max:40},
+    {label:'40〜50秒', min:40,  max:50},
+    {label:'50〜60秒', min:50,  max:60},
+    {label:'60〜75秒', min:60,  max:75},
+    {label:'75秒〜3分',min:75,  max:181},
   ];
   const durViews = durBuckets.map(()=>0), durCount = durBuckets.map(()=>0);
   videos.forEach(v=>{
     const s = v.duration_sec||0;
+    if(s<=0 || s>180) return;  // ショート以外（3分超・尺不明）は除外
     const bi = durBuckets.findIndex(b=>s>=b.min&&s<b.max);
     if(bi>=0){ durViews[bi]+=v.views; durCount[bi]++; }
   });
