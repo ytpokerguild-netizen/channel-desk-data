@@ -359,6 +359,19 @@ body{
 </style>
 </head>
 <body>
+
+<!-- ── パスワードゲート ── -->
+<div id="pwGate" style="position:fixed;inset:0;z-index:99999;background:#0F1A14;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+  <div style="font-size:15px;color:#8FA396;letter-spacing:.08em">CHANNEL DESK</div>
+  <div style="display:flex;gap:8px">
+    <input id="pwInput" type="password" placeholder="パスワード" autocomplete="off"
+      style="background:#1B2E23;border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:10px 14px;color:#E8EDE9;font-size:14px;width:220px;outline:none">
+    <button id="pwBtn" onclick="pwCheck()"
+      style="background:#C9A227;border:0;border-radius:8px;padding:10px 18px;color:#14140E;font-weight:700;font-size:13px;cursor:pointer">開く</button>
+  </div>
+  <div id="pwError" style="font-size:12px;color:#E2706E;visibility:hidden">パスワードが違います</div>
+</div>
+
 <div class="wrap">
 
   <!-- Topbar -->
@@ -1996,7 +2009,32 @@ function renderAll(){
   if(activeTab==='videos')   renderVideoList();
 }
 
-loadData();
+// ── パスワードゲート ──
+const PW_HASH = 'REPLACE_ME_HASH';  // set_password.sh で設定
+async function sha256hex(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function pwCheck(){
+  const v = document.getElementById('pwInput').value;
+  if(await sha256hex(v) === PW_HASH){
+    sessionStorage.setItem('cd_unlocked','1');
+    document.getElementById('pwGate').remove();
+    loadData();
+  } else {
+    const e=document.getElementById('pwError');
+    e.style.visibility='visible';
+    document.getElementById('pwInput').value='';
+  }
+}
+document.getElementById('pwInput').addEventListener('keydown',e=>{if(e.key==='Enter')pwCheck();});
+if(PW_HASH === 'REPLACE_ME_HASH' || sessionStorage.getItem('cd_unlocked')==='1'){
+  // パスワード未設定 or このタブで認証済み → ゲートを外してそのまま表示
+  document.getElementById('pwGate').remove();
+  loadData();
+} else {
+  document.getElementById('pwInput').focus();
+}
 </script>
 </body>
 </html>
