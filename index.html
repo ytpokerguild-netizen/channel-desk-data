@@ -687,10 +687,21 @@ function allViewData(){
   // Analytics 日次を優先
   (G.analytics_daily||[]).forEach(d=>{if(d.views>0) map.set(d.date,{date:d.date,views:d.views});});
   // フォールバック: スナップショット差分
+  // スナップショットに欠損日がある場合は差分を日数で均等割りして暫定値を入れる
+  // （Analytics API は約2日遅れで確定するため、後日自動的に正確な値へ置き換わる）
   const daily = allDaily();
   for(let i=1;i<daily.length;i++){
+    const prev = new Date(daily[i-1].date+'T00:00:00');
+    const cur  = new Date(daily[i].date+'T00:00:00');
+    const gap  = Math.round((cur-prev)/86400000);
+    if(gap<=0) continue;
     const delta = Math.max(0, daily[i].total_views - daily[i-1].total_views);
-    if(!map.has(daily[i].date)) map.set(daily[i].date,{date:daily[i].date,views:delta});
+    const per   = Math.round(delta/gap);
+    for(let g=1; g<=gap; g++){
+      const dd = new Date(prev); dd.setDate(prev.getDate()+g);
+      const ds = dd.toISOString().slice(0,10);
+      if(!map.has(ds)) map.set(ds,{date:ds,views:per,estimated:gap>1});
+    }
   }
   return [...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
 }
