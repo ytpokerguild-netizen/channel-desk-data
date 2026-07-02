@@ -122,18 +122,21 @@ def fetch_channel_stats(api_key):
 # 動画リスト
 # ──────────────────────────────────────────────────────────
 def fetch_video_ids(api_key, max_videos=MAX_VIDEOS):
+    """アップロードプレイリスト（UU...）経由で全動画IDを取得。
+    search.list は取りこぼしが発生するため playlistItems を使用（quota も約1/100）。"""
+    playlist_id = "UU" + CHANNEL_ID[2:]
     ids, page_token = [], None
     while len(ids) < max_videos:
         params = {
-            "part": "id", "channelId": CHANNEL_ID,
-            "maxResults": 50, "order": "date", "type": "video", "key": api_key,
+            "part": "contentDetails", "playlistId": playlist_id,
+            "maxResults": 50, "key": api_key,
         }
         if page_token:
             params["pageToken"] = page_token
-        data = yt_get("search", params)
+        data = yt_get("playlistItems", params)
         if not data:
             break
-        ids       += [item["id"]["videoId"] for item in data.get("items", [])]
+        ids       += [it["contentDetails"]["videoId"] for it in data.get("items", [])]
         page_token = data.get("nextPageToken")
         if not page_token:
             break
@@ -307,40 +310,36 @@ def analytics_get(access_token, params):
 def fetch_channel_analytics_daily(access_token, start_date, end_date):
     """
     チャンネル日次データ → [{date, views, watch_min, subs_gained, subs_lost}]
-    ページネーションで全期間（チャンネル開設日〜昨日）を取得。
+    Analytics API は dimensions=day で pageToken を返さない（maxResults=200 が実質上限）。
+    180日チャンクに分割して全期間を取得する。
     """
-    result     = []
-    page_token = None
+    result   = []
+    s        = date.fromisoformat(start_date)
+    e        = date.fromisoformat(end_date)
+    chunk    = 180   # 200 未満で余裕を持たせる
 
-    while True:
+    while s <= e:
+        ce     = min(s + timedelta(days=chunk - 1), e)
         params = {
-            "ids":        "channel==MINE",
+            "ids":        f"channel=={CHANNEL_ID}",
             "dimensions": "day",
             "metrics":    "views,estimatedMinutesWatched,subscribersGained,subscribersLost",
-            "startDate":  start_date,
-            "endDate":    end_date,
+            "startDate":  s.isoformat(),
+            "endDate":    ce.isoformat(),
             "sort":       "day",
             "maxResults": 200,
         }
-        if page_token:
-            params["pageToken"] = page_token
-
         data = analytics_get(access_token, params)
-        if not data or "rows" not in data:
-            break
-
-        for row in data["rows"]:
-            result.append({
-                "date":        row[0],
-                "views":       int(row[1]),
-                "watch_min":   int(row[2]),
-                "subs_gained": int(row[3]),
-                "subs_lost":   int(row[4]),
-            })
-
-        page_token = data.get("nextPageToken")
-        if not page_token:
-            break
+        if data and "rows" in data:
+            for row in data["rows"]:
+                result.append({
+                    "date":        row[0],
+                    "views":       int(float(row[1])),
+                    "watch_min":   int(float(row[2])),
+                    "subs_gained": int(float(row[3])),
+                    "subs_lost":   int(float(row[4])),
+                })
+        s = ce + timedelta(days=1)
 
     return result
 
@@ -361,9 +360,9 @@ def fetch_video_period(access_token, days):
 
     while True:
         params = {
-            "ids":        "channel==MINE",
+            "ids":        f"channel=={CHANNEL_ID}",
             "dimensions": "video",
-            "metrics":    "views,estimatedMinutesWatched,averageViewDuration,impressions,impressionClickThroughRate",
+            "metrics":    "views,estimatedMinutesWatched,averageViewDuration",
             "startDate":  start_date,
             "endDate":    end_date,
             "sort":       "-views",
@@ -382,8 +381,6 @@ def fetch_video_period(access_token, days):
                 "views":       int(float(row[1])),
                 "watch_min":   int(float(row[2])),
                 "avg_dur_sec": int(float(row[3])),
-                "impressions": int(float(row[4])) if len(row) > 4 else 0,
-                "ctr":         round(float(row[5]) * 100, 2) if len(row) > 5 else 0.0,
             }
 
         page_token = data.get("nextPageToken")
@@ -414,7 +411,7 @@ def fetch_video_daily_all(access_token, all_video_ids, days=365):
         if (i+1) % 50 == 0 or i+1 == total:
             print(f"    [{i+1}/{total}]", flush=True)
         data = analytics_get(access_token, {
-            "ids":        "channel==MINE",
+            "ids":        f"channel=={CHANNEL_ID}",
             "dimensions": "day",
             "filters":    f"video=={vid_id}",
             "metrics":    "views,estimatedMinutesWatched",
@@ -472,7 +469,7 @@ def fetch_channel_extra_analytics(access_token, days=28):
 
     # ── CTR / インプレッション（dimensions=day が必要な指標はdimension付きで取得）──
     data = analytics_get(access_token, {
-        "ids":        "channel==MINE",
+        "ids":        f"channel=={CHANNEL_ID}",
         "dimensions": "day",
         "metrics":    "views,estimatedMinutesWatched,averageViewPercentage",
         "startDate":  start_date,
@@ -497,7 +494,7 @@ def fetch_channel_extra_analytics(access_token, days=28):
 
     # ── トラフィックソース ──
     data = analytics_get(access_token, {
-        "ids":        "channel==MINE",
+        "ids":        f"channel=={CHANNEL_ID}",
         "dimensions": "insightTrafficSourceType",
         "metrics":    "views,estimatedMinutesWatched",
         "startDate":  start_date,
@@ -522,7 +519,7 @@ def fetch_channel_extra_analytics(access_token, days=28):
     # ── 国別 Top15 ──
     # ※ province ディメンションは US のみ対応のため country ディメンションを使用
     data = analytics_get(access_token, {
-        "ids":        "channel==MINE",
+        "ids":        f"channel=={CHANNEL_ID}",
         "dimensions": "country",
         "metrics":    "views,estimatedMinutesWatched",
         "startDate":  start_date,
@@ -545,7 +542,7 @@ def fetch_channel_extra_analytics(access_token, days=28):
 
     # ── 新規 vs リピーター ──
     data = analytics_get(access_token, {
-        "ids":        "channel==MINE",
+        "ids":        f"channel=={CHANNEL_ID}",
         "dimensions": "subscribedStatus",
         "metrics":    "views,estimatedMinutesWatched",
         "startDate":  start_date,
@@ -592,7 +589,7 @@ def fetch_video_extra_analytics(access_token, top_video_ids, days=365):
 
         # 国別 Top8（province は US 専用のため country に変更）
         data = analytics_get(access_token, {
-            "ids":        "channel==MINE",
+            "ids":        f"channel=={CHANNEL_ID}",
             "dimensions": "country",
             "filters":    f"video=={vid_id}",
             "metrics":    "views",
@@ -610,7 +607,7 @@ def fetch_video_extra_analytics(access_token, top_video_ids, days=365):
 
         # 登録者別（新規 vs リピーター）
         data = analytics_get(access_token, {
-            "ids":        "channel==MINE",
+            "ids":        f"channel=={CHANNEL_ID}",
             "dimensions": "subscribedStatus",
             "filters":    f"video=={vid_id}",
             "metrics":    "views",
@@ -626,7 +623,7 @@ def fetch_video_extra_analytics(access_token, top_video_ids, days=365):
 
         # 流入経路 Top8（insightTrafficSourceType + filters=video==VID_ID）
         data = analytics_get(access_token, {
-            "ids":        "channel==MINE",
+            "ids":        f"channel=={CHANNEL_ID}",
             "dimensions": "insightTrafficSourceType",
             "filters":    f"video=={vid_id}",
             "metrics":    "views",
