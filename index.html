@@ -461,6 +461,7 @@ body{
         <button onclick="setGrowthPeriod(28,this)"        >28日</button>
         <button onclick="setGrowthPeriod(90,this)"        >90日</button>
         <button onclick="setGrowthPeriod(365,this)"       >365日</button>
+        <button onclick="setGrowthPeriod(0,this)"         >全期間</button>
       </div>
 
       <div id="growthContent"></div>
@@ -546,6 +547,13 @@ body{
     <div id="pane-videos" style="display:none">
       <div class="card">
         <h3><span class="dot"></span><span id="videoRankLabel">動画ランキング</span><span style="margin-left:auto;font-size:11px;color:var(--muted-2);text-transform:none;font-family:'Noto Sans JP',sans-serif" id="videoCount"></span></h3>
+        <div class="period-seg" id="videoRankSeg" style="margin-bottom:14px">
+          <button onclick="setVideoRankPeriod(0,this)" class="on">全期間</button>
+          <button onclick="setVideoRankPeriod(7,this)">7日</button>
+          <button onclick="setVideoRankPeriod(28,this)">28日</button>
+          <button onclick="setVideoRankPeriod(90,this)">90日</button>
+          <button onclick="setVideoRankPeriod(365,this)">365日</button>
+        </div>
         <div class="video-list" id="videoBody"></div>
       </div>
     </div>
@@ -610,6 +618,7 @@ let filterFromB = null, filterToB = null;
 let activeMetric = 'views';
 let activeTab = 'overview';
 let growthPeriod = 7;
+let videoRankPeriod = 0;  // 0=全期間
 let _rankVideos = [];
 
 // ════════════════════════════════
@@ -1038,6 +1047,13 @@ function renderOverview(){
 // ════════════════════════════════
 // 伸び率タブ
 // ════════════════════════════════
+function setVideoRankPeriod(days, btn){
+  videoRankPeriod = days;
+  document.querySelectorAll('#videoRankSeg button').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderVideoList();
+}
+
 function setGrowthPeriod(days, btn){
   growthPeriod = days;
   document.querySelectorAll('#growthSeg button').forEach(b=>b.classList.remove('on'));
@@ -1047,10 +1063,42 @@ function setGrowthPeriod(days, btn){
 
 function renderGrowth(){
   const vp = G.video_period || {};
+  const container = document.getElementById('growthContent');
+
+  // 全期間（growthPeriod === 0）: Data API 総再生数順
+  if(growthPeriod === 0){
+    const videos = (G.videos||[]).map(v=>({...v})).sort((a,b)=>b.views-a.views);
+    if(!videos.length){ container.innerHTML = '<div class="no-data">動画データがありません。</div>'; return; }
+    const maxV = videos[0].views || 1;
+    container.innerHTML = `
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+        総再生数ランキング（全期間・Data API）
+      </div>
+      <div class="video-list">
+        ${videos.slice(0,100).map((v,i)=>{
+          const n=i+1, medal=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
+          return `
+          <div class="video-card" onclick="openVideoModalFromGrowth('${v.video_id}',${n})">
+            <div class="vc-rank ${n<=3?'top3':''}">${medal}</div>
+            <img class="vc-thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
+            <div class="vc-body">
+              <div class="vc-title">${v.title}</div>
+              <div class="vc-meta">
+                <span class="vc-stat">👁 <strong>${fmtFull(v.views)}</strong>回</span>
+                ${v.likes?`<span class="vc-stat">👍 <strong>${fmtFull(v.likes)}</strong></span>`:''}
+                <span class="vc-date">${fmtDate(v.published_at)}</span>
+              </div>
+              <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.round(v.views/maxV*100)}%"></div></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+    return;
+  }
+
   const key = String(growthPeriod);
   const periodData = vp[key] || {};
   const vs = G.video_snapshots || [];
-  const container = document.getElementById('growthContent');
 
   // 期間データがある場合: video_period を使う
   if(Object.keys(periodData).length > 0){
@@ -1611,19 +1659,48 @@ function renderWeekly(){
 // 動画一覧タブ
 // ════════════════════════════════
 function renderVideoList(){
-  const videos = (G.videos||[]).map(v=>({...v})).sort((a,b)=>b.views-a.views);
+  const vp = G.video_period || {};
+  let videos, labelText;
+
+  if(videoRankPeriod === 0){
+    // 全期間（Data API 総再生数）
+    videos = (G.videos||[]).map(v=>({...v, _dv: v.views}))
+      .sort((a,b)=>b._dv-a._dv);
+    labelText = '動画ランキング（総再生数順）';
+  } else {
+    const key = String(videoRankPeriod);
+    const pd = vp[key] || {};
+    videos = (G.videos||[]).map(v=>{
+      const d = pd[v.video_id];
+      return d ? {...v, _dv: d.views, _wm: d.watch_min, _ad: d.avg_dur_sec, _ctr: d.ctr} : null;
+    }).filter(Boolean).sort((a,b)=>b._dv-a._dv);
+    labelText = `動画ランキング（直近${videoRankPeriod}日）`;
+  }
+
   _rankVideos = videos;
-  document.getElementById('videoRankLabel').textContent = '動画ランキング（総再生数順）';
+  document.getElementById('videoRankLabel').textContent = labelText;
   document.getElementById('videoCount').textContent = videos.length+'本';
 
-  const maxViews = videos[0]?.views||1;
+  const maxV = videos[0]?._dv || 1;
   document.getElementById('videoBody').innerHTML = videos.slice(0,200).map((v,i)=>{
     const n=i+1, medal=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
-    // 伸び率バッジ（video_periodの7日データがあれば）
-    const vp7 = ((G.video_period||{})['7']||{})[v.video_id];
-    const growthBadge = vp7
-      ? `<span class="growth-badge up">▲${fmtFull(vp7.views)}回/7日</span>`
-      : '';
+    let metaHtml;
+    if(videoRankPeriod === 0){
+      const vp7 = (vp['7']||{})[v.video_id];
+      const badge = vp7 ? `<span class="growth-badge up">▲${fmtFull(vp7.views)}回/7日</span>` : '';
+      metaHtml = `
+        <span class="vc-stat">👁 <strong>${fmt(v.views)}</strong></span>
+        <span class="vc-stat">👍 <strong>${fmtFull(v.likes)}</strong></span>
+        <span class="vc-stat">💬 <strong>${fmtFull(v.comments)}</strong></span>
+        ${v.duration_sec?`<span class="vc-stat">🎬 <strong>${fmtDur(v.duration_sec)}</strong></span>`:''}
+        ${badge}`;
+    } else {
+      metaHtml = `
+        <span class="vc-stat">👁 <strong>${fmtFull(v._dv)}</strong>回</span>
+        ${v._wm?`<span class="vc-stat">⏱ <strong>${fmtMin(v._wm)}</strong></span>`:''}
+        ${v._ad?`<span class="vc-stat">🎬 <strong>${fmtDur(v._ad)}</strong></span>`:''}
+        ${v._ctr?`<span class="vc-stat" title="CTR">🎯 <strong>${v._ctr}%</strong></span>`:''}`;
+    }
     return `
     <div class="video-card" onclick="openVideoModal(${i})">
       <div class="vc-rank ${n<=3?'top3':''}">${medal}</div>
@@ -1631,14 +1708,10 @@ function renderVideoList(){
       <div class="vc-body">
         <div class="vc-title">${v.title}</div>
         <div class="vc-meta">
-          <span class="vc-stat">👁 <strong>${fmt(v.views)}</strong></span>
-          <span class="vc-stat">👍 <strong>${fmtFull(v.likes)}</strong></span>
-          <span class="vc-stat">💬 <strong>${fmtFull(v.comments)}</strong></span>
-          ${v.duration_sec?`<span class="vc-stat">🎬 <strong>${fmtDur(v.duration_sec)}</strong></span>`:''}
-          ${growthBadge}
+          ${metaHtml}
           <span class="vc-date">${fmtDate(v.published_at)}</span>
         </div>
-        <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.round(v.views/maxViews*100)}%"></div></div>
+        <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.round(v._dv/maxV*100)}%"></div></div>
       </div>
     </div>`;
   }).join('');
