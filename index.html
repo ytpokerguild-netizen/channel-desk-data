@@ -262,7 +262,8 @@ body{
   background:var(--panel);border:1px solid var(--line-strong);
   border-radius:16px;width:100%;max-width:580px;
   box-shadow:0 24px 64px rgba(0,0,0,.6);
-  transform:translateY(12px);transition:transform .2s;overflow:hidden;
+  transform:translateY(12px);transition:transform .2s;
+  display:flex;flex-direction:column;max-height:90vh;overflow:hidden;
 }
 .vmodal-overlay.open .vmodal{transform:translateY(0)}
 .vmodal-header{
@@ -273,7 +274,8 @@ body{
 .vmodal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px;transition:color .15s}
 .vmodal-close:hover{color:var(--ink)}
 .vmodal-thumb{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;background:var(--panel-2)}
-.vmodal-body{padding:16px 18px 20px}
+.vmodal-thumb{flex-shrink:0}
+.vmodal-body{padding:16px 18px 20px;overflow-y:auto;flex:1}
 .vmodal-title{font-size:15px;font-weight:700;line-height:1.5;margin-bottom:12px}
 .vmodal-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:14px}
 .vmodal-stat{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;text-align:center}
@@ -287,8 +289,73 @@ body{
   transition:background .15s;
 }
 .vmodal-link:hover{background:rgba(201,162,39,.22)}
+.vmodal-chart{margin:14px 0 4px;border-top:1px solid var(--line);padding-top:14px}
+.vmodal-chart-title{font-size:11px;color:var(--muted);letter-spacing:.05em;margin-bottom:8px}
+.vmodal-chart-box{position:relative;height:140px}
+.vmodal{max-width:640px}
 
 .foot{color:var(--muted-2);font-size:11px;text-align:center;margin-top:30px;letter-spacing:.04em}
+
+/* ── Analytics tab ── */
+.analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:680px){.analytics-grid{grid-template-columns:1fr}}
+.ctr-bar{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:1px;background:var(--line-strong);border:1px solid var(--line-strong);border-radius:var(--radius);overflow:hidden;margin-bottom:14px}
+.ctr-item{background:var(--panel);padding:14px 18px}
+.ctr-label{font-size:11px;color:var(--muted);letter-spacing:.05em;margin-bottom:4px}
+.ctr-val{font-family:"Oswald",sans-serif;font-size:24px;font-weight:400;line-height:1}
+.ctr-sub{font-size:10.5px;color:var(--muted-2);margin-top:3px}
+.subs-wrap{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.subs-card{flex:1;min-width:160px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px}
+.subs-card .label{font-size:11px;color:var(--muted);margin-bottom:8px;letter-spacing:.04em}
+.subs-donut-wrap{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.subs-bar{flex:1;min-width:100px;height:24px;border-radius:6px;overflow:hidden;display:flex}
+.subs-bar .seg-sub{height:100%;transition:width .4s}
+.subs-legend{display:flex;flex-direction:column;gap:5px;font-size:11.5px}
+.subs-legend .row{display:flex;align-items:center;gap:7px;color:var(--muted)}
+.subs-legend .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.period-note{font-size:11px;color:var(--muted-2);margin-bottom:10px}
+.analytics-nodata{text-align:center;padding:60px 20px;color:var(--muted-2);font-size:13px;line-height:1.7}
+
+/* ── Schedule tab ── */
+.sched-table-wrap{overflow-x:auto}
+.sched-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.sched-table th{
+  text-align:left;padding:8px 10px;
+  font-size:11px;color:var(--muted);letter-spacing:.04em;font-weight:500;
+  border-bottom:2px solid var(--line-strong);white-space:nowrap;
+}
+.sched-table td{
+  padding:9px 10px;border-bottom:1px solid var(--line);vertical-align:middle;
+}
+.sched-table tr:last-child td{border-bottom:none}
+.sched-table tr:hover td{background:rgba(255,255,255,.02)}
+.sched-title-col{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.status-badge{
+  display:inline-block;padding:2px 8px;border-radius:20px;
+  font-size:10.5px;font-weight:600;white-space:nowrap;
+}
+.status-badge.posted{background:rgba(91,214,138,.12);color:var(--up)}
+.status-badge.neta{background:rgba(201,162,39,.15);color:var(--gold-soft)}
+.status-badge.empty{background:rgba(255,255,255,.06);color:var(--muted)}
+.sched-yt-link{
+  color:var(--blue);text-decoration:none;font-size:11px;
+  padding:2px 7px;border:1px solid rgba(91,166,214,.3);border-radius:5px;
+  white-space:nowrap;
+}
+.sched-yt-link:hover{background:rgba(91,166,214,.1)}
+.sched-detail-btn{
+  background:rgba(201,162,39,.12);border:1px solid rgba(201,162,39,.3);
+  color:var(--gold-soft);font-size:11px;padding:2px 8px;border-radius:5px;
+  cursor:pointer;white-space:nowrap;font-family:inherit;
+}
+.sched-detail-btn:hover{background:rgba(201,162,39,.22)}
+.sched-title-link{
+  cursor:pointer;color:var(--ink);
+  text-decoration:underline;text-decoration-color:rgba(255,255,255,.2);
+  text-underline-offset:2px;
+}
+.sched-title-link:hover{color:var(--gold-soft);text-decoration-color:var(--gold)}
+.sched-note{font-size:11px;color:var(--muted-2);margin-top:6px}
 </style>
 </head>
 <body>
@@ -315,10 +382,12 @@ body{
 
     <!-- Tab nav -->
     <nav class="tab-nav">
-      <button onclick="switchTab('overview')"  id="tab-overview"  class="on">📊 概要</button>
-      <button onclick="switchTab('growth')"    id="tab-growth"        >📈 伸び率</button>
-      <button onclick="switchTab('weekly')"    id="tab-weekly"        >📅 今週 vs 先週</button>
-      <button onclick="switchTab('videos')"    id="tab-videos"        >🎬 動画一覧</button>
+      <button onclick="switchTab('overview')"   id="tab-overview"   class="on">📊 概要</button>
+      <button onclick="switchTab('growth')"     id="tab-growth"         >📈 伸び率</button>
+      <button onclick="switchTab('weekly')"     id="tab-weekly"         >📅 今週 vs 先週</button>
+      <button onclick="switchTab('ops')"        id="tab-ops"            >📋 運営</button>
+      <button onclick="switchTab('schedule')"   id="tab-schedule"       >📝 投稿</button>
+      <button onclick="switchTab('videos')"     id="tab-videos"         >🎬 動画一覧</button>
     </nav>
 
     <!-- ════════════════════════ TAB: 概要 ════════════════════════ -->
@@ -368,6 +437,21 @@ body{
       <!-- Overview bar -->
       <div class="overview-bar" id="overviewBar"></div>
 
+      <!-- 国別 & 新規vsリピーター（概要タブ内） -->
+      <div class="analytics-grid" id="analyticsInOverview" style="display:none;margin-top:14px">
+        <div class="chart-card standalone">
+          <div class="chart-title"><span class="ct-label">視聴者の国別 Top15（28日）</span></div>
+          <div class="chart-box" style="height:240px">
+            <canvas id="countryChart"></canvas>
+            <div class="chart-nodata" id="countryNoData" style="display:none">データなし</div>
+          </div>
+        </div>
+        <div class="chart-card standalone" style="display:flex;flex-direction:column;justify-content:center">
+          <div class="period-note" id="analyticsNote" style="margin-bottom:10px">— データなし —</div>
+          <div class="subs-wrap" id="subsWrap" style="flex-direction:column;margin-bottom:0"></div>
+        </div>
+      </div>
+
     </div><!-- /pane-overview -->
 
     <!-- ════════════════════════ TAB: 伸び率 ════════════════════════ -->
@@ -403,6 +487,61 @@ body{
 
     </div>
 
+    <!-- ════════════════════════ TAB: 運営 ════════════════════════ -->
+    <div id="pane-ops" style="display:none">
+
+      <!-- サマリーバー -->
+      <div class="overview-bar" id="opsSummary"></div>
+
+      <!-- 投稿ペース & 登録者増減 -->
+      <div class="analytics-grid">
+        <div class="chart-card standalone">
+          <div class="chart-title"><span class="ct-label">月別投稿本数（過去12ヶ月）</span></div>
+          <div class="chart-box" style="height:220px"><canvas id="postPaceChart"></canvas></div>
+        </div>
+        <div class="chart-card standalone">
+          <div class="chart-title"><span class="ct-label">登録者 増加 / 減少（日次）</span></div>
+          <div class="chart-box" style="height:220px">
+            <canvas id="subsDetailChart"></canvas>
+            <div class="chart-nodata" id="subsDetailNoData" style="display:none">Analytics データなし</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 曜日別 & 動画尺別 -->
+      <div class="analytics-grid">
+        <div class="chart-card standalone">
+          <div class="chart-title"><span class="ct-label">投稿曜日 × 平均再生数</span></div>
+          <div class="chart-box" style="height:220px"><canvas id="dowChart"></canvas></div>
+        </div>
+        <div class="chart-card standalone">
+          <div class="chart-title"><span class="ct-label">動画尺別 平均再生数</span></div>
+          <div class="chart-box" style="height:220px"><canvas id="durationChart"></canvas></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════ TAB: 投稿 ════════════════════════ -->
+    <div id="pane-schedule" style="display:none">
+
+      <!-- サマリーバー -->
+      <div class="overview-bar" id="scheduleSummary"></div>
+
+      <!-- 投稿予定（未投稿） -->
+      <div class="card" id="schedUpcomingCard">
+        <h3><span class="dot"></span>投稿予定（未投稿）</h3>
+        <div class="sched-table-wrap" id="schedUpcoming"></div>
+      </div>
+
+      <!-- 最近の投稿済み -->
+      <div class="card">
+        <h3><span class="dot"></span>最近の投稿済み（直近20件）</h3>
+        <div class="sched-table-wrap" id="schedRecent"></div>
+      </div>
+
+    </div>
+
     <!-- ════════════════════════ TAB: 動画一覧 ════════════════════════ -->
     <div id="pane-videos" style="display:none">
       <div class="card">
@@ -428,6 +567,30 @@ body{
       <div class="vmodal-title" id="vmodalTitle"></div>
       <div class="vmodal-stats" id="vmodalStats"></div>
       <div class="vmodal-meta" id="vmodalMeta"></div>
+      <div class="vmodal-chart" id="vmodalChartWrap">
+        <div class="vmodal-chart-title" id="vmodalChartTitle">日次再生数推移</div>
+        <div class="vmodal-chart-box" id="vmodalChartBox"><canvas id="vmodalChart"></canvas></div>
+        <div id="vmodalPeriodStats" style="display:none;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-top:8px"></div>
+        <div style="font-size:10.5px;color:var(--muted-2);margin-top:6px" id="vmodalChartNote"></div>
+      </div>
+      <!-- 動画別追加分析（国別 / 新規vsリピーター / 流入経路） -->
+      <div id="vmodalAnalyticsExtra" style="display:none;border-top:1px solid var(--line);padding-top:14px;margin:14px 0 4px">
+        <div style="font-size:11px;color:var(--muted);letter-spacing:.05em;margin-bottom:10px">📊 動画別分析（365日）</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+          <div>
+            <div style="font-size:10.5px;color:var(--muted-2);margin-bottom:6px">国別 Top8（365日）</div>
+            <div id="vmodalCountryBars"></div>
+          </div>
+          <div>
+            <div style="font-size:10.5px;color:var(--muted-2);margin-bottom:6px">新規 / リピーター</div>
+            <div id="vmodalSubsBar"></div>
+          </div>
+        </div>
+        <div id="vmodalTrafficWrap" style="display:none">
+          <div style="font-size:10.5px;color:var(--muted-2);margin-bottom:6px">流入経路</div>
+          <div id="vmodalTrafficBars" style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px"></div>
+        </div>
+      </div>
       <a class="vmodal-link" id="vmodalLink" href="" target="_blank" rel="noopener">▶ YouTubeで開く</a>
     </div>
   </div>
@@ -436,10 +599,11 @@ body{
 <script>
 const DATA_URL = window.location.protocol === 'file:'
   ? "https://raw.githubusercontent.com/ytpokerguild-netizen/channel-desk-data/main/data.json"
-  : "/data.json";
+  : "data.json";
 
 let G = null;
-let mainChart = null, weekChart = null, watchChart = null;
+let mainChart = null, weekChart = null, watchChart = null, trafficChart = null, countryChart = null, vmodalChart = null;
+let postPaceChart = null, subsDetailChart = null, dowChart = null, durationChart = null;
 let filterFrom = null, filterTo = null;
 let compareMode = false;
 let filterFromB = null, filterToB = null;
@@ -489,13 +653,15 @@ async function loadData(){
 // ════════════════════════════════
 function switchTab(name){
   activeTab = name;
-  ['overview','growth','weekly','videos'].forEach(t => {
+  ['overview','growth','weekly','ops','schedule','videos'].forEach(t => {
     document.getElementById('pane-'+t).style.display = t === name ? '' : 'none';
     document.getElementById('tab-'+t).classList.toggle('on', t === name);
   });
-  if(name === 'growth')  renderGrowth();
-  if(name === 'weekly')  renderWeekly();
-  if(name === 'videos')  renderVideoList();
+  if(name === 'growth')   renderGrowth();
+  if(name === 'weekly')   renderWeekly();
+  if(name === 'ops')      renderOps();
+  if(name === 'schedule') renderSchedule();
+  if(name === 'videos')   renderVideoList();
 }
 
 // ════════════════════════════════
@@ -518,6 +684,53 @@ function allViewData(){
     if(!map.has(daily[i].date)) map.set(daily[i].date,{date:daily[i].date,views:delta});
   }
   return [...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
+}
+
+// analytics_daily の増減を積算して登録者推移を再構築（363日分）
+function buildSubscriberTimeline(){
+  const ad = (G.analytics_daily||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  if(!ad.length) return [];
+  const daily = allDaily();
+  if(!daily.length) return [];
+
+  // チャンネルスナップショットを既知値として使用
+  const knownMap = {};
+  daily.forEach(d=>{ knownMap[d.date] = d.subscribers; });
+
+  // 1日あたりの純増減
+  const netMap = {};
+  ad.forEach(d=>{ netMap[d.date] = (d.subs_gained||0)-(d.subs_lost||0); });
+
+  const dates = ad.map(d=>d.date);
+  const result = {};
+
+  // アンカー: 最古のスナップショット（実測値）
+  const anchorDate = daily[0].date;
+  const anchorSubs = daily[0].subscribers;
+  const anchorIdx  = dates.indexOf(anchorDate);
+
+  if(anchorIdx < 0){
+    daily.forEach(d=>{ result[d.date] = d.subscribers; });
+  } else {
+    result[anchorDate] = anchorSubs;
+    // アンカーより後ろ → 前進計算（knownMap優先）
+    for(let i=anchorIdx+1; i<dates.length; i++){
+      const d=dates[i];
+      result[d] = knownMap[d] ?? ((result[dates[i-1]]||0) + (netMap[d]||0));
+    }
+    // アンカーより前 → 逆算
+    for(let i=anchorIdx-1; i>=0; i--){
+      const d=dates[i];
+      const nd=dates[i+1];
+      result[d] = (result[nd]||0) - (netMap[nd]||0);
+    }
+  }
+
+  return dates.map(d=>({
+    date: d,
+    subscribers: Math.max(0, Math.round(result[d]||0)),
+    estimated: !knownMap[d],
+  }));
 }
 function filteredData(from,to){
   const daily = allDaily().filter(d=>(!from||d.date>=from)&&(!to||d.date<=to));
@@ -590,13 +803,18 @@ function setMetric(key){ activeMetric = key; renderOverview(); }
 function calcMetrics(from,to){
   const {daily, views} = filteredData(from,to);
   const totalViews = views.reduce((s,d)=>s+d.views,0);
-  const totalWatchMin = (G.analytics_daily||[])
-    .filter(d=>(!from||d.date>=from)&&(!to||d.date<=to))
-    .reduce((s,d)=>s+(d.watch_min||0),0);
-  const subFirst = daily.length ? daily[0].subscribers : null;
-  const subLast  = daily.length ? daily[daily.length-1].subscribers : null;
-  const subDelta = (subFirst!==null&&subLast!==null) ? subLast-subFirst : null;
-  return { totalViews, totalWatchMin, subDelta, subLatest:subLast, days:views.length };
+  const adFilt = (G.analytics_daily||[]).filter(d=>(!from||d.date>=from)&&(!to||d.date<=to));
+  const totalWatchMin = adFilt.reduce((s,d)=>s+(d.watch_min||0),0);
+  // 登録者増減: analytics_daily の合計（363日分カバー、スナップショット差分より正確）
+  const subDelta = adFilt.length
+    ? adFilt.reduce((s,d)=>s+(d.subs_gained||0)-(d.subs_lost||0),0)
+    : null;
+  // 登録者現在値: スナップショット最新値
+  const subTimeline = buildSubscriberTimeline();
+  const tFilt = subTimeline.filter(d=>(!from||d.date>=from)&&(!to||d.date<=to));
+  const subLatest = tFilt.length ? tFilt[tFilt.length-1].subscribers
+                  : (daily.length ? daily[daily.length-1].subscribers : null);
+  return { totalViews, totalWatchMin, subDelta, subLatest, days:views.length };
 }
 
 function renderTiles(){
@@ -692,26 +910,35 @@ function renderMainChart(){
     datasets = [{label:'視聴時間',type:'bar',data:adA.map(d=>d.watch_min),backgroundColor:'rgba(91,166,214,.6)',borderWidth:0,borderRadius:3}];
     ttFmt=ctx=>`${fmtMin(ctx.raw)} (${fmtDate(adA[ctx.dataIndex]?.date||'')})`;
   } else if(activeMetric === 'sub_delta'){
-    if(dA.length<2){
+    // analytics_daily から日次増減（363日分）
+    const adFiltSub = (G.analytics_daily||[])
+      .filter(d=>(!filterFrom||d.date>=filterFrom)&&(!filterTo||d.date<=filterTo))
+      .sort((a,b)=>a.date.localeCompare(b.date));
+    if(!adFiltSub.length){
       document.getElementById('mainChart').style.display='none';
       document.getElementById('chartNoData').style.display='block';
       if(mainChart){mainChart.destroy();mainChart=null;}
       return;
     }
-    const dates=dA.slice(1), vals=dates.map((d,i)=>d.subscribers-dA[i].subscribers);
-    labels=dates.map(d=>d.date.slice(5));
+    const vals=adFiltSub.map(d=>(d.subs_gained||0)-(d.subs_lost||0));
+    labels=adFiltSub.map(d=>d.date.slice(5));
     datasets=[{label:'増減',type:'bar',data:vals,backgroundColor:vals.map(v=>v>=0?'rgba(91,214,138,.7)':'rgba(226,112,110,.7)'),borderWidth:0,borderRadius:3}];
-    ttFmt=ctx=>`${fmtDate(dates[ctx.dataIndex]?.date||'')}: ${ctx.raw>=0?'+':''}${fmtFull(ctx.raw)}人`;
-  } else { // subscribers
-    if(!dA.length){
+    ttFmt=ctx=>`${fmtDate(adFiltSub[ctx.dataIndex]?.date||'')}: ${ctx.raw>=0?'+':''}${fmtFull(ctx.raw)}人`;
+  } else { // subscribers — buildSubscriberTimeline で363日分
+    const subTL = buildSubscriberTimeline();
+    const tFiltA = subTL.filter(d=>(!filterFrom||d.date>=filterFrom)&&(!filterTo||d.date<=filterTo));
+    if(!tFiltA.length){
       document.getElementById('mainChart').style.display='none';
       document.getElementById('chartNoData').style.display='block';
       if(mainChart){mainChart.destroy();mainChart=null;}
       return;
     }
-    labels=dA.map(d=>d.date.slice(5));
-    datasets=[{label:'登録者',type:'line',data:dA.map(d=>d.subscribers),borderColor:'rgba(201,162,39,1)',borderWidth:2,backgroundColor:'rgba(201,162,39,.10)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4}];
-    ttFmt=ctx=>`${fmtDate(dA[ctx.dataIndex]?.date||'')}: ${fmtFull(ctx.raw)}人`;
+    labels=tFiltA.map(d=>d.date.slice(5));
+    datasets=[{label:'登録者数',type:'line',data:tFiltA.map(d=>d.subscribers),borderColor:'rgba(201,162,39,1)',borderWidth:2,backgroundColor:'rgba(201,162,39,.10)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4}];
+    ttFmt=ctx=>`${fmtDate(tFiltA[ctx.dataIndex]?.date||'')}: ${fmtFull(ctx.raw)}人${tFiltA[ctx.dataIndex]?.estimated?' (推計)':''}`;
+    // 推計注記をサブラベルに表示
+    const estCount = tFiltA.filter(d=>d.estimated).length;
+    if(estCount>0) document.getElementById('chartSubLabel').textContent = `${tFiltA.length}日分（うち${estCount}日は増減積算推計）`;
   }
 
   document.getElementById('mainChart').style.display='block';
@@ -835,6 +1062,7 @@ function renderGrowth(){
         period_views: pd.views,
         period_watch_min: pd.watch_min,
         avg_dur_sec: pd.avg_dur_sec,
+        period_ctr: pd.ctr || null,
       } : null;
     }).filter(Boolean).sort((a,b)=>b.period_views-a.period_views);
 
@@ -867,6 +1095,7 @@ function renderGrowth(){
                 <span class="vc-stat">👁 <strong>${fmtFull(v.period_views)}</strong>回</span>
                 ${v.period_watch_min?`<span class="vc-stat">⏱ <strong>${fmtMin(v.period_watch_min)}</strong></span>`:''}
                 ${v.avg_dur_sec?`<span class="vc-stat">🎬 <strong>${fmtDur(v.avg_dur_sec)}</strong></span>`:''}
+                ${v.period_ctr?`<span class="vc-stat" title="クリック率">🎯 <strong>${v.period_ctr}%</strong></span>`:''}
                 ${growthBadge}
                 <span class="vc-date">${fmtDate(v.published_at)}</span>
               </div>
@@ -963,6 +1192,291 @@ function openVideoModalFromGrowth(vid_id, rank){
   const vp = G.video_period || {};
   const pd = (vp[String(growthPeriod)]||{})[vid_id] || {};
   openVideoModalData(v, rank, pd);
+}
+
+// ════════════════════════════════
+// 分析タブ
+// ════════════════════════════════
+const COUNTRY_JP = {
+  'JP':'日本','US':'アメリカ','TW':'台湾','KR':'韓国','CN':'中国','HK':'香港',
+  'TH':'タイ','SG':'シンガポール','MY':'マレーシア','ID':'インドネシア',
+  'PH':'フィリピン','VN':'ベトナム','AU':'オーストラリア','CA':'カナダ',
+  'GB':'イギリス','DE':'ドイツ','FR':'フランス','BR':'ブラジル','MX':'メキシコ',
+  'IN':'インド','RU':'ロシア','IT':'イタリア','ES':'スペイン','NL':'オランダ',
+  'SE':'スウェーデン','NO':'ノルウェー','DK':'デンマーク','FI':'フィンランド',
+  'CH':'スイス','AT':'オーストリア','BE':'ベルギー','PL':'ポーランド',
+  'PT':'ポルトガル','CZ':'チェコ','RO':'ルーマニア','HU':'ハンガリー',
+  'GR':'ギリシャ','TR':'トルコ','SA':'サウジアラビア','AE':'UAE',
+  'NZ':'ニュージーランド','ZA':'南アフリカ','AR':'アルゼンチン','CL':'チリ',
+  'CO':'コロンビア','PE':'ペルー'
+};
+
+function renderAnalytics(){
+  const ex = G.analytics_extra || {};
+  const hasData = (ex.top_countries||[]).length || ex.subscribed_status;
+
+  // 概要タブ内の分析エリアを表示/非表示
+  const aioEl = document.getElementById('analyticsInOverview');
+  if(aioEl) aioEl.style.display = hasData ? 'grid' : 'none';
+
+  if(!hasData) {
+    document.getElementById('subsWrap').innerHTML = '';
+    return;
+  }
+
+  const period = ex.period_days || 28;
+  document.getElementById('analyticsNote').textContent =
+    `集計期間: ${ex.start_date||''}〜${ex.end_date||''} (直近${period}日間)`;
+
+  // ── 国別 Top15 ──
+  const countries = ex.top_countries || [];
+  if(countryChart){ countryChart.destroy(); countryChart = null; }
+  if(countries.length){
+    document.getElementById('countryNoData').style.display = 'none';
+    document.getElementById('countryChart').style.display = 'block';
+    const totalCV = countries.reduce((s,r)=>s+r.views,0);
+    const CPALETTE = ['#5BD68A','#5BA6D6','#C9A227','#E2706E','#8FA396','#A78BFA','#E0C45C','#60A5FA','#F59E0B','#34D399','#F472B6','#A3E635','#FB923C','#38BDF8','#E879F9'];
+    countryChart = new Chart(document.getElementById('countryChart'),{
+      type:'bar',
+      data:{
+        labels: countries.map(r=>COUNTRY_JP[r.country]||r.country),
+        datasets:[{
+          data: countries.map(r=>r.views),
+          backgroundColor: CPALETTE.slice(0,countries.length),
+          borderWidth:0, borderRadius:4,
+        }]
+      },
+      options:{
+        indexAxis:'y',
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{
+            backgroundColor:'#1B2E23',borderColor:'rgba(255,255,255,.12)',borderWidth:1,
+            titleColor:'#8FA396',bodyColor:'#E8EDE9',padding:10,
+            callbacks:{
+              label:ctx=>`${ctx.raw.toLocaleString()}回 (${totalCV>0?(ctx.raw/totalCV*100).toFixed(1):'0'}%)`
+            }
+          }
+        },
+        scales:{
+          x:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:10},callback:v=>fmt(v)}},
+          y:{grid:{display:false},ticks:{color:'#8FA396',font:{size:10}}},
+        }
+      }
+    });
+  } else {
+    document.getElementById('countryNoData').style.display = 'block';
+    document.getElementById('countryChart').style.display = 'none';
+  }
+
+  // ── 新規 vs リピーター ──
+  const ss = ex.subscribed_status || {};
+  const sub   = (ss['SUBSCRIBED']   ||{views:0});
+  const unsub = (ss['UNSUBSCRIBED'] ||{views:0});
+  const totalSS = sub.views + unsub.views;
+  const subPct   = totalSS > 0 ? Math.round(sub.views   / totalSS * 100) : 0;
+  const unsubPct = totalSS > 0 ? Math.round(unsub.views / totalSS * 100) : 0;
+  const subWh   = sub.watch_min   || 0;
+  const unsubWh = unsub.watch_min || 0;
+  const totalWH = subWh + unsubWh;
+  const subWhPct   = totalWH > 0 ? Math.round(subWh   / totalWH * 100) : 0;
+  const unsubWhPct = totalWH > 0 ? Math.round(unsubWh / totalWH * 100) : 0;
+
+  document.getElementById('subsWrap').innerHTML = totalSS > 0 ? `
+    <div class="subs-card">
+      <div class="label">再生数 — 登録者 vs 非登録者</div>
+      <div class="subs-donut-wrap">
+        <div style="flex:1;min-width:100px">
+          <div class="subs-bar">
+            <div class="seg-sub" style="width:${subPct}%;background:var(--up)"></div>
+            <div class="seg-sub" style="width:${unsubPct}%;background:var(--muted-2)"></div>
+          </div>
+          <div style="font-size:10.5px;color:var(--muted-2);margin-top:5px">
+            登録者 ${subPct}% (${sub.views.toLocaleString()}回) ／ 非登録者 ${unsubPct}% (${unsub.views.toLocaleString()}回)
+          </div>
+        </div>
+        <div class="subs-legend">
+          <div class="row"><div class="dot" style="background:var(--up)"></div>登録者 ${subPct}%</div>
+          <div class="row"><div class="dot" style="background:var(--muted-2)"></div>非登録者 ${unsubPct}%</div>
+        </div>
+      </div>
+    </div>
+    <div class="subs-card">
+      <div class="label">視聴時間 — 登録者 vs 非登録者</div>
+      <div class="subs-donut-wrap">
+        <div style="flex:1;min-width:100px">
+          <div class="subs-bar">
+            <div class="seg-sub" style="width:${subWhPct}%;background:var(--blue)"></div>
+            <div class="seg-sub" style="width:${unsubWhPct}%;background:var(--muted-2)"></div>
+          </div>
+          <div style="font-size:10.5px;color:var(--muted-2);margin-top:5px">
+            登録者 ${subWhPct}% (${fmtMin(subWh)}) ／ 非登録者 ${unsubWhPct}% (${fmtMin(unsubWh)})
+          </div>
+        </div>
+        <div class="subs-legend">
+          <div class="row"><div class="dot" style="background:var(--blue)"></div>登録者 ${subWhPct}%</div>
+          <div class="row"><div class="dot" style="background:var(--muted-2)"></div>非登録者 ${unsubWhPct}%</div>
+        </div>
+      </div>
+    </div>
+  ` : `<div style="color:var(--muted-2);font-size:13px">登録者別データなし</div>`;
+}
+
+// ════════════════════════════════
+// 運営タブ
+// ════════════════════════════════
+const DOW_LABELS = ['日','月','火','水','木','金','土'];
+
+function renderOps(){
+  const videos = G.videos || [];
+  if(!videos.length) return;
+
+  // ── サマリー ──
+  const today = new Date(G.meta.data_through + 'T00:00:00');
+  const sorted = [...videos].sort((a,b)=>b.published_at.localeCompare(a.published_at));
+  const lastPost = sorted[0]?.published_at;
+  const daysSince = lastPost ? Math.floor((today - new Date(lastPost+'T00:00:00'))/86400000) : null;
+  // 過去30日投稿本数
+  const d30 = new Date(today); d30.setDate(d30.getDate()-30);
+  const posts30 = videos.filter(v=>v.published_at>=d30.toISOString().slice(0,10)).length;
+  // 平均週間投稿数（全期間）
+  const oldest = sorted[sorted.length-1]?.published_at;
+  const totalDays = oldest ? Math.floor((today - new Date(oldest+'T00:00:00'))/86400000)+1 : 1;
+  const avgPerWeek = (videos.length / (totalDays/7)).toFixed(1);
+
+  document.getElementById('opsSummary').innerHTML = [
+    {label:'最終投稿',      val: daysSince!==null?daysSince+'日前':'—', sub: fmtDate(lastPost||'')},
+    {label:'過去30日投稿',  val: posts30+'本',  sub: ''},
+    {label:'週平均投稿数',  val: avgPerWeek+'本/週', sub: `${videos.length}本 / ${Math.round(totalDays/7)}週`},
+    {label:'総動画数',      val: videos.length+'本', sub: ''},
+  ].map(it=>`<div class="ov-item"><div class="ov-label">${it.label}</div><div class="ov-val">${it.val}</div><div class="ov-sub">${it.sub}</div></div>`).join('');
+
+  // ── 月別投稿本数（過去12ヶ月）──
+  if(postPaceChart){ postPaceChart.destroy(); postPaceChart=null; }
+  const monthMap = {};
+  const now = new Date(today);
+  for(let i=11;i>=0;i--){
+    const d = new Date(now); d.setMonth(d.getMonth()-i);
+    const key = d.toISOString().slice(0,7);
+    monthMap[key] = 0;
+  }
+  videos.forEach(v=>{
+    const key = v.published_at.slice(0,7);
+    if(key in monthMap) monthMap[key]++;
+  });
+  const monthLabels = Object.keys(monthMap).map(k=>k.slice(5)+'月');
+  const monthData   = Object.values(monthMap);
+  postPaceChart = new Chart(document.getElementById('postPaceChart'),{
+    type:'bar',
+    data:{labels:monthLabels,datasets:[{
+      data:monthData,
+      backgroundColor:monthData.map((_,i)=>i===monthData.length-1?'rgba(201,162,39,.9)':'rgba(91,214,138,.6)'),
+      borderWidth:0,borderRadius:4,
+    }]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1B2E23',borderColor:'rgba(255,255,255,.12)',borderWidth:1,titleColor:'#8FA396',bodyColor:'#E8EDE9',callbacks:{label:ctx=>`${ctx.raw}本`}}},
+      scales:{
+        x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5E726A',font:{size:10}}},
+        y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:10},stepSize:1},beginAtZero:true},
+      }
+    }
+  });
+
+  // ── 登録者 増加 / 減少（日次 90日）──
+  if(subsDetailChart){ subsDetailChart.destroy(); subsDetailChart=null; }
+  const ad = (G.analytics_daily||[]).slice(-90);
+  const hasSubData = ad.some(d=>d.subs_gained||d.subs_lost);
+  document.getElementById('subsDetailNoData').style.display = hasSubData?'none':'block';
+  document.getElementById('subsDetailChart').style.display = hasSubData?'block':'none';
+  if(hasSubData){
+    const adLabels = ad.map(d=>d.date.slice(5));
+    subsDetailChart = new Chart(document.getElementById('subsDetailChart'),{
+      type:'bar',
+      data:{labels:adLabels,datasets:[
+        {label:'増加',data:ad.map(d=>d.subs_gained||0),backgroundColor:'rgba(91,214,138,.75)',borderWidth:0,borderRadius:2,stack:'s'},
+        {label:'減少',data:ad.map(d=>-(d.subs_lost||0)),backgroundColor:'rgba(226,112,110,.65)',borderWidth:0,borderRadius:2,stack:'s'},
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:true,labels:{color:'#8FA396',font:{size:10}}},
+          tooltip:{backgroundColor:'#1B2E23',borderColor:'rgba(255,255,255,.12)',borderWidth:1,titleColor:'#8FA396',bodyColor:'#E8EDE9',
+            callbacks:{title:i=>fmtDate(ad[i[0].dataIndex]?.date||''),label:ctx=>ctx.dataset.label+': '+(ctx.raw>=0?'+':'')+ctx.raw+'人'}}},
+        scales:{
+          x:{grid:{display:false},ticks:{color:'#5E726A',font:{size:9},maxTicksLimit:10}},
+          y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:9}}},
+        }
+      }
+    });
+  }
+
+  // ── 曜日別 平均再生数 ──
+  if(dowChart){ dowChart.destroy(); dowChart=null; }
+  const dowViews = Array(7).fill(0), dowCount = Array(7).fill(0);
+  videos.forEach(v=>{
+    const d = new Date(v.published_at+'T00:00:00');
+    dowViews[d.getDay()] += v.views;
+    dowCount[d.getDay()]++;
+  });
+  const dowAvg = dowViews.map((s,i)=>dowCount[i]>0?Math.round(s/dowCount[i]):0);
+  const maxDow = Math.max(...dowAvg)||1;
+  dowChart = new Chart(document.getElementById('dowChart'),{
+    type:'bar',
+    data:{
+      labels:DOW_LABELS.map((l,i)=>l+'('+dowCount[i]+'本)'),
+      datasets:[{
+        data:dowAvg,
+        backgroundColor:dowAvg.map(v=>v===maxDow?'rgba(201,162,39,.9)':'rgba(91,166,214,.6)'),
+        borderWidth:0,borderRadius:4,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1B2E23',borderColor:'rgba(255,255,255,.12)',borderWidth:1,titleColor:'#8FA396',bodyColor:'#E8EDE9',callbacks:{label:ctx=>`平均 ${fmtFull(ctx.raw)}回`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#5E726A',font:{size:10}}},
+        y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:9},callback:v=>fmt(v)}},
+      }
+    }
+  });
+
+  // ── 動画尺別 平均再生数 ──
+  if(durationChart){ durationChart.destroy(); durationChart=null; }
+  const durBuckets = [
+    {label:'〜3分',   min:0,    max:180},
+    {label:'3〜10分', min:180,  max:600},
+    {label:'10〜20分',min:600,  max:1200},
+    {label:'20〜30分',min:1200, max:1800},
+    {label:'30分〜',  min:1800, max:Infinity},
+  ];
+  const durViews = durBuckets.map(()=>0), durCount = durBuckets.map(()=>0);
+  videos.forEach(v=>{
+    const s = v.duration_sec||0;
+    const bi = durBuckets.findIndex(b=>s>=b.min&&s<b.max);
+    if(bi>=0){ durViews[bi]+=v.views; durCount[bi]++; }
+  });
+  const durAvg = durViews.map((s,i)=>durCount[i]>0?Math.round(s/durCount[i]):0);
+  const maxDur = Math.max(...durAvg)||1;
+  durationChart = new Chart(document.getElementById('durationChart'),{
+    type:'bar',
+    data:{
+      labels:durBuckets.map((b,i)=>b.label+'\n('+durCount[i]+'本)'),
+      datasets:[{
+        data:durAvg,
+        backgroundColor:durAvg.map(v=>v===maxDur?'rgba(201,162,39,.9)':'rgba(160,120,200,.65)'),
+        borderWidth:0,borderRadius:4,
+      }]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{backgroundColor:'#1B2E23',borderColor:'rgba(255,255,255,.12)',borderWidth:1,titleColor:'#8FA396',bodyColor:'#E8EDE9',callbacks:{label:ctx=>`平均 ${fmtFull(ctx.raw)}回`}}},
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#5E726A',font:{size:10}}},
+        y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:9},callback:v=>fmt(v)}},
+      }
+    }
+  });
 }
 
 // ════════════════════════════════
@@ -1152,19 +1666,376 @@ function openVideoModalData(v, rank, pd){
   if(pd.views)     stats.push({label:'7日再生数',   value:fmtFull(pd.views)+'回'});
   if(pd.watch_min) stats.push({label:'7日視聴時間', value:fmtMin(pd.watch_min)});
   if(pd.avg_dur_sec) stats.push({label:'平均視聴時間', value:fmtDur(pd.avg_dur_sec)});
+  if(pd.ctr)       stats.push({label:'クリック率',  value:pd.ctr+'%'});
+  if(pd.impressions) stats.push({label:'インプレッション', value:(pd.impressions/10000).toFixed(1)+'万'});
   document.getElementById('vmodalStats').innerHTML = stats.map(s=>`<div class="vmodal-stat"><div class="label">${s.label}</div><div class="value">${s.value}</div></div>`).join('');
+  // post_plan から担当者を取得
+  const planEntry = (G.post_plan||[]).find(p => (p['URL']||'').includes(v.video_id));
+  const creator   = planEntry?.['担当'] || '';
   document.getElementById('vmodalMeta').innerHTML =
     `<span>📅 公開日: ${fmtDate(v.published_at)}</span>`+
     (v.duration_sec?`<span>⏱ 動画時間: ${fmtDur(v.duration_sec)}</span>`:'')+
+    (creator?`<span>✍️ 担当: ${creator}</span>`:'')+
     `<span>🆔 ${v.video_id}</span>`;
   document.getElementById('vmodalLink').href = `https://www.youtube.com/watch?v=${v.video_id}`;
-  document.getElementById('vmodalOverlay').classList.add('open');
+
+  // ── 再生数推移グラフ ──
+  renderVideoModalChart(v.video_id, v.published_at);
+
+  // ── 動画別追加分析 ──
+  renderVideoExtraAnalytics(v.video_id);
+
+  const _ov = document.getElementById('vmodalOverlay');
+  _ov.style.transition = 'none';
+  _ov.style.opacity = '1';
+  _ov.style.pointerEvents = 'auto';
+  _ov.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
+
+function renderVideoModalChart(vid_id, published_at){
+  if(vmodalChart){ vmodalChart.destroy(); vmodalChart = null; }
+
+  // リセット
+  document.getElementById('vmodalChartBox').style.display = 'block';
+  document.getElementById('vmodalPeriodStats').style.display = 'none';
+  document.getElementById('vmodalChartWrap').style.display = 'block';
+  document.getElementById('vmodalChartTitle').textContent = '日次再生数推移';
+
+  // ① Analytics API による日次データ
+  const vdaily = (G.video_daily || {})[vid_id];
+  let points = [];
+
+  if(vdaily && vdaily.length > 0){
+    points = vdaily.filter(p => !published_at || p.date >= published_at);
+    document.getElementById('vmodalChartNote').textContent =
+      `Analytics API (${fmtDate(points[0]?.date||'')} 〜 ${fmtDate(points[points.length-1]?.date||'')} / ${points.length}日分)`;
+  } else {
+    // ② フォールバック: スナップショット差分
+    const snapshots = (G.video_snapshots || []).sort((a,b)=>a.date.localeCompare(b.date));
+    for(let i=1; i<snapshots.length; i++){
+      const prev = (snapshots[i-1].v || {})[vid_id] || 0;
+      const curr = (snapshots[i].v   || {})[vid_id] || 0;
+      const delta = Math.max(0, curr - prev);
+      if(published_at && snapshots[i].date < published_at) continue;
+      points.push({ date: snapshots[i].date, views: delta });
+    }
+    if(points.length){
+      document.getElementById('vmodalChartNote').textContent =
+        `スナップショット差分（${fmtDate(points[0].date)} 〜 ${fmtDate(points[points.length-1].date)} / ${points.length}日分）`;
+    }
+  }
+
+  if(!points.length || points.every(p=>p.views===0)){
+    // ③ 最終フォールバック: video_period の期間集計を表示
+    const vp = G.video_period || {};
+    const periodItems = [
+      {label:'7日間',  data: (vp['7']  ||{})[vid_id]},
+      {label:'28日間', data: (vp['28'] ||{})[vid_id]},
+      {label:'90日間', data: (vp['90'] ||{})[vid_id]},
+      {label:'365日間',data: (vp['365']||{})[vid_id]},
+    ].filter(x=>x.data?.views>0);
+
+    if(periodItems.length){
+      document.getElementById('vmodalChartBox').style.display = 'none';
+      document.getElementById('vmodalChartTitle').textContent = '期間別再生数';
+      const el = document.getElementById('vmodalPeriodStats');
+      el.style.display = 'grid';
+      el.innerHTML = periodItems.map(({label,data})=>`
+        <div class="vmodal-stat">
+          <div class="label">${label}</div>
+          <div class="value">${fmtFull(data.views)}回</div>
+          ${data.avg_dur_sec?`<div style="font-size:10px;color:var(--muted-2);margin-top:2px">平均 ${fmtDur(data.avg_dur_sec)}</div>`:''}
+        </div>`).join('');
+      document.getElementById('vmodalChartNote').textContent = '※ 直近に日次データなし。期間合計のみ表示。';
+    } else {
+      document.getElementById('vmodalChartWrap').style.display = 'none';
+    }
+    return;
+  }
+
+  document.getElementById('vmodalChartWrap').style.display = 'block';
+
+  const labels   = points.map(p => p.date.slice(5));
+  const dataVals = points.map(p => p.views);
+
+  vmodalChart = new Chart(document.getElementById('vmodalChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: dataVals,
+        borderColor: 'rgba(201,162,39,1)',
+        borderWidth: 1.5,
+        backgroundColor: 'rgba(201,162,39,.12)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: points.length > 30 ? 0 : 2,
+        pointHoverRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1B2E23',
+          borderColor: 'rgba(255,255,255,.12)',
+          borderWidth: 1,
+          titleColor: '#8FA396',
+          bodyColor: '#E8EDE9',
+          padding: 8,
+          callbacks: {
+            title: i => fmtDate(points[i[0].dataIndex]?.date || ''),
+            label: ctx => `+${fmtFull(ctx.raw)}回`,
+          }
+        }
+      },
+      scales: {
+        x: { grid:{color:'rgba(255,255,255,.04)'}, ticks:{color:'#5E726A',font:{size:9},maxTicksLimit:8} },
+        y: { grid:{color:'rgba(255,255,255,.06)'}, ticks:{color:'#5E726A',font:{size:9},callback:v=>fmt(v)}, beginAtZero:true }
+      }
+    }
+  });
+}
+// ════════════════════════════════
+// 投稿タブ
+// ════════════════════════════════
+function renderSchedule(){
+  const plan       = G.post_plan || [];
+  const summaryEl  = document.getElementById('scheduleSummary');
+  const upcomingEl = document.getElementById('schedUpcoming');
+  const recentEl   = document.getElementById('schedRecent');
+
+  if(!plan.length){
+    summaryEl.innerHTML = '<div class="ov-item" style="grid-column:1/-1"><div class="ov-label">データなし</div><div class="ov-val" style="font-size:14px;color:var(--muted)">次回 fetch 実行後に自動表示されます</div></div>';
+    upcomingEl.innerHTML = '';
+    recentEl.innerHTML   = '';
+    return;
+  }
+
+  // 日付文字列 "2026/6/1" → "2026-06-01" (ソート用)
+  function normalizeDate(s){
+    if(!s) return '';
+    const parts = s.split('/');
+    if(parts.length !== 3) return s;
+    return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
+  }
+
+  // ステータスバッジ
+  function statusBadge(s){
+    if(s==='投稿済み') return `<span class="status-badge posted">投稿済み</span>`;
+    if(s==='ネタ')    return `<span class="status-badge neta">ネタ</span>`;
+    return `<span class="status-badge empty">${s||'日程のみ'}</span>`;
+  }
+
+  // サマリー
+  const total  = plan.length;
+  const posted = plan.filter(p=>p['ステータス']==='投稿済み').length;
+  const neta   = plan.filter(p=>p['ステータス']==='ネタ').length;
+  const blank  = plan.filter(p=>!p['ステータス']).length;
+  summaryEl.innerHTML = `
+    <div class="ov-item"><div class="ov-label">総件数</div><div class="ov-val">${total}</div><div class="ov-sub">件</div></div>
+    <div class="ov-item"><div class="ov-label">投稿済み</div><div class="ov-val">${posted}</div><div class="ov-sub">件</div></div>
+    <div class="ov-item"><div class="ov-label">ネタ確定</div><div class="ov-val">${neta}</div><div class="ov-sub">件</div></div>
+    <div class="ov-item"><div class="ov-label">日程のみ</div><div class="ov-val">${blank}</div><div class="ov-sub">件（ネタ未定）</div></div>
+  `;
+
+  // URL から video_id を抽出
+  function extractVideoId(url){
+    if(!url) return null;
+    const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  // video_id → G.videos の index を引く（高速化のため Map を使用）
+  const videoMap = {};
+  (G.videos||[]).forEach((v,i) => { videoMap[v.video_id] = {v, i: i+1}; });
+
+  // テーブル生成（showModal=true のとき 詳細ボタンを追加）
+  function makeTable(rows, showModal){
+    if(!rows.length) return '<div class="no-data" style="padding:20px 0;font-size:13px">対象データなし</div>';
+    const actionCol = showModal ? '<th></th>' : '';
+    return `<table class="sched-table">
+      <thead><tr>
+        <th>投稿日</th><th>曜</th><th>タイトル</th><th>配信元</th><th>尺</th><th>担当</th><th>ステータス</th>${actionCol}
+      </tr></thead>
+      <tbody>
+        ${rows.map(p=>{
+          const date   = p['公開日'] || p['投稿予定日'] || '';
+          const vid_id = extractVideoId(p['URL']);
+          const entry  = vid_id ? videoMap[vid_id] : null;
+          const hasModal = !!(vid_id && (entry || p['タイトル']));
+          let actionTd = '';
+          if(showModal){
+            if(hasModal){
+              actionTd = `<td><button class="sched-detail-btn" data-vid="${vid_id}">📊 詳細</button></td>`;
+            } else if(p['URL']){
+              actionTd = `<td><a class="sched-yt-link" href="${p['URL']}" target="_blank" rel="noopener">▶ YT</a></td>`;
+            } else {
+              actionTd = '<td></td>';
+            }
+          }
+          const titleCell = hasModal
+            ? `<span class="sched-title-link" data-vid="${vid_id}">${p['タイトル']||(entry?.v?.title)||''}</span>`
+            : (p['タイトル']||'<span style="color:var(--muted-2)">未定</span>');
+          return `<tr>
+            <td style="white-space:nowrap;font-size:11.5px;color:var(--muted)">${date}</td>
+            <td style="color:var(--muted-2);font-size:11px">${p['曜日']||''}</td>
+            <td class="sched-title-col">${titleCell}</td>
+            <td style="font-size:11px;white-space:nowrap;color:var(--muted)">${p['配信元']||''}</td>
+            <td style="font-size:11.5px;font-variant-numeric:tabular-nums">${p['尺']||''}</td>
+            <td style="font-size:11px;color:var(--muted)">${p['担当']||''}</td>
+            <td>${statusBadge(p['ステータス'])}</td>
+            ${actionTd}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+  }
+
+  // 投稿予定（未投稿、日付昇順）
+  const upcoming = plan
+    .filter(p => p['ステータス'] !== '投稿済み')
+    .map(p => ({...p, _d: normalizeDate(p['投稿予定日'])}))
+    .sort((a,b) => a._d.localeCompare(b._d));
+  upcomingEl.innerHTML = makeTable(upcoming, false);
+  if(upcoming.length)
+    upcomingEl.insertAdjacentHTML('beforeend',
+      `<p class="sched-note">${upcoming.length} 件（ネタ ${neta} 件 / 日程のみ ${blank} 件）</p>`);
+
+  // 最近の投稿済み（公開日降順、直近20件）
+  const recent = plan
+    .filter(p => p['ステータス']==='投稿済み')
+    .map(p => ({...p, _d: normalizeDate(p['公開日']||p['投稿予定日'])}))
+    .sort((a,b) => b._d.localeCompare(a._d))
+    .slice(0, 20);
+  recentEl.innerHTML = makeTable(recent, true);
+}
+
+// 投稿タブの📊詳細ボタン＆タイトルクリック → video_id で動画詳細モーダルを開く
+document.addEventListener('click', function(e){
+  const el = e.target.closest('.sched-detail-btn, .sched-title-link');
+  if(!el) return;
+  const vid_id = el.dataset.vid;
+  if(!vid_id) return;
+  const vIdx = (G.videos||[]).findIndex(v=>v.video_id===vid_id);
+  const v    = vIdx>=0 ? G.videos[vIdx] : null;
+  const planEntry = (G.post_plan||[]).find(p=>{
+    const m = (p['URL']||'').match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
+    return m && m[1]===vid_id;
+  });
+  const modalV = v || (planEntry ? {
+    video_id: vid_id,
+    title: planEntry['タイトル']||'',
+    published_at: planEntry['公開日']||planEntry['投稿予定日']||'',
+    view_count: 0, duration_sec: 0
+  } : null);
+  if(!modalV) return;
+  const rank = vIdx>=0 ? vIdx+1 : '-';
+  const pd7  = (G.video_period?.['7']||{})[vid_id]||{};
+  openVideoModalData(modalV, rank, pd7);
+});
+
+// ── 動画別追加分析（国別 / 新規vsリピーター / 流入経路）──
+
+const TRAFFIC_LABEL = {
+  'SUBSCRIBER':'登録フィード','YT_SEARCH':'YouTube検索','SHORTS':'ショート',
+  'EXT_URL':'外部サイト','NOTIFICATION':'通知','RELATED_VIDEO':'関連動画',
+  'BROWSE':'ブラウジング','CHANNEL':'チャンネルページ','YT_CHANNEL':'チャンネルページ',
+  'DIRECT':'直接リンク','ADVERTISING':'広告','PLAYLIST':'再生リスト',
+  'END_SCREEN':'エンドスクリーン','NO_LINK_EMBEDDED':'埋め込み','OTHER':'その他',
+  'ANNOTATION':'アノテーション','CAMPAIGN_CARD':'プロモーション',
+  'SHORTS_CONTENT_LINKS':'ショートリンク','YT_OTHER_PAGE':'他のYTページ',
+  '3':'ブラウジング','9':'YouTube検索','10':'関連動画','4':'チャンネルページ',
+  '5':'外部サイト','7':'Google検索','19':'通知','18':'エンドスクリーン',
+  '11':'再生リスト','0':'直接/不明','1':'広告','17':'プロモーション','8':'その他'
+};
+
+function renderVideoExtraAnalytics(vid_id){
+  const wrap        = document.getElementById('vmodalAnalyticsExtra');
+  const cntEl       = document.getElementById('vmodalCountryBars');
+  const subsEl      = document.getElementById('vmodalSubsBar');
+  const trafficWrap = document.getElementById('vmodalTrafficWrap');
+  const trafficEl   = document.getElementById('vmodalTrafficBars');
+  const extra       = (G.video_analytics_extra || {})[vid_id];
+  const chTraffic   = (G.analytics_extra || {}).traffic_sources || [];
+
+  if(!extra && !chTraffic.length){ wrap.style.display='none'; return; }
+  wrap.style.display = 'block';
+
+  // ── 国別ミニバー ──
+  const vidCountries = (extra||{}).top_countries || [];
+  if(vidCountries.length){
+    const maxV = vidCountries[0].views || 1;
+    cntEl.innerHTML = vidCountries.map(c=>`
+      <div style="margin-bottom:5px">
+        <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-bottom:2px">
+          <span>${COUNTRY_JP[c.country]||c.country}</span>
+          <span>${fmtFull(c.views)}</span>
+        </div>
+        <div style="height:4px;background:var(--line-strong);border-radius:2px">
+          <div style="height:4px;background:var(--gold);border-radius:2px;width:${Math.round(c.views/maxV*100)}%"></div>
+        </div>
+      </div>`).join('');
+  } else {
+    cntEl.innerHTML = '<div style="font-size:11px;color:var(--muted-2)">データなし</div>';
+  }
+
+  // ── 新規 vs リピーターバー ──
+  const ss    = (extra||{}).subscribed_status || {};
+  const sub   = ss['SUBSCRIBED']   || 0;
+  const unsub = ss['UNSUBSCRIBED'] || 0;
+  const stotal  = sub + unsub || 1;
+  const subPct  = Math.round(sub   / stotal * 100);
+  const unsubPct = 100 - subPct;
+  if(sub + unsub > 0){
+    subsEl.innerHTML = `
+      <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;margin-bottom:6px">
+        <div style="width:${subPct}%;background:var(--gold)" title="登録者 ${subPct}%"></div>
+        <div style="width:${unsubPct}%;background:var(--panel-2)" title="非登録者 ${unsubPct}%"></div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:10.5px;color:var(--muted)">
+        <span><span style="color:var(--gold)">■</span> 登録者 ${subPct}%</span>
+        <span><span style="color:var(--muted-2)">■</span> 非登録者 ${unsubPct}%</span>
+      </div>
+      <div style="font-size:10.5px;color:var(--muted-2);margin-top:4px">${fmtFull(sub+unsub)} 回視聴</div>`;
+  } else {
+    subsEl.innerHTML = '<div style="font-size:11px;color:var(--muted-2)">データなし</div>';
+  }
+
+  // ── 流入経路バー（動画別データなし→チャンネル全体28日をフォールバック）──
+  const vidTraffic  = (extra||{}).traffic_sources || [];
+  const trafficLblEl = trafficWrap.querySelector('div:first-child');
+  if(vidTraffic.length){
+    trafficWrap.style.display = 'block';
+    if(trafficLblEl) trafficLblEl.textContent = '流入経路（365日）';
+    const traffic = vidTraffic;
+    const maxV = Math.max(...traffic.map(t=>t.views||0)) || 1;
+    trafficEl.innerHTML = traffic.slice(0,8).map(t=>`
+      <div style="margin-bottom:6px">
+        <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-bottom:2px">
+          <span>${TRAFFIC_LABEL[String(t.source_type)]||String(t.source_type)||'その他'}</span>
+          <span>${fmtFull(t.views)}</span>
+        </div>
+        <div style="height:4px;background:var(--line-strong);border-radius:2px">
+          <div style="height:4px;background:var(--blue);border-radius:2px;width:${Math.round(t.views/maxV*100)}%"></div>
+        </div>
+      </div>`).join('');
+  } else {
+    trafficWrap.style.display = 'none';
+  }
+}
+
 function closeVideoModal(e){
   if(e && e.target!==document.getElementById('vmodalOverlay')) return;
-  document.getElementById('vmodalOverlay').classList.remove('open');
+  const _ov2 = document.getElementById('vmodalOverlay');
+  _ov2.classList.remove('open');
+  _ov2.style.opacity = '0';
+  _ov2.style.pointerEvents = 'none';
   document.body.style.overflow='';
+  if(vmodalChart){ vmodalChart.destroy(); vmodalChart = null; }
 }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeVideoModal(); });
 
@@ -1173,10 +2044,13 @@ document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeVideoModal()
 // ════════════════════════════════
 function renderAll(){
   renderOverview();
+  renderAnalytics(); // 概要タブ内に常時表示
   // 開いているタブだけ描画
-  if(activeTab==='growth')  renderGrowth();
-  if(activeTab==='weekly')  renderWeekly();
-  if(activeTab==='videos')  renderVideoList();
+  if(activeTab==='growth')   renderGrowth();
+  if(activeTab==='weekly')   renderWeekly();
+  if(activeTab==='ops')      renderOps();
+  if(activeTab==='schedule') renderSchedule();
+  if(activeTab==='videos')   renderVideoList();
 }
 
 loadData();
