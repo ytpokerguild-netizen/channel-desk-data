@@ -681,6 +681,8 @@ function dedupeByDate(arr){
   arr.forEach(d => m.set(d.date, d));
   return [...m.values()].sort((a,b)=>a.date.localeCompare(b.date));
 }
+// ローカルタイムゾーンのまま YYYY-MM-DD を返す（toISOString はUTC変換で日付がズレるため使わない）
+function localISO(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
 function allDaily(){ return dedupeByDate((G.daily||[]).filter(d=>d.subscribers>0||d.total_views>0)); }
 function allViewData(){
   const map = new Map();
@@ -699,7 +701,7 @@ function allViewData(){
     const per   = Math.round(delta/gap);
     for(let g=1; g<=gap; g++){
       const dd = new Date(prev); dd.setDate(prev.getDate()+g);
-      const ds = dd.toISOString().slice(0,10);
+      const ds = localISO(dd);
       if(!map.has(ds)) map.set(ds,{date:ds,views:per,estimated:gap>1});
     }
   }
@@ -773,7 +775,7 @@ function setQuick(days, btn){
     document.getElementById('dateTo').value   = '';
   } else {
     const d = new Date(to+'T00:00:00'); d.setDate(d.getDate()-days+1);
-    filterFrom = d.toISOString().slice(0,10); filterTo = to;
+    filterFrom = localISO(d); filterTo = to;
     document.getElementById('dateFrom').value = filterFrom;
     document.getElementById('dateTo').value   = filterTo;
   }
@@ -799,8 +801,8 @@ function toggleCompare(){
     const days = Math.round(ms/86400000)+1;
     const toB = new Date(filterFrom+'T00:00:00'); toB.setDate(toB.getDate()-1);
     const fromB = new Date(toB); fromB.setDate(fromB.getDate()-days+1);
-    filterFromB = fromB.toISOString().slice(0,10);
-    filterToB   = toB.toISOString().slice(0,10);
+    filterFromB = localISO(fromB);
+    filterToB   = localISO(toB);
     document.getElementById('dateFromB').value = filterFromB;
     document.getElementById('dateToB').value   = filterToB;
   } else if(!compareMode){
@@ -1019,7 +1021,7 @@ function renderOverviewBar(){
   const daily=allDaily(), latest=daily.length?daily[daily.length-1]:null;
   if(!latest){document.getElementById('overviewBar').innerHTML='';return;}
   const d7 = new Date(latest.date+'T00:00:00'); d7.setDate(d7.getDate()-7);
-  const e7 = [...daily].reverse().find(e=>e.date<=d7.toISOString().slice(0,10))||null;
+  const e7 = [...daily].reverse().find(e=>e.date<=localISO(d7))||null;
   const weekViews = e7 ? Math.max(0,latest.total_views-e7.total_views) : null;
   const weekSub   = e7 ? latest.subscribers-e7.subscribers : null;
   const allV=allViewData();
@@ -1217,7 +1219,7 @@ function calcSnapshotGained(vid_id, days, snapshots){
   const latest = sorted[sorted.length-1];
   const cutoffDate = new Date(latest.date+'T00:00:00');
   cutoffDate.setDate(cutoffDate.getDate()-days);
-  const cutoff = cutoffDate.toISOString().slice(0,10);
+  const cutoff = localISO(cutoffDate);
   const old = [...sorted].reverse().find(s=>s.date<=cutoff);
   if(!old) return 0;
   const latestViews = (latest.v||{})[vid_id] || 0;
@@ -1231,7 +1233,7 @@ function calcSnapshotGrowth(days, snapshots){
   const latest = sorted[sorted.length-1];
   const cutoffDate = new Date(latest.date+'T00:00:00');
   cutoffDate.setDate(cutoffDate.getDate()-days);
-  const cutoff = cutoffDate.toISOString().slice(0,10);
+  const cutoff = localISO(cutoffDate);
   const old = [...sorted].reverse().find(s=>s.date<=cutoff);
   if(!old) return {};
   const result = {};
@@ -1398,7 +1400,7 @@ function renderOps(){
   const daysSince = lastPost ? Math.floor((today - new Date(lastPost+'T00:00:00'))/86400000) : null;
   // 過去30日投稿本数
   const d30 = new Date(today); d30.setDate(d30.getDate()-30);
-  const posts30 = videos.filter(v=>v.published_at>=d30.toISOString().slice(0,10)).length;
+  const posts30 = videos.filter(v=>v.published_at>=localISO(d30)).length;
   // 平均週間投稿数（全期間）
   const oldest = sorted[sorted.length-1]?.published_at;
   const totalDays = oldest ? Math.floor((today - new Date(oldest+'T00:00:00'))/86400000)+1 : 1;
@@ -1417,7 +1419,7 @@ function renderOps(){
   const now = new Date(today);
   for(let i=11;i>=0;i--){
     const d = new Date(now); d.setMonth(d.getMonth()-i);
-    const key = d.toISOString().slice(0,7);
+    const key = localISO(d).slice(0,7);
     monthMap[key] = 0;
   }
   videos.forEach(v=>{
@@ -1551,7 +1553,7 @@ function getWeekDates(referenceDate, offsetWeeks){
   const mondayOffset = dow === 0 ? -6 : 1 - dow;
   const monday = new Date(d); monday.setDate(d.getDate()+mondayOffset-(offsetWeeks*7));
   const dates = [];
-  for(let i=0;i<7;i++){const dd=new Date(monday);dd.setDate(monday.getDate()+i);dates.push(dd.toISOString().slice(0,10));}
+  for(let i=0;i<7;i++){const dd=new Date(monday);dd.setDate(monday.getDate()+i);dates.push(localISO(dd));}
   return dates;
 }
 
