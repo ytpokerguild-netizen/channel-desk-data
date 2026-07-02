@@ -383,7 +383,6 @@ body{
     <!-- Tab nav -->
     <nav class="tab-nav">
       <button onclick="switchTab('overview')"   id="tab-overview"   class="on">📊 概要</button>
-      <button onclick="switchTab('growth')"     id="tab-growth"         >📈 伸び率</button>
       <button onclick="switchTab('weekly')"     id="tab-weekly"         >📅 今週 vs 先週</button>
       <button onclick="switchTab('ops')"        id="tab-ops"            >📋 運営</button>
       <button onclick="switchTab('schedule')"   id="tab-schedule"       >📝 投稿</button>
@@ -453,19 +452,6 @@ body{
       </div>
 
     </div><!-- /pane-overview -->
-
-    <!-- ════════════════════════ TAB: 伸び率 ════════════════════════ -->
-    <div id="pane-growth" style="display:none">
-      <div class="period-seg" id="growthSeg">
-        <button onclick="setGrowthPeriod(7,this)"   class="on">7日</button>
-        <button onclick="setGrowthPeriod(28,this)"        >28日</button>
-        <button onclick="setGrowthPeriod(90,this)"        >90日</button>
-        <button onclick="setGrowthPeriod(365,this)"       >365日</button>
-        <button onclick="setGrowthPeriod(0,this)"         >全期間</button>
-      </div>
-
-      <div id="growthContent"></div>
-    </div>
 
     <!-- ════════════════════════ TAB: 今週 vs 先週 ════════════════════════ -->
     <div id="pane-weekly" style="display:none">
@@ -617,7 +603,6 @@ let compareMode = false;
 let filterFromB = null, filterToB = null;
 let activeMetric = 'views';
 let activeTab = 'overview';
-let growthPeriod = 7;
 let videoRankPeriod = 0;  // 0=全期間
 let _rankVideos = [];
 
@@ -662,11 +647,10 @@ async function loadData(){
 // ════════════════════════════════
 function switchTab(name){
   activeTab = name;
-  ['overview','growth','weekly','ops','schedule','videos'].forEach(t => {
+  ['overview','weekly','ops','schedule','videos'].forEach(t => {
     document.getElementById('pane-'+t).style.display = t === name ? '' : 'none';
     document.getElementById('tab-'+t).classList.toggle('on', t === name);
   });
-  if(name === 'growth')   renderGrowth();
   if(name === 'weekly')   renderWeekly();
   if(name === 'ops')      renderOps();
   if(name === 'schedule') renderSchedule();
@@ -1058,7 +1042,7 @@ function renderOverview(){
 }
 
 // ════════════════════════════════
-// 伸び率タブ
+// 動画ランキング（期間切替）
 // ════════════════════════════════
 function setVideoRankPeriod(days, btn){
   videoRankPeriod = days;
@@ -1067,202 +1051,6 @@ function setVideoRankPeriod(days, btn){
   renderVideoList();
 }
 
-function setGrowthPeriod(days, btn){
-  growthPeriod = days;
-  document.querySelectorAll('#growthSeg button').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  renderGrowth();
-}
-
-function renderGrowth(){
-  const vp = G.video_period || {};
-  const container = document.getElementById('growthContent');
-
-  // 全期間（growthPeriod === 0）: Data API 総再生数順
-  if(growthPeriod === 0){
-    const videos = (G.videos||[]).map(v=>({...v})).sort((a,b)=>b.views-a.views);
-    if(!videos.length){ container.innerHTML = '<div class="no-data">動画データがありません。</div>'; return; }
-    const maxV = videos[0].views || 1;
-    container.innerHTML = `
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
-        総再生数ランキング（全期間・Data API）
-      </div>
-      <div class="video-list">
-        ${videos.slice(0,100).map((v,i)=>{
-          const n=i+1, medal=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
-          return `
-          <div class="video-card" onclick="openVideoModalFromGrowth('${v.video_id}',${n})">
-            <div class="vc-rank ${n<=3?'top3':''}">${medal}</div>
-            <img class="vc-thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
-            <div class="vc-body">
-              <div class="vc-title">${v.title}</div>
-              <div class="vc-meta">
-                <span class="vc-stat">👁 <strong>${fmtFull(v.views)}</strong>回</span>
-                ${v.likes?`<span class="vc-stat">👍 <strong>${fmtFull(v.likes)}</strong></span>`:''}
-                <span class="vc-date">${fmtDate(v.published_at)}</span>
-              </div>
-              <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.round(v.views/maxV*100)}%"></div></div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`;
-    return;
-  }
-
-  const key = String(growthPeriod);
-  const periodData = vp[key] || {};
-  const vs = G.video_snapshots || [];
-
-  // 期間データがある場合: video_period を使う
-  if(Object.keys(periodData).length > 0){
-    const today = G.meta.data_through;
-    const videos = (G.videos||[]).map(v => {
-      const pd = periodData[v.video_id];
-      return pd ? {
-        ...v,
-        period_views: pd.views,
-        period_watch_min: pd.watch_min,
-        avg_dur_sec: pd.avg_dur_sec,
-        period_ctr: pd.ctr || null,
-      } : null;
-    }).filter(Boolean).sort((a,b)=>b.period_views-a.period_views);
-
-    if(!videos.length){ container.innerHTML = '<div class="no-data">期間データがありません。Analytics API の設定を確認してください。</div>'; return; }
-
-    const maxViews = videos[0]?.period_views || 1;
-
-    // スナップショットから伸び率を計算（あれば）
-    const snapshotGrowthMap = calcSnapshotGrowth(growthPeriod, vs);
-
-    container.innerHTML = `
-      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
-        直近${growthPeriod}日間の再生数ランキング（Analytics API データ）
-      </div>
-      <div class="video-list">
-        ${videos.slice(0,100).map((v,i)=>{
-          const n=i+1;
-          const medal=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
-          // 伸び率: スナップショット優先。不足時は 期間再生数÷期間前累計 で算出
-          let growth = snapshotGrowthMap[v.video_id];
-          let isNew = false;
-          if(growth === undefined && v.period_views > 0){
-            const base = (v.views||0) - v.period_views;  // 期間開始時点の推定累計
-            if(base > 0) growth = v.period_views / base * 100;
-            else isNew = true;  // 期間内の再生がほぼ全て = 期間中に投稿された動画
-          }
-          const growthBadge = isNew
-            ? `<span class="growth-badge new">NEW</span>`
-            : growth !== undefined
-              ? `<span class="growth-badge ${growth>=0?'up':'down'}">${growth>=0?'▲':'▼'}${Math.abs(growth).toFixed(1)}%</span>`
-              : '';
-          return `
-          <div class="video-card" onclick="openVideoModalFromGrowth('${v.video_id}',${n})">
-            <div class="vc-rank ${n<=3?'top3':''}">${medal}</div>
-            <img class="vc-thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
-            <div class="vc-body">
-              <div class="vc-title">${v.title}</div>
-              <div class="vc-meta">
-                <span class="vc-stat">👁 <strong>${fmtFull(v.period_views)}</strong>回</span>
-                ${v.period_watch_min?`<span class="vc-stat">⏱ <strong>${fmtMin(v.period_watch_min)}</strong></span>`:''}
-                ${v.avg_dur_sec?`<span class="vc-stat">🎬 <strong>${fmtDur(v.avg_dur_sec)}</strong></span>`:''}
-                ${v.period_ctr?`<span class="vc-stat" title="クリック率">🎯 <strong>${v.period_ctr}%</strong></span>`:''}
-                ${growthBadge}
-                <span class="vc-date">${fmtDate(v.published_at)}</span>
-              </div>
-              <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.round(v.period_views/maxViews*100)}%"></div></div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`;
-
-  } else if(vs.length >= 2){
-    // フォールバック: スナップショット差分
-    const snapshotGrowthMap = calcSnapshotGrowth(growthPeriod, vs);
-    if(!Object.keys(snapshotGrowthMap).length){ container.innerHTML = '<div class="no-data">スナップショットデータが不足しています。<br>毎日自動取得中です（'+growthPeriod+'日後に完成）。</div>'; return; }
-
-    const videos = (G.videos||[]).map(v=>{
-      const g = snapshotGrowthMap[v.video_id];
-      if(g===undefined) return null;
-      const gained = calcSnapshotGained(v.video_id, growthPeriod, vs);
-      return {...v, period_views:gained, growth_pct:g};
-    }).filter(v=>v&&v.period_views>0).sort((a,b)=>b.period_views-a.period_views);
-
-    const maxViews = videos[0]?.period_views||1;
-    container.innerHTML = `
-      <div style="font-size:12px;color:var(--muted-2);margin-bottom:10px">
-        ⚠ Analytics API 未接続 — スナップショット差分（暫定データ）
-      </div>
-      <div class="video-list">
-        ${videos.slice(0,100).map((v,i)=>{
-          const n=i+1;
-          const medal=n===1?'🥇':n===2?'🥈':n===3?'🥉':n;
-          return `
-          <div class="video-card" onclick="openVideoModalFromGrowth('${v.video_id}',${n})">
-            <div class="vc-rank ${n<=3?'top3':''}">${medal}</div>
-            <img class="vc-thumb" src="https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg" alt="" loading="lazy" onerror="this.style.display='none'">
-            <div class="vc-body">
-              <div class="vc-title">${v.title}</div>
-              <div class="vc-meta">
-                <span class="vc-stat">👁 <strong>+${fmtFull(v.period_views)}</strong>回（${growthPeriod}日）</span>
-                <span class="growth-badge ${v.growth_pct>=0?'up':'down'}">${v.growth_pct>=0?'▲':'▼'}${Math.abs(v.growth_pct).toFixed(1)}%</span>
-                <span class="vc-date">${fmtDate(v.published_at)}</span>
-              </div>
-              <div class="vc-bar-wrap"><div class="vc-bar" style="width:${Math.round(v.period_views/maxViews*100)}%"></div></div>
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`;
-  } else {
-    container.innerHTML = `<div class="no-data">
-      データ収集中です。<br>
-      GitHub Actions が毎日自動取得しています（${growthPeriod}日分蓄積後に表示）。<br><br>
-      Analytics API を接続すると即座に表示されます。<br>
-      <span style="color:var(--muted-2);font-size:11px">GitHub Secrets: REFRESH_TOKEN / OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET</span>
-    </div>`;
-  }
-}
-
-function calcSnapshotGained(vid_id, days, snapshots){
-  if(snapshots.length < 2) return 0;
-  const sorted = [...snapshots].sort((a,b)=>a.date.localeCompare(b.date));
-  const latest = sorted[sorted.length-1];
-  const cutoffDate = new Date(latest.date+'T00:00:00');
-  cutoffDate.setDate(cutoffDate.getDate()-days);
-  const cutoff = localISO(cutoffDate);
-  const old = [...sorted].reverse().find(s=>s.date<=cutoff);
-  if(!old) return 0;
-  const latestViews = (latest.v||{})[vid_id] || 0;
-  const oldViews    = (old.v||{})[vid_id]    || 0;
-  return Math.max(0, latestViews - oldViews);
-}
-
-function calcSnapshotGrowth(days, snapshots){
-  if(snapshots.length < 2) return {};
-  const sorted = [...snapshots].sort((a,b)=>a.date.localeCompare(b.date));
-  const latest = sorted[sorted.length-1];
-  const cutoffDate = new Date(latest.date+'T00:00:00');
-  cutoffDate.setDate(cutoffDate.getDate()-days);
-  const cutoff = localISO(cutoffDate);
-  const old = [...sorted].reverse().find(s=>s.date<=cutoff);
-  if(!old) return {};
-  const result = {};
-  const latestV = latest.v || {};
-  const oldV    = old.v    || {};
-  for(const vid_id of Object.keys(latestV)){
-    const now = latestV[vid_id]||0;
-    const prev = oldV[vid_id]||0;
-    if(prev > 0) result[vid_id] = (now-prev)/prev*100;
-  }
-  return result;
-}
-
-function openVideoModalFromGrowth(vid_id, rank){
-  const v = (G.videos||[]).find(v=>v.video_id===vid_id);
-  if(!v) return;
-  const vp = G.video_period || {};
-  const pd = (vp[String(growthPeriod)]||{})[vid_id] || {};
-  openVideoModalData(v, rank, pd);
-}
 
 // ════════════════════════════════
 // 分析タブ
@@ -2144,7 +1932,6 @@ function renderAll(){
   renderOverview();
   renderAnalytics(); // 概要タブ内に常時表示
   // 開いているタブだけ描画
-  if(activeTab==='growth')   renderGrowth();
   if(activeTab==='weekly')   renderWeekly();
   if(activeTab==='ops')      renderOps();
   if(activeTab==='schedule') renderSchedule();
