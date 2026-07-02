@@ -672,9 +672,16 @@ function allViewData(){
   const map = new Map();
   // Analytics 日次を優先
   (G.analytics_daily||[]).forEach(d=>{if(d.views>0) map.set(d.date,{date:d.date,views:d.views});});
-  // フォールバック: スナップショット差分
-  // スナップショットに欠損日がある場合は差分を日数で均等割りして暫定値を入れる
-  // （Analytics API は約2日遅れで確定するため、後日自動的に正確な値へ置き換わる）
+  // フォールバック: スナップショット差分（Analytics確定前の暫定推定値）
+  // 欠損日への配分は「直近8週間の曜日別平均再生数」で重み付けする。
+  // 合計はスナップショット差分（実測）に一致し、日別配分のみ推定。
+  // Analytics API の確定値（約2日遅れ）が届き次第、自動でそちらに置き換わる。
+  const adHist = (G.analytics_daily||[]).filter(d=>d.views>0).slice(-56);
+  const dowSum=[0,0,0,0,0,0,0], dowCnt=[0,0,0,0,0,0,0];
+  adHist.forEach(d=>{const w=new Date(d.date+'T00:00:00').getDay(); dowSum[w]+=d.views; dowCnt[w]++;});
+  const dowAvg = dowSum.map((s,i)=>dowCnt[i]?s/dowCnt[i]:0);
+  const hasDow = dowAvg.some(v=>v>0);
+
   const daily = allDaily();
   for(let i=1;i<daily.length;i++){
     const prev = new Date(daily[i-1].date+'T00:00:00');
@@ -682,12 +689,15 @@ function allViewData(){
     const gap  = Math.round((cur-prev)/86400000);
     if(gap<=0) continue;
     const delta = Math.max(0, daily[i].total_views - daily[i-1].total_views);
-    const per   = Math.round(delta/gap);
+    const days=[]; let wsum=0;
     for(let g=1; g<=gap; g++){
       const dd = new Date(prev); dd.setDate(prev.getDate()+g);
-      const ds = localISO(dd);
-      if(!map.has(ds)) map.set(ds,{date:ds,views:per,estimated:gap>1});
+      const w  = hasDow ? (dowAvg[dd.getDay()]||1) : 1;
+      days.push({ds:localISO(dd), w}); wsum += w;
     }
+    days.forEach(({ds,w})=>{
+      if(!map.has(ds)) map.set(ds,{date:ds, views:Math.round(delta*w/(wsum||1)), estimated:true});
+    });
   }
   return [...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
 }
@@ -1373,6 +1383,12 @@ function renderWeekly(){
     if(adMap.has(date)) return adMap.get(date).views;
     return vMap.get(date)?.views||0;
   });
+  const getEstFlags = (dates) => dates.map(date=>{
+    if(adMap.has(date)) return false;
+    return !!vMap.get(date)?.estimated;
+  });
+  const thisEst = getEstFlags(thisWeek);
+  const lastEst = getEstFlags(lastWeek);
   const getWatchMin = (dates) => dates.map(date=>(adMap.get(date)||{}).watch_min||0);
   const getSubsGained = (dates) => dates.map(date=>(adMap.get(date)||{}).subs_gained||0);
   const getSubsLost   = (dates) => dates.map(date=>(adMap.get(date)||{}).subs_lost||0);
@@ -1399,7 +1415,7 @@ function renderWeekly(){
   };
 
   const wsItems = [
-    {label:'今週 再生数',   thisVal:fmtFull(totalThis), diff:diffBadge(totalThis,totalLast,n=>fmtFull(n)+'回'), sub:`先週: ${fmtFull(totalLast)}回`},
+    {label:'今週 再生数',   thisVal:fmtFull(totalThis)+(thisEst.some(Boolean)?'※':''), diff:diffBadge(totalThis,totalLast,n=>fmtFull(n)+'回'), sub:`先週: ${fmtFull(totalLast)}回${lastEst.some(Boolean)?'※':''}`},
     {label:'今週 視聴時間', thisVal:fmtMin(watchThis),  diff:watchThis||watchLast?diffBadge(watchThis,watchLast,n=>fmtMin(n)):'<span class="ws-delta flat">—</span>', sub:watchLast?`先週: ${fmtMin(watchLast)}`:'Analytics未接続'},
     {label:'今週 登録者増',  thisVal:(netSubsThis>=0?'+':'')+fmtFull(netSubsThis), diff:netSubsThis||netSubsLast?diffBadge(netSubsThis,netSubsLast,n=>fmtFull(n)+'人'):'<span class="ws-delta flat">—</span>', sub:netSubsLast?`先週: ${netSubsLast>=0?'+':''}${fmtFull(netSubsLast)}人`:'Analytics未接続'},
   ];
@@ -1410,10 +1426,13 @@ function renderWeekly(){
       <div class="ws-row"><span class="ws-val">${it.thisVal}</span>${it.diff}</div>
       <div class="ws-sub">${it.sub}</div>
     </div>`).join('');
+  const anyEst = thisEst.some(Boolean) || lastEst.some(Boolean);
+  document.getElementById('weekSummary').insertAdjacentHTML('beforeend',
+    anyEst ? `<div style="flex-basis:100%;font-size:11px;color:var(--muted-2,#8FA396);margin-top:6px">※ Analytics確定前の推定値を含みます（曜日パターンで按分）。確定データ取得後に自動更新されます。</div>` : '');
 
   // 曜日ラベル
   const DOW = ['月','火','水','木','金','土','日'];
-  const labels = thisWeek.map((d,i)=>DOW[i]+'('+d.slice(5)+')');
+  const labels = thisWeek.map((d,i)=>DOW[i]+'('+d.slice(5)+')'+(thisEst[i]||lastEst[i]?'※':''));
 
   // 再生数チャート
   const hasData = totalThis>0||totalLast>0;
@@ -1424,14 +1443,22 @@ function renderWeekly(){
     weekChart = new Chart(document.getElementById('weekChart'),{
       type:'bar',
       data:{labels,datasets:[
-        {label:'今週',data:thisViews,backgroundColor:'rgba(91,214,138,.75)',borderWidth:0,borderRadius:4},
-        {label:'先週',data:lastViews,backgroundColor:'rgba(201,162,39,.45)',borderWidth:0,borderRadius:4},
+        {label:'今週',data:thisViews,borderRadius:4,
+         backgroundColor:thisViews.map((_,i)=>thisEst[i]?'rgba(91,214,138,.28)':'rgba(91,214,138,.75)'),
+         borderColor:thisViews.map((_,i)=>thisEst[i]?'rgba(91,214,138,.9)':'transparent'),
+         borderWidth:thisViews.map((_,i)=>thisEst[i]?1.5:0),
+         borderDash:[4,3]},
+        {label:'先週',data:lastViews,borderRadius:4,
+         backgroundColor:lastViews.map((_,i)=>lastEst[i]?'rgba(201,162,39,.22)':'rgba(201,162,39,.45)'),
+         borderColor:lastViews.map((_,i)=>lastEst[i]?'rgba(201,162,39,.8)':'transparent'),
+         borderWidth:lastViews.map((_,i)=>lastEst[i]?1.5:0),
+         borderDash:[4,3]},
       ]},
       options:{
         ...CHART_BASE,
         plugins:{...CHART_BASE.plugins,
           legend:{display:true,labels:{color:'#8FA396',font:{size:11}}},
-          tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtFull(ctx.raw)}回`}}
+          tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:ctx=>{const est=(ctx.datasetIndex===0?thisEst:lastEst)[ctx.dataIndex];return `${ctx.dataset.label}: ${fmtFull(ctx.raw)}回${est?'（推定）':''}`;}}}
         },
         scales:{
           x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5E726A',font:{size:11}}},
