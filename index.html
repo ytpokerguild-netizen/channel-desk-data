@@ -451,6 +451,12 @@ body{
         </div>
       </div>
 
+      <!-- チャンネル流入経路 -->
+      <div class="chart-card standalone" id="trafficOverviewCard" style="display:none;margin-top:14px">
+        <div class="chart-title"><span class="ct-label" id="trafficOverviewTitle">チャンネル流入経路</span></div>
+        <div id="trafficOverviewBars" style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px"></div>
+      </div>
+
     </div><!-- /pane-overview -->
 
     <!-- ════════════════════════ TAB: 今週 vs 先週 ════════════════════════ -->
@@ -1082,6 +1088,31 @@ const COUNTRY_JP = {
 function renderAnalytics(){
   const ex = G.analytics_extra || {};
   const hasData = (ex.top_countries||[]).length || ex.subscribed_status;
+
+  // ── チャンネル流入経路（概要タブ下部） ──
+  const tsrc  = ex.traffic_sources || [];
+  const tCard = document.getElementById('trafficOverviewCard');
+  if(tCard){
+    if(tsrc.length){
+      tCard.style.display = 'block';
+      document.getElementById('trafficOverviewTitle').textContent =
+        `チャンネル流入経路（直近${ex.period_days||28}日）`;
+      const totalTV = tsrc.reduce((s,t)=>s+(t.views||0),0) || 1;
+      const maxTV   = Math.max(...tsrc.map(t=>t.views||0)) || 1;
+      document.getElementById('trafficOverviewBars').innerHTML = tsrc.slice(0,12).map(t=>`
+        <div style="margin-bottom:8px">
+          <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:3px">
+            <span>${TRAFFIC_LABEL[String(t.source_type)]||String(t.source_type)||'その他'}</span>
+            <span><strong style="color:var(--ink,#E8EDE9)">${fmtFull(t.views)}</strong>回 ・ ${(t.views/totalTV*100).toFixed(1)}%</span>
+          </div>
+          <div style="height:5px;background:var(--line-strong);border-radius:3px">
+            <div style="height:5px;background:var(--blue);border-radius:3px;width:${Math.max(2,Math.round(t.views/maxTV*100))}%"></div>
+          </div>
+        </div>`).join('');
+    } else {
+      tCard.style.display = 'none';
+    }
+  }
 
   // 概要タブ内の分析エリアを表示/非表示
   const aioEl = document.getElementById('analyticsInOverview');
