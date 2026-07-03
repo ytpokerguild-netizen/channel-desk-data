@@ -458,10 +458,11 @@ TRAFFIC_SOURCE_LABELS = {
     "22": "登録フィード",
 }
 
-def fetch_channel_extra_analytics(access_token, days=28):
+def fetch_channel_extra_analytics(access_token, days=28, shorts_ids=None):
     """
     チャンネル追加 Analytics（28日間）
-    Returns dict with keys: ctr, traffic_sources, top_countries, subscribed_status
+    Returns dict with keys: ctr, traffic_sources, traffic_sources_shorts, top_countries, subscribed_status, jp_daily
+    shorts_ids: ショート動画のvideo_idリスト（指定時はショート限定の流入経路も取得）
     """
     end_date   = (date.today() - timedelta(days=1)).isoformat()
     start_date = (date.today() - timedelta(days=days)).isoformat()
@@ -515,6 +516,32 @@ def fetch_channel_extra_analytics(access_token, days=28):
         print(f"  トラフィックソース: {len(result['traffic_sources'])} 種")
     else:
         print("  [WARN] トラフィックソース取得失敗")
+
+    # ── ショート動画限定の流入経路（video ID フィルタ、上限500本）──
+    if shorts_ids:
+        data = analytics_get(access_token, {
+            "ids":        f"channel=={CHANNEL_ID}",
+            "dimensions": "insightTrafficSourceType",
+            "metrics":    "views,estimatedMinutesWatched",
+            "filters":    "video==" + ",".join(shorts_ids[:500]),
+            "startDate":  start_date,
+            "endDate":    end_date,
+            "sort":       "-views",
+            "maxResults": 20,
+        })
+        if data and data.get("rows"):
+            result["traffic_sources_shorts"] = [
+                {
+                    "source_type": row[0],
+                    "label":  TRAFFIC_SOURCE_LABELS.get(str(row[0]), f"その他({row[0]})"),
+                    "views":      int(float(row[1])),
+                    "watch_min":  int(float(row[2])),
+                }
+                for row in data["rows"]
+            ]
+            print(f"  ショート限定トラフィック: {len(result['traffic_sources_shorts'])} 種 ({len(shorts_ids)} 本対象)")
+        else:
+            print("  [WARN] ショート限定トラフィック取得失敗")
 
     # ── 国別 Top15 ──
     # ※ province ディメンションは US のみ対応のため country ディメンションを使用
@@ -1023,7 +1050,8 @@ def main():
 
         # チャンネル追加 Analytics（CTR / トラフィック / 国別 / 登録者別）
         print("[7/9] チャンネル追加 Analytics を取得中...")
-        new_extra = fetch_channel_extra_analytics(access_token, days=28)
+        shorts_ids = [v["video_id"] for v in videos if (v.get("duration_sec") or 0) <= 180]
+        new_extra = fetch_channel_extra_analytics(access_token, days=28, shorts_ids=shorts_ids)
         if new_extra:
             analytics_extra = new_extra
         else:
