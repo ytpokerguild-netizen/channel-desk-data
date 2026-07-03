@@ -577,7 +577,7 @@ body{
       <div class="card">
         <h3><span class="dot"></span>週次レポート（土〜金）
           <select id="wrSelect" onchange="renderReport()" style="margin-left:auto;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px;font-family:'Noto Sans JP',sans-serif"></select>
-          <button id="wrPdfBtn" onclick="downloadReportPdf()" style="margin-left:8px;background:rgba(201,162,39,.14);color:var(--gold);border:1px solid rgba(201,162,39,.4);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:'Noto Sans JP',sans-serif">📄 PDF保存</button>
+          <button id="wrPdfBtn" onclick="openReportPage()" style="margin-left:8px;background:rgba(201,162,39,.14);color:var(--gold);border:1px solid rgba(201,162,39,.4);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:'Noto Sans JP',sans-serif">🌐 レポートページを開く</button>
         </h3>
         <div id="wrEmpty" style="display:none;font-size:12px;color:var(--muted-2)">レポートはまだありません。毎週土曜の朝に自動生成されます。</div>
         <div id="wrBody">
@@ -2213,105 +2213,10 @@ function renderReport(){
 }
 
 // ════════════════════════════════
-// 週次レポート PDF 出力（印刷用レイアウト → ブラウザの「PDFとして保存」）
+// 週次レポート Webページ（report.html）を開く
 // ════════════════════════════════
-function buildPrintHtml(rep){
-  const c = rep.channel || {};
-  const views     = rep.final ? c.views      : (c.views_snap      ?? c.views);
-  const viewsPrev = rep.final ? c.views_prev : (c.views_snap_prev ?? c.views_prev);
-  const subsNet   = c.subs_net ?? ((c.subs_gained||0)-(c.subs_lost||0));
-  const pct = (a,b)=> (b==null||!b) ? '—' : ((a-b)/b*100>=0?'+':'')+((a-b)/b*100).toFixed(1)+'%';
-  const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  const badge = rep.final ? '確定' : '速報';
-  // 速報かつ実測(スナップショット)なし = 確定日数分のみの部分集計 → 前週比は出さない
-  const partial = !rep.final && c.views_snap==null && (rep.confirmed_days||0) < 7;
-
-  const sumRows = [
-    ['週間再生数', fmtFull(views)+' 回'+(partial?`（確定${rep.confirmed_days}日分のみ）`:''), fmtFull(viewsPrev)+' 回', partial?'—':pct(views,viewsPrev)],
-    ['視聴時間',   fmtMin(c.watch_min||0), fmtMin(c.watch_min_prev||0), pct(c.watch_min,c.watch_min_prev)],
-    ['登録者純増', (subsNet>=0?'+':'')+fmtFull(subsNet||0)+' 人', c.subs_net_prev!=null?(c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+' 人':'—', pct(subsNet,c.subs_net_prev)],
-    ['週内の投稿', (rep.new_videos||[]).length+' 本', '', ''],
-  ];
-
-  const trP = new Map((rep.traffic_sources_prev||[]).map(t=>[String(t.source_type), t.views]));
-  const trafficRows = (rep.traffic_sources||[]).slice(0,8).map(t=>{
-    const prev = trP.get(String(t.source_type));
-    return `<tr><td>${esc(TRAFFIC_LABEL[String(t.source_type)]||t.source_type)}</td><td class="num">${fmtFull(t.views)}</td><td class="num">${prev!=null?fmtFull(prev):'—'}</td><td class="num">${prev!=null?pct(t.views,prev):'—'}</td></tr>`;
-  }).join('');
-
-  const ssRow = (ss)=>{
-    if(!ss||!Object.keys(ss).length) return null;
-    const sub=ss['SUBSCRIBED']||0, unsub=ss['UNSUBSCRIBED']||0, tot=sub+unsub||1;
-    return {p:Math.round(sub/tot*100), tot:sub+unsub};
-  };
-  const ssC = ssRow(rep.subscribed_status), ssP = ssRow(rep.subscribed_status_prev);
-
-  const pp = rep.post_plan || {planned:0,posted:0,items:[]};
-
-  return `<!DOCTYPE html><html lang="ja"><head><meta charset="utf-8">
-<title>週次レポート ${rep.week_start}〜${rep.week_end}</title>
-<style>
-  @page{size:A4;margin:16mm}
-  body{font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;color:#1a1a1a;font-size:11px;line-height:1.6;margin:0}
-  h1{font-size:17px;margin:0 0 2px;border-bottom:2.5px solid #C9A227;padding-bottom:8px}
-  .sub{color:#666;font-size:10.5px;margin-bottom:16px}
-  h2{font-size:12.5px;margin:18px 0 6px;color:#8a6d1a;border-left:4px solid #C9A227;padding-left:8px}
-  table{width:100%;border-collapse:collapse;font-size:10.5px}
-  th,td{border:1px solid #ddd;padding:5px 8px;text-align:left}
-  th{background:#f5f1e6;font-weight:600}
-  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
-  .badge{display:inline-block;font-size:10px;padding:1px 8px;border-radius:9px;margin-left:8px;vertical-align:2px;
-    background:${rep.final?'#e5f2e9':'#fdf3d7'};color:${rep.final?'#1c7c40':'#8a6d1a'};border:1px solid ${rep.final?'#a9d6b8':'#e4cf8e'}}
-  .note{color:#888;font-size:9.5px;margin-top:4px}
-  .foot{margin-top:22px;color:#999;font-size:9px;border-top:1px solid #ddd;padding-top:6px}
-</style></head><body>
-<h1>りいポーカーチャンネル 週次レポート<span class="badge">${badge}</span></h1>
-<div class="sub">対象期間: ${fmtDate(rep.week_start)}（土）〜 ${fmtDate(rep.week_end)}（金）　${rep.final?`Analytics確定値 ${rep.confirmed_days}/7日`:`※速報値（確定 ${rep.confirmed_days}/7日）。確定データが揃い次第ダッシュボード上で自動更新されます`}</div>
-
-<h2>基本指標（前週比）</h2>
-<table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減率</th></tr>
-${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td></tr>`).join('')}</table>
-${c.subscribers_end!=null?`<div class="note">週末時点の登録者数: ${fmtFull(Math.round(c.subscribers_end))} 人</div>`:''}
-
-${rep.ai_analysis?`<h2>AI分析と提案</h2>
-${String(rep.ai_analysis.analysis||'').split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 6px">${esc(p)}</p>`).join('')}
-${(rep.ai_analysis.suggestions||[]).length?`<div style="border:1px solid #e4cf8e;background:#fdf8ea;border-radius:6px;padding:8px 12px;margin-top:6px">
-<b style="color:#8a6d1a">今週の提案</b>
-<ol style="margin:4px 0 0;padding-left:18px">${rep.ai_analysis.suggestions.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>`:''}`:''}
-
-<h2>週間トップ動画</h2>
-<table><tr><th style="width:24px">#</th><th>タイトル</th><th class="num">今週再生</th><th class="num">前週再生</th></tr>
-${(rep.top_videos||[]).map((v,i)=>`<tr><td>${i+1}</td><td>${esc(v.title)}</td><td class="num">${fmtFull(v.views_week)}</td><td class="num">${fmtFull(v.views_prev_week)}</td></tr>`).join('')||'<tr><td colspan="4">データなし</td></tr>'}</table>
-
-<h2>流入経路</h2>
-${trafficRows?`<table><tr><th>経路</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減率</th></tr>${trafficRows}</table>`:'<div class="note">この週の流入経路データはまだ取得されていません（次回の自動更新で追加されます）</div>'}
-
-<h2>視聴者層（新規 vs リピーター）</h2>
-${ssC?`<table><tr><th>週</th><th class="num">登録者による視聴</th><th class="num">非登録者による視聴</th><th class="num">総視聴</th></tr>
-<tr><td>今週</td><td class="num">${ssC.p}%</td><td class="num">${100-ssC.p}%</td><td class="num">${fmtFull(ssC.tot)}</td></tr>
-${ssP?`<tr><td>前週</td><td class="num">${ssP.p}%</td><td class="num">${100-ssP.p}%</td><td class="num">${fmtFull(ssP.tot)}</td></tr>`:''}</table>`:'<div class="note">この週の視聴者層データはまだ取得されていません（次回の自動更新で追加されます）</div>'}
-
-<h2>投稿計画の進捗</h2>
-<div style="margin-bottom:6px">計画 <b>${pp.planned}</b> 本 ／ シート上「投稿済み」 <b>${pp.posted}</b> 本 ／ 実際に公開 <b>${(rep.new_videos||[]).length}</b> 本</div>
-${(pp.items||[]).length?`<table><tr><th style="width:70px">予定日</th><th>タイトル</th><th style="width:70px">ステータス</th></tr>
-${pp.items.map(p=>`<tr><td>${fmtDate(p.date)}</td><td>${esc(p.title)}</td><td>${esc(p.status||'—')}</td></tr>`).join('')}</table>`:'<div class="note">この週の計画データなし</div>'}
-
-<div class="foot">CHANNEL DESK 自動生成 ／ 出力日時: ${new Date().toLocaleString('ja-JP')} ／ りいポーカーチャンネル【PokerGuild】</div>
-</body></html>`;
-}
-
-function downloadReportPdf(){
-  const reports = G.weekly_reports || [];
-  const rep = reports.find(r=>r.week_start===wrSelected) || reports[reports.length-1];
-  if(!rep) return;
-  const f = document.createElement('iframe');
-  f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0';
-  f.onload = () => setTimeout(()=>{
-    try{ f.contentWindow.focus(); f.contentWindow.print(); }
-    finally{ setTimeout(()=>f.remove(), 60000); }
-  }, 200);
-  document.body.appendChild(f);
-  f.srcdoc = buildPrintHtml(rep);
+function openReportPage(){
+  window.open('report.html' + (wrSelected ? '?week=' + wrSelected : ''), '_blank');
 }
 
 // ════════════════════════════════
