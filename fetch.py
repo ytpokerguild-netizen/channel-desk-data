@@ -540,6 +540,26 @@ def fetch_channel_extra_analytics(access_token, days=28):
     else:
         print("  [WARN] 国別データ取得失敗")
 
+    # ── 日本国内の日次推移（filters=country==JP）──
+    data = analytics_get(access_token, {
+        "ids":        f"channel=={CHANNEL_ID}",
+        "dimensions": "day",
+        "filters":    "country==JP",
+        "metrics":    "views,estimatedMinutesWatched",
+        "startDate":  start_date,
+        "endDate":    end_date,
+        "sort":       "day",
+        "maxResults": 200,
+    })
+    if data and data.get("rows"):
+        result["jp_daily"] = [
+            {"date": row[0], "views": int(float(row[1])), "watch_min": int(float(row[2]))}
+            for row in data["rows"]
+        ]
+        print(f"  日本国内 日次: {len(result['jp_daily'])} 日分")
+    else:
+        print("  [WARN] 日本国内 日次データ取得失敗")
+
     # ── 新規 vs リピーター ──
     data = analytics_get(access_token, {
         "ids":        f"channel=={CHANNEL_ID}",

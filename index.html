@@ -453,11 +453,13 @@ body{
       <!-- 国別 & 新規vsリピーター（概要タブ内） -->
       <div class="analytics-grid" id="analyticsInOverview" style="display:none;margin-top:14px">
         <div class="chart-card standalone">
-          <div class="chart-title"><span class="ct-label">視聴者の国別 Top15（28日）</span></div>
-          <div class="chart-box" style="height:240px">
+          <div class="chart-title"><span class="ct-label">🇯🇵 日本国内の視聴（28日）</span><span id="jpShareLabel" style="color:var(--muted-2)"></span></div>
+          <div id="jpStats" style="display:flex;gap:18px;margin:2px 0 10px;font-size:12px;color:var(--muted)"></div>
+          <div class="chart-box" style="height:190px">
             <canvas id="countryChart"></canvas>
-            <div class="chart-nodata" id="countryNoData" style="display:none">データなし</div>
+            <div class="chart-nodata" id="countryNoData" style="display:none">日本国内の日次データは次回の自動更新後に表示されます</div>
           </div>
+          <div id="jpAbroadNote" style="font-size:11px;color:var(--muted-2);margin-top:8px"></div>
         </div>
         <div class="chart-card standalone" style="display:flex;flex-direction:column;justify-content:center">
           <div class="period-note" id="analyticsNote" style="margin-bottom:10px">— データなし —</div>
@@ -1188,40 +1190,53 @@ function renderAnalytics(){
   document.getElementById('analyticsNote').textContent =
     `集計期間: ${ex.start_date||''}〜${ex.end_date||''} (直近${period}日間)`;
 
-  // ── 国別 Top15 ──
+  // ── 日本国内の視聴（28日）──
   const countries = ex.top_countries || [];
+  const jp      = countries.find(c=>c.country==='JP') || {views:0, watch_min:0};
+  const totalCV = countries.reduce((s,r)=>s+r.views,0);
+  const jpPct   = totalCV>0 ? jp.views/totalCV*100 : 0;
+  document.getElementById('jpShareLabel').textContent = totalCV>0 ? ` 全視聴の${jpPct.toFixed(1)}%` : '';
+  document.getElementById('jpStats').innerHTML = totalCV>0 ? `
+    <span>視聴数 <strong style="color:var(--ink,#E8EDE9);font-size:15px;font-family:'Oswald',sans-serif">${fmtFull(jp.views)}</strong> 回</span>
+    <span>視聴時間 <strong style="color:var(--ink,#E8EDE9);font-size:15px;font-family:'Oswald',sans-serif">${fmtMin(jp.watch_min||0)}</strong></span>` : '';
+  const abroad  = countries.filter(c=>c.country!=='JP');
+  const abroadV = abroad.reduce((s,c)=>s+c.views,0);
+  document.getElementById('jpAbroadNote').textContent = totalCV>0
+    ? `海外合計: ${fmtFull(abroadV)}回（${(100-jpPct).toFixed(1)}%）— ` +
+      abroad.slice(0,4).map(c=>`${COUNTRY_JP[c.country]||c.country} ${fmt(c.views)}`).join(' ／ ')
+    : '';
+
+  // 日本限定の日次推移（country==JP フィルタで取得した jp_daily）
+  const jpDaily = ex.jp_daily || [];
   if(countryChart){ countryChart.destroy(); countryChart = null; }
-  if(countries.length){
+  if(jpDaily.length){
     document.getElementById('countryNoData').style.display = 'none';
     document.getElementById('countryChart').style.display = 'block';
-    const totalCV = countries.reduce((s,r)=>s+r.views,0);
-    const CPALETTE = ['#5BD68A','#5BA6D6','#C9A227','#E2706E','#8FA396','#A78BFA','#E0C45C','#60A5FA','#F59E0B','#34D399','#F472B6','#A3E635','#FB923C','#38BDF8','#E879F9'];
     countryChart = new Chart(document.getElementById('countryChart'),{
-      type:'bar',
+      type:'line',
       data:{
-        labels: countries.map(r=>COUNTRY_JP[r.country]||r.country),
+        labels: jpDaily.map(d=>d.date.slice(5).replace('-','/')),
         datasets:[{
-          data: countries.map(r=>r.views),
-          backgroundColor: CPALETTE.slice(0,countries.length),
-          borderWidth:0, borderRadius:4,
+          label:'日本国内 再生数',
+          data: jpDaily.map(d=>d.views),
+          borderColor:'#5BD68A',
+          backgroundColor:'rgba(91,214,138,.12)',
+          fill:true, tension:.3, pointRadius:0, borderWidth:2,
         }]
       },
       options:{
-        indexAxis:'y',
         responsive:true, maintainAspectRatio:false,
         plugins:{
           legend:{display:false},
           tooltip:{
             backgroundColor:'#1B2E23',borderColor:'rgba(255,255,255,.12)',borderWidth:1,
             titleColor:'#8FA396',bodyColor:'#E8EDE9',padding:10,
-            callbacks:{
-              label:ctx=>`${ctx.raw.toLocaleString()}回 (${totalCV>0?(ctx.raw/totalCV*100).toFixed(1):'0'}%)`
-            }
+            callbacks:{ label:ctx=>`${ctx.raw.toLocaleString()}回` }
           }
         },
         scales:{
-          x:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:10},callback:v=>fmt(v)}},
-          y:{grid:{display:false},ticks:{color:'#8FA396',font:{size:10}}},
+          x:{grid:{display:false},ticks:{color:'#5E726A',font:{size:10},maxTicksLimit:8}},
+          y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:10},callback:v=>fmt(v)}},
         }
       }
     });
