@@ -461,7 +461,8 @@ body{
           </div>
           <div id="jpAbroadNote" style="font-size:11px;color:var(--muted-2);margin-top:8px"></div>
         </div>
-        <div class="chart-card standalone" style="display:flex;flex-direction:column;justify-content:center">
+        <div class="chart-card standalone" style="display:flex;flex-direction:column">
+          <div class="chart-title"><span class="ct-label">視聴者層 — 登録者 vs 非登録者（28日）</span></div>
           <div class="period-note" id="analyticsNote" style="margin-bottom:10px">— データなし —</div>
           <div class="subs-wrap" id="subsWrap" style="flex-direction:column;margin-bottom:0"></div>
         </div>
@@ -1159,7 +1160,7 @@ function renderAnalytics(){
     if(tsrc.length){
       tCard.style.display = 'block';
       document.getElementById('trafficOverviewTitle').textContent =
-        `チャンネル流入経路（直近${ex.period_days||28}日）`;
+        `チャンネル流入経路 — 全動画の視聴がどこから来たか（直近${ex.period_days||28}日）`;
       const totalTV = tsrc.reduce((s,t)=>s+(t.views||0),0) || 1;
       const maxTV   = Math.max(...tsrc.map(t=>t.views||0)) || 1;
       document.getElementById('trafficOverviewBars').innerHTML = tsrc.slice(0,12).map(t=>`
