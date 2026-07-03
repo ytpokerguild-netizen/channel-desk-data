@@ -400,6 +400,7 @@ body{
       <button onclick="switchTab('ops')"        id="tab-ops"            >📋 運営</button>
       <button onclick="switchTab('schedule')"   id="tab-schedule"       >📝 投稿</button>
       <button onclick="switchTab('videos')"     id="tab-videos"         >🎬 動画一覧</button>
+      <button onclick="switchTab('report')"     id="tab-report"         >📈 週次レポート</button>
     </nav>
 
     <!-- ════════════════════════ TAB: 概要 ════════════════════════ -->
@@ -563,6 +564,46 @@ body{
       </div>
     </div>
 
+    <!-- ════════════════════════ TAB: 週次レポート ════════════════════════ -->
+    <div id="pane-report" style="display:none">
+
+      <div class="card">
+        <h3><span class="dot"></span>週次レポート（土〜金）
+          <select id="wrSelect" onchange="renderReport()" style="margin-left:auto;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px;font-family:'Noto Sans JP',sans-serif"></select>
+        </h3>
+        <div id="wrEmpty" style="display:none;font-size:12px;color:var(--muted-2)">レポートはまだありません。毎週土曜の朝に自動生成されます。</div>
+        <div id="wrBody">
+          <div class="week-summary" id="wrSummary"></div>
+          <div id="wrNote" style="font-size:11px;color:var(--muted-2);margin-top:8px"></div>
+        </div>
+      </div>
+
+      <div class="card" id="wrTopCard">
+        <h3><span class="dot"></span>週間トップ動画</h3>
+        <div id="wrTopVideos"></div>
+      </div>
+
+      <div class="card" id="wrTrafficCard">
+        <h3><span class="dot"></span>流入経路・視聴者層</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px">
+          <div>
+            <div style="font-size:11px;color:var(--muted);letter-spacing:.05em;margin-bottom:8px">流入経路（前週比）</div>
+            <div id="wrTraffic"></div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--muted);letter-spacing:.05em;margin-bottom:8px">新規 vs リピーター</div>
+            <div id="wrSubsStatus"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="wrPlanCard">
+        <h3><span class="dot"></span>投稿計画の進捗</h3>
+        <div id="wrPostPlan"></div>
+      </div>
+
+    </div>
+
   </div><!-- /mainContent -->
 
   <div class="foot" id="footNote"></div>
@@ -666,7 +707,7 @@ async function loadData(){
 // ════════════════════════════════
 function switchTab(name){
   activeTab = name;
-  ['overview','weekly','ops','schedule','videos'].forEach(t => {
+  ['overview','weekly','ops','schedule','videos','report'].forEach(t => {
     document.getElementById('pane-'+t).style.display = t === name ? '' : 'none';
     document.getElementById('tab-'+t).classList.toggle('on', t === name);
   });
@@ -674,6 +715,7 @@ function switchTab(name){
   if(name === 'ops')      renderOps();
   if(name === 'schedule') renderSchedule();
   if(name === 'videos')   renderVideoList();
+  if(name === 'report')   renderReport();
 }
 
 // ════════════════════════════════
@@ -1997,6 +2039,117 @@ function closeVideoModal(e){
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeVideoModal(); });
 
 // ════════════════════════════════
+// 週次レポートタブ
+// ════════════════════════════════
+let wrSelected = null;
+function renderReport(){
+  const reports = (G.weekly_reports||[]).slice().sort((a,b)=>b.week_start.localeCompare(a.week_start));
+  const sel = document.getElementById('wrSelect');
+  const hasData = reports.length > 0;
+  document.getElementById('wrEmpty').style.display = hasData ? 'none' : 'block';
+  document.getElementById('wrBody').style.display  = hasData ? '' : 'none';
+  ['wrTopCard','wrTrafficCard','wrPlanCard'].forEach(id=>{
+    document.getElementById(id).style.display = hasData ? '' : 'none';
+  });
+  sel.style.display = hasData ? '' : 'none';
+  if(!hasData) return;
+
+  sel.innerHTML = reports.map(r=>
+    `<option value="${r.week_start}">${fmtDate(r.week_start)} 〜 ${fmtDate(r.week_end)}${r.final?'':'［速報］'}</option>`).join('');
+  if(wrSelected && reports.some(r=>r.week_start===wrSelected)) sel.value = wrSelected;
+  const rep = reports.find(r=>r.week_start===sel.value) || reports[0];
+  wrSelected = rep.week_start;
+  const c = rep.channel || {};
+
+  // 速報週は実測(スナップショット差分)を優先、確定週は Analytics 確定値
+  const views     = rep.final ? c.views      : (c.views_snap      ?? c.views);
+  const viewsPrev = rep.final ? c.views_prev : (c.views_snap_prev ?? c.views_prev);
+
+  const diffBadge = (a,b,fmtFn) => {
+    if(b==null || (!a && !b)) return '<span class="ws-delta flat">—</span>';
+    const d=(a||0)-b, cls=d>0?'up':d<0?'down':'flat';
+    return `<span class="ws-delta ${cls}">${d>=0?'▲':'▼'} ${fmtFn(Math.abs(d))}</span>`;
+  };
+  const subsNet     = c.subs_net ?? ((c.subs_gained||0)-(c.subs_lost||0));
+  const subsNetPrev = c.subs_net_prev;
+  const est = rep.final ? '' : '※';
+  const items = [
+    {label:'週間再生数'+est, val:fmtFull(views), diff:diffBadge(views,viewsPrev,n=>fmtFull(n)+'回'), sub:`前週: ${fmtFull(viewsPrev)}回`},
+    {label:'視聴時間'+est, val:fmtMin(c.watch_min||0), diff:diffBadge(c.watch_min,c.watch_min_prev,fmtMin), sub:`前週: ${fmtMin(c.watch_min_prev||0)}`},
+    {label:'登録者純増'+est, val:(subsNet>=0?'+':'')+fmtFull(subsNet||0), diff:diffBadge(subsNet,subsNetPrev,n=>fmtFull(n)+'人'), sub:c.subscribers_end!=null?`週末時点: ${fmtFull(Math.round(c.subscribers_end))}人`:''},
+    {label:'週内の投稿', val:(rep.new_videos||[]).length+'本', diff:'', sub:rep.post_plan?`計画 ${rep.post_plan.planned}本中 ${rep.post_plan.posted}本投稿済み`:''},
+  ];
+  document.getElementById('wrSummary').innerHTML = items.map(it=>`
+    <div class="ws-item">
+      <div class="ws-label">${it.label}</div>
+      <div class="ws-row"><span class="ws-val">${it.val}</span>${it.diff}</div>
+      <div class="ws-sub">${it.sub}</div>
+    </div>`).join('');
+  document.getElementById('wrNote').textContent = rep.final
+    ? `確定レポート（Analytics確定値 ${rep.confirmed_days}/7日）`
+    : `※速報値です。確定データが揃い次第（週明け頃）自動で確定版に更新されます（現在 ${rep.confirmed_days}/7日が確定）`;
+
+  // ── トップ動画 ──
+  document.getElementById('wrTopVideos').innerHTML = (rep.top_videos||[]).map((v,i)=>`
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px">
+      <span style="width:22px;text-align:right;color:${i<3?'var(--gold)':'var(--muted-2)'};font-family:'Oswald',sans-serif">${i+1}</span>
+      <a href="https://youtube.com/watch?v=${v.video_id}" target="_blank" rel="noopener" style="flex:1;color:var(--ink);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(v.title||'').replace(/"/g,'&quot;')}">${v.title}</a>
+      <span style="font-family:'Oswald',sans-serif">${fmtFull(v.views_week)}</span>
+      ${diffBadge(v.views_week, v.views_prev_week, fmtFull)}
+    </div>`).join('') || '<div style="font-size:12px;color:var(--muted-2)">データなし</div>';
+
+  // ── 流入経路（前週比付き）──
+  const tr   = rep.traffic_sources || [];
+  const trP  = new Map((rep.traffic_sources_prev||[]).map(t=>[String(t.source_type), t.views]));
+  const maxT = Math.max(...tr.map(t=>t.views||0), 1);
+  document.getElementById('wrTraffic').innerHTML = tr.length ? tr.slice(0,8).map(t=>{
+    const prev = trP.get(String(t.source_type));
+    return `
+    <div style="margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-bottom:2px">
+        <span>${TRAFFIC_LABEL[String(t.source_type)]||String(t.source_type)}</span>
+        <span>${fmtFull(t.views)}${prev!=null?` <span style="color:var(--muted-2)">(前週 ${fmtFull(prev)})</span>`:''}</span>
+      </div>
+      <div style="height:4px;background:var(--line-strong);border-radius:2px">
+        <div style="height:4px;background:var(--blue);border-radius:2px;width:${Math.round((t.views||0)/maxT*100)}%"></div>
+      </div>
+    </div>`;}).join('') : '<div style="font-size:12px;color:var(--muted-2)">データなし</div>';
+
+  // ── 新規 vs リピーター ──
+  const renderSS = (ss, label) => {
+    if(!ss || !Object.keys(ss).length) return '';
+    const sub=ss['SUBSCRIBED']||0, unsub=ss['UNSUBSCRIBED']||0, tot=sub+unsub||1;
+    const p=Math.round(sub/tot*100);
+    return `
+      <div style="font-size:10.5px;color:var(--muted-2);margin:8px 0 3px">${label}</div>
+      <div style="display:flex;height:10px;border-radius:5px;overflow:hidden">
+        <div style="width:${p}%;background:var(--gold)"></div>
+        <div style="width:${100-p}%;background:var(--panel-2)"></div>
+      </div>
+      <div style="display:flex;gap:10px;font-size:10.5px;color:var(--muted);margin-top:3px">
+        <span><span style="color:var(--gold)">■</span> 登録者 ${p}%</span>
+        <span>非登録者 ${100-p}%</span>
+        <span style="color:var(--muted-2)">${fmtFull(sub+unsub)} 回視聴</span>
+      </div>`;
+  };
+  document.getElementById('wrSubsStatus').innerHTML =
+    (renderSS(rep.subscribed_status,'この週') + renderSS(rep.subscribed_status_prev,'前週')) ||
+    '<div style="font-size:12px;color:var(--muted-2)">データなし</div>';
+
+  // ── 投稿計画 ──
+  const pp = rep.post_plan || {planned:0,posted:0,items:[]};
+  const nv = rep.new_videos || [];
+  document.getElementById('wrPostPlan').innerHTML = `
+    <div style="font-size:12.5px;margin-bottom:8px">計画 <b>${pp.planned}</b> 本 / 投稿済み <b style="color:var(--gold)">${pp.posted}</b> 本 / 実際に公開 <b>${nv.length}</b> 本</div>
+    ${(pp.items||[]).map(p=>`
+      <div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--line);font-size:12px">
+        <span style="color:var(--muted-2);width:74px;flex-shrink:0">${fmtDate(p.date)}</span>
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.title}</span>
+        <span style="flex-shrink:0;color:${(p.status||'').includes('済')?'var(--gold)':'var(--muted)'}">${p.status||'—'}</span>
+      </div>`).join('') || '<div style="font-size:12px;color:var(--muted-2)">この週の計画データなし</div>'}`;
+}
+
+// ════════════════════════════════
 // 全体レンダリング
 // ════════════════════════════════
 function renderAll(){
@@ -2007,6 +2160,7 @@ function renderAll(){
   if(activeTab==='ops')      renderOps();
   if(activeTab==='schedule') renderSchedule();
   if(activeTab==='videos')   renderVideoList();
+  if(activeTab==='report')   renderReport();
 }
 
 // ── パスワードゲート ──

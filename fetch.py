@@ -649,11 +649,239 @@ def fetch_video_extra_analytics(access_token, top_video_ids, days=365):
     return result
 
 # ──────────────────────────────────────────────────────────
+# 週次レポート（毎週 土〜金 JST。土曜朝の実行で速報生成 → 確定値が揃い次第更新）
+# ──────────────────────────────────────────────────────────
+WEEKLY_REPORT_BACKFILL_WEEKS = 8    # 遡って生成する週数
+WEEKLY_REPORT_KEEP           = 26   # 保持する週数
+
+def _jst_today():
+    """JST の今日（Actions は UTC で動くため明示変換）"""
+    return (datetime.now(timezone.utc) + timedelta(hours=9)).date()
+
+def _interp_cum(daily_rows, key, target):
+    """daily の累積値（total_views / subscribers）を日付 target で線形補間。範囲外は None"""
+    pts = sorted(
+        (date.fromisoformat(r["date"]), r[key])
+        for r in daily_rows if r.get(key)
+    )
+    if not pts or target < pts[0][0] or target > pts[-1][0]:
+        return None
+    prev = pts[0]
+    for p in pts:
+        if p[0] == target:
+            return p[1]
+        if p[0] > target:
+            span = (p[0] - prev[0]).days
+            if span <= 0:
+                return p[1]
+            frac = (target - prev[0]).days / span
+            return prev[1] + (p[1] - prev[1]) * frac
+        prev = p
+    return pts[-1][1]
+
+def fetch_week_traffic(access_token, start, end):
+    """指定期間の流入経路・登録者別 views を取得"""
+    import time
+    out = {}
+    data = analytics_get(access_token, {
+        "ids":        f"channel=={CHANNEL_ID}",
+        "dimensions": "insightTrafficSourceType",
+        "metrics":    "views",
+        "startDate":  start,
+        "endDate":    end,
+        "sort":       "-views",
+        "maxResults": 10,
+    })
+    if data and data.get("rows"):
+        out["traffic_sources"] = [
+            {"source_type": row[0], "views": int(float(row[1]))}
+            for row in data["rows"]
+        ]
+    time.sleep(0.1)
+    data = analytics_get(access_token, {
+        "ids":        f"channel=={CHANNEL_ID}",
+        "dimensions": "subscribedStatus",
+        "metrics":    "views",
+        "startDate":  start,
+        "endDate":    end,
+    })
+    if data and data.get("rows"):
+        out["subscribed_status"] = {row[0]: int(float(row[1])) for row in data["rows"]}
+    time.sleep(0.1)
+    return out
+
+def _parse_plan_date(s):
+    """'2026/6/1' 形式 → date。失敗は None"""
+    try:
+        p = [int(x) for x in str(s).strip().split("/")]
+        if len(p) == 3:
+            return date(p[0], p[1], p[2])
+    except Exception:
+        pass
+    return None
+
+def build_weekly_report(week_start, week_end, *, daily, analytics_daily,
+                        video_daily, videos, post_plan, week_extra, prev_week_extra):
+    """1週分（土〜金）のレポートを組み立てる"""
+    ws, we   = week_start, week_end
+    pws, pwe = ws - timedelta(days=7), we - timedelta(days=7)
+    ad = {r["date"]: r for r in analytics_daily}
+
+    def win_days(s, e):
+        return [(s + timedelta(days=i)).isoformat() for i in range((e - s).days + 1)]
+
+    def sum_ad(s, e):
+        rows = [ad[d] for d in win_days(s, e) if d in ad]
+        return {
+            "views":       sum(r.get("views", 0)       for r in rows),
+            "watch_min":   sum(r.get("watch_min", 0)   for r in rows),
+            "subs_gained": sum(r.get("subs_gained", 0) for r in rows),
+            "subs_lost":   sum(r.get("subs_lost", 0)   for r in rows),
+            "days":        len(rows),
+        }
+
+    cur, prv = sum_ad(ws, we), sum_ad(pws, pwe)
+
+    # 実測（daily スナップショット補間）による速報値
+    def snap_diff(key, s, e):
+        a = _interp_cum(daily, key, s - timedelta(days=1))
+        b = _interp_cum(daily, key, e)
+        if a is None or b is None:
+            return None
+        return int(round(b - a))
+
+    # 動画別の週間 views（video_daily を期間合計）
+    def video_week(s, e):
+        dset = set(win_days(s, e))
+        out = {}
+        for vid, rows in video_daily.items():
+            v = sum(r.get("views", 0) for r in rows if r.get("date") in dset)
+            if v > 0:
+                out[vid] = v
+        return out
+
+    vw, vw_prev = video_week(ws, we), video_week(pws, pwe)
+    vmeta = {v["video_id"]: v for v in videos}
+    top_videos = [{
+        "video_id":        vid,
+        "title":           vmeta.get(vid, {}).get("title", ""),
+        "published_at":    vmeta.get(vid, {}).get("published_at", ""),
+        "views_week":      vw[vid],
+        "views_prev_week": vw_prev.get(vid, 0),
+    } for vid in sorted(vw, key=vw.get, reverse=True)[:10]]
+
+    # 週内に公開された動画
+    new_videos = sorted([{
+        "video_id":     v["video_id"],
+        "title":        v["title"],
+        "published_at": v["published_at"],
+        "views_total":  v.get("views", 0),
+    } for v in videos
+        if ws.isoformat() <= (v.get("published_at") or "")[:10] <= we.isoformat()],
+        key=lambda v: v["published_at"])
+
+    # 投稿計画の進捗
+    planned = []
+    for row in post_plan:
+        pd_ = _parse_plan_date(row.get("投稿予定日", ""))
+        if pd_ and ws <= pd_ <= we:
+            planned.append({
+                "date":   pd_.isoformat(),
+                "title":  row.get("タイトル", ""),
+                "status": row.get("ステータス", ""),
+                "owner":  row.get("担当", ""),
+            })
+    posted_cnt = sum(1 for p in planned if "済" in p["status"])
+
+    report = {
+        "week_start":     ws.isoformat(),
+        "week_end":       we.isoformat(),
+        "generated_at":   datetime.now(timezone.utc).isoformat(),
+        "confirmed_days": cur["days"],
+        "channel": {
+            "views":           cur["views"],
+            "views_prev":      prv["views"],
+            "views_snap":      snap_diff("total_views", ws, we),
+            "views_snap_prev": snap_diff("total_views", pws, pwe),
+            "watch_min":       cur["watch_min"],
+            "watch_min_prev":  prv["watch_min"],
+            "subs_net":        snap_diff("subscribers", ws, we),
+            "subs_net_prev":   snap_diff("subscribers", pws, pwe),
+            "subs_gained":     cur["subs_gained"],
+            "subs_lost":       cur["subs_lost"],
+            "subscribers_end": _interp_cum(daily, "subscribers", we),
+        },
+        "top_videos": top_videos,
+        "new_videos": new_videos,
+        "post_plan":  {"planned": len(planned), "posted": posted_cnt, "items": planned},
+    }
+    if week_extra:
+        report["traffic_sources"]   = week_extra.get("traffic_sources", [])
+        report["subscribed_status"] = week_extra.get("subscribed_status", {})
+    if prev_week_extra:
+        report["traffic_sources_prev"]   = prev_week_extra.get("traffic_sources", [])
+        report["subscribed_status_prev"] = prev_week_extra.get("subscribed_status", {})
+    return report
+
+def update_weekly_reports(weekly_reports, access_token, *, daily, analytics_daily,
+                          video_daily, videos, post_plan):
+    """完了した週（土〜金）のレポートを生成・更新して返す。
+    確定値が揃う（週末+3日）までは速報として毎日更新し、揃ったら final=True で固定。"""
+    today_j = _jst_today()
+    days_since_sat = (today_j.weekday() - 5) % 7          # 土曜=5
+    cur_week_start = today_j - timedelta(days=days_since_sat)
+    last_end       = cur_week_start - timedelta(days=1)   # 直近の完了週の金曜
+    existing = {r["week_start"]: r for r in weekly_reports}
+
+    extra_cache = {}
+    def get_extra(s, e):
+        key = s.isoformat()
+        if key in extra_cache:
+            return extra_cache[key]
+        r = existing.get(key)
+        if r and r.get("final") and "traffic_sources" in r:
+            extra_cache[key] = {
+                "traffic_sources":   r["traffic_sources"],
+                "subscribed_status": r.get("subscribed_status", {}),
+            }
+        elif access_token:
+            extra_cache[key] = fetch_week_traffic(access_token, s.isoformat(), e.isoformat())
+        else:
+            extra_cache[key] = {}
+        return extra_cache[key]
+
+    for i in range(WEEKLY_REPORT_BACKFILL_WEEKS):
+        we = last_end - timedelta(days=7 * i)
+        ws = we - timedelta(days=6)
+        key = ws.isoformat()
+        old = existing.get(key)
+        if old and old.get("final"):
+            continue
+        rep = build_weekly_report(
+            ws, we,
+            daily=daily, analytics_daily=analytics_daily, video_daily=video_daily,
+            videos=videos, post_plan=post_plan,
+            week_extra=get_extra(ws, we),
+            prev_week_extra=get_extra(ws - timedelta(days=7), we - timedelta(days=7)),
+        )
+        # 確定条件: 日付経過 + Analytics が7日分揃っている + (トークンありなら流入経路も取得済み)
+        rep["final"] = (
+            today_j >= we + timedelta(days=3)
+            and rep.get("confirmed_days", 0) >= 7
+            and (not access_token or "traffic_sources" in rep)
+        )
+        existing[key] = rep
+        print(f"  {ws}〜{we}: {'確定' if rep['final'] else '速報'}生成")
+
+    reports = sorted(existing.values(), key=lambda r: r["week_start"])
+    return reports[-WEEKLY_REPORT_KEEP:]
+
+# ──────────────────────────────────────────────────────────
 # 既存 data.json 読み込み
 # ──────────────────────────────────────────────────────────
 def load_existing_data():
     if not os.path.exists(OUTPUT_FILE):
-        return {}, [], [], {}, {}, {}, [], {}
+        return [], [], [], {}, {}, {}, [], {}, [], []
 
     try:
         with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
@@ -671,12 +899,13 @@ def load_existing_data():
         post_plan             = ex.get("post_plan",             [])
         video_analytics_extra = ex.get("video_analytics_extra", {})
         prev_videos           = ex.get("videos",                [])
+        weekly_reports        = ex.get("weekly_reports",        [])
 
-        return daily, analytics_daily, video_snapshots, video_period, analytics_extra, video_daily, post_plan, video_analytics_extra, prev_videos
+        return daily, analytics_daily, video_snapshots, video_period, analytics_extra, video_daily, post_plan, video_analytics_extra, prev_videos, weekly_reports
 
     except Exception as e:
         print(f"[WARN] 既存データ読み込み失敗: {e}")
-        return [], [], [], {}, {}, {}, [], {}, []
+        return [], [], [], {}, {}, {}, [], {}, [], []
 
 # ──────────────────────────────────────────────────────────
 # メイン
@@ -697,7 +926,7 @@ def main():
     print(f"  {len(videos)} 本取得")
 
     # ── 既存データ読み込み ──
-    daily, analytics_daily, video_snapshots, video_period, analytics_extra, video_daily, post_plan, video_analytics_extra, prev_videos = load_existing_data()
+    daily, analytics_daily, video_snapshots, video_period, analytics_extra, video_daily, post_plan, video_analytics_extra, prev_videos, weekly_reports = load_existing_data()
 
     # videos が空の場合は前回データを保持（API エラー・クォータ超過対策）
     if not videos and prev_videos:
@@ -803,6 +1032,17 @@ def main():
     else:
         print("  [WARN] 取得失敗 — 前回データを保持")
 
+    # ── 週次レポート（土〜金、速報→確定で自動更新）──
+    print("[10/10] 週次レポートを生成中...")
+    try:
+        weekly_reports = update_weekly_reports(
+            weekly_reports, access_token,
+            daily=daily, analytics_daily=analytics_daily,
+            video_daily=video_daily, videos=videos, post_plan=post_plan,
+        )
+    except Exception as e:
+        print(f"  [WARN] 週次レポート生成失敗 — 前回データを保持: {e}")
+
     # ── データ書き出し ──
     print("data.json を書き出し中...")
     output = {
@@ -823,6 +1063,7 @@ def main():
         "video_analytics_extra": video_analytics_extra, # 動画別追加分析（国別/登録者別）上位30本
         "videos":                videos,                # 動画メタデータ + 現在 stats
         "post_plan":             post_plan,             # 投稿計画（Google スプレッドシート）
+        "weekly_reports":        weekly_reports,        # 週次レポート（土〜金、最大26週）
     }
 
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
@@ -836,6 +1077,7 @@ def main():
     print(f"  動画数: {len(videos)}")
     print(f"  動画別追加分析: {len(video_analytics_extra)} 本")
     print(f"  投稿計画: {len(post_plan)} 件")
+    print(f"  週次レポート: {len(weekly_reports)} 週分")
 
 if __name__ == "__main__":
     main()
