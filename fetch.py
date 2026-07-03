@@ -587,6 +587,26 @@ def fetch_channel_extra_analytics(access_token, days=28, shorts_ids=None):
     else:
         print("  [WARN] 日本国内 日次データ取得失敗")
 
+    # ── 日本国内 都市別 Top25（city ディメンションは2022年以降のデータで利用可）──
+    data = analytics_get(access_token, {
+        "ids":        f"channel=={CHANNEL_ID}",
+        "dimensions": "city",
+        "filters":    "country==JP",
+        "metrics":    "views,estimatedMinutesWatched",
+        "startDate":  start_date,
+        "endDate":    end_date,
+        "sort":       "-views",
+        "maxResults": 25,
+    })
+    if data and data.get("rows"):
+        result["jp_cities"] = [
+            {"city": row[0], "views": int(float(row[1])), "watch_min": int(float(row[2]))}
+            for row in data["rows"]
+        ]
+        print(f"  日本国内 都市別: {len(result['jp_cities'])} 都市 (首位: {result['jp_cities'][0]['city']})")
+    else:
+        print("  [WARN] 日本国内 都市別データ取得失敗")
+
     # ── 新規 vs リピーター ──
     data = analytics_get(access_token, {
         "ids":        f"channel=={CHANNEL_ID}",

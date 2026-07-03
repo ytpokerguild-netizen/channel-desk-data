@@ -5,6 +5,9 @@ on:
     # 毎朝 3:00 JST（= UTC 18:00 前日）に実行
     - cron: "0 18 * * *"
   workflow_dispatch:  # 手動実行も可能
+  push:               # ※一時的（動作確認用）。確認後に削除する
+    paths-ignore:
+      - "data.json"
 
 jobs:
   fetch:
