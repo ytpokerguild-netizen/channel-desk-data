@@ -864,6 +864,9 @@ def update_weekly_reports(weekly_reports, access_token, *, daily, analytics_dail
             week_extra=get_extra(ws, we),
             prev_week_extra=get_extra(ws - timedelta(days=7), we - timedelta(days=7)),
         )
+        # AI分析(別プロセスが書き込む)は再生成時も引き継ぐ
+        if old and old.get("ai_analysis"):
+            rep["ai_analysis"] = old["ai_analysis"]
         # 確定条件: 日付経過 + Analytics が7日分揃っている + (トークンありなら流入経路も取得済み)
         rep["final"] = (
             today_j >= we + timedelta(days=3)

@@ -579,6 +579,11 @@ body{
         </div>
       </div>
 
+      <div class="card" id="wrAiCard" style="display:none">
+        <h3><span class="dot"></span>🤖 AI分析と提案<span id="wrAiDate" style="margin-left:auto;font-size:11px;color:var(--muted-2);text-transform:none;font-family:'Noto Sans JP',sans-serif"></span></h3>
+        <div id="wrAi" style="font-size:12.5px;line-height:1.8"></div>
+      </div>
+
       <div class="card" id="wrTopCard">
         <h3><span class="dot"></span>週間トップ動画</h3>
         <div id="wrTopVideos"></div>
@@ -2092,6 +2097,21 @@ function renderReport(){
     ? `確定レポート（Analytics確定値 ${rep.confirmed_days}/7日）`
     : `※速報値です。確定データが揃い次第（週明け頃）自動で確定版に更新されます（現在 ${rep.confirmed_days}/7日が確定）`;
 
+  // ── AI分析と提案 ──
+  const ai = rep.ai_analysis;
+  const escHtml = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  document.getElementById('wrAiCard').style.display = ai ? '' : 'none';
+  if(ai){
+    document.getElementById('wrAiDate').textContent = ai.generated_at ? '生成: '+fmtDate(String(ai.generated_at).slice(0,10)) : '';
+    document.getElementById('wrAi').innerHTML =
+      String(ai.analysis||'').split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 8px">${escHtml(p)}</p>`).join('') +
+      ((ai.suggestions||[]).length ? `
+        <div style="margin-top:10px;padding:10px 12px;background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.25);border-radius:10px">
+          <div style="font-size:11px;color:var(--gold);letter-spacing:.05em;margin-bottom:6px">今週の提案</div>
+          ${ai.suggestions.map((s,i)=>`<div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--gold);flex-shrink:0">${i+1}.</span><span>${escHtml(s)}</span></div>`).join('')}
+        </div>` : '');
+  }
+
   // ── トップ動画 ──
   document.getElementById('wrTopVideos').innerHTML = (rep.top_videos||[]).map((v,i)=>`
     <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--line);font-size:12.5px">
@@ -2212,6 +2232,12 @@ function buildPrintHtml(rep){
 <table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減率</th></tr>
 ${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td></tr>`).join('')}</table>
 ${c.subscribers_end!=null?`<div class="note">週末時点の登録者数: ${fmtFull(Math.round(c.subscribers_end))} 人</div>`:''}
+
+${rep.ai_analysis?`<h2>AI分析と提案</h2>
+${String(rep.ai_analysis.analysis||'').split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 6px">${esc(p)}</p>`).join('')}
+${(rep.ai_analysis.suggestions||[]).length?`<div style="border:1px solid #e4cf8e;background:#fdf8ea;border-radius:6px;padding:8px 12px;margin-top:6px">
+<b style="color:#8a6d1a">今週の提案</b>
+<ol style="margin:4px 0 0;padding-left:18px">${rep.ai_analysis.suggestions.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>`:''}`:''}
 
 <h2>週間トップ動画</h2>
 <table><tr><th style="width:24px">#</th><th>タイトル</th><th class="num">今週再生</th><th class="num">前週再生</th></tr>
