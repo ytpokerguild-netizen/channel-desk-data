@@ -472,7 +472,7 @@ body{
           <button onclick="setTrafficMode('shorts',this)" class="on">ショート動画</button>
           <button onclick="setTrafficMode('all',this)">全体</button>
         </div>
-        <div id="trafficOverviewBars" style="display:grid;grid-template-columns:1fr 1fr;gap:0 24px"></div>
+        <div id="trafficOverviewBars" style="display:grid;grid-template-columns:1fr;gap:0;max-width:680px"></div>
       </div>
 
     </div><!-- /pane-overview -->
@@ -2010,6 +2010,8 @@ const TRAFFIC_LABEL = {
   'END_SCREEN':'エンドスクリーン','NO_LINK_EMBEDDED':'埋め込み','OTHER':'その他',
   'ANNOTATION':'アノテーション','CAMPAIGN_CARD':'プロモーション',
   'SHORTS_CONTENT_LINKS':'ショートリンク','YT_OTHER_PAGE':'他のYTページ',
+  'NO_LINK_OTHER':'リンクなし/その他','SOUND_PAGE':'サウンドページ','HASHTAGS':'ハッシュタグ',
+  'VIDEO_REMIXES':'リミックス','LIVE_REDIRECT':'ライブリダイレクト','PRODUCT_PAGE':'商品ページ',
   '3':'ブラウジング','9':'YouTube検索','10':'関連動画','4':'チャンネルページ',
   '5':'外部サイト','7':'Google検索','19':'通知','18':'エンドスクリーン',
   '11':'再生リスト','0':'直接/不明','1':'広告','17':'プロモーション','8':'その他'
