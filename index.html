@@ -396,7 +396,6 @@ body{
     <!-- Tab nav -->
     <nav class="tab-nav">
       <button onclick="switchTab('overview')"   id="tab-overview"   class="on">📊 概要</button>
-      <button onclick="switchTab('weekly')"     id="tab-weekly"         >📅 今週 vs 先週</button>
       <button onclick="switchTab('ops')"        id="tab-ops"            >📋 運営</button>
       <button onclick="switchTab('schedule')"   id="tab-schedule"       >📝 投稿</button>
       <button onclick="switchTab('videos')"     id="tab-videos"         >🎬 動画一覧</button>
@@ -476,27 +475,6 @@ body{
       </div>
 
     </div><!-- /pane-overview -->
-
-    <!-- ════════════════════════ TAB: 今週 vs 先週 ════════════════════════ -->
-    <div id="pane-weekly" style="display:none">
-
-      <div class="week-summary" id="weekSummary"></div>
-
-      <div class="chart-card standalone">
-        <div class="chart-title"><span class="ct-label">日次視聴回数 — 今週 vs 先週</span></div>
-        <div class="chart-box"><canvas id="weekChart"></canvas><div class="chart-nodata" id="weekChartNoData">データが不足しています（7日分以上蓄積後に表示）</div></div>
-        <div class="chart-legend">
-          <div class="legend-item"><div class="legend-dot" style="background:var(--up)"></div>今週</div>
-          <div class="legend-item"><div class="legend-dot" style="background:var(--gold);opacity:.6"></div>先週</div>
-        </div>
-      </div>
-
-      <div class="chart-card standalone">
-        <div class="chart-title"><span class="ct-label">総再生時間（分）— 今週 vs 先週</span></div>
-        <div class="chart-box"><canvas id="watchChart"></canvas><div class="chart-nodata" id="watchChartNoData">Analytics データなし（GitHub Secrets 設定後に自動取得）</div></div>
-      </div>
-
-    </div>
 
     <!-- ════════════════════════ TAB: 運営 ════════════════════════ -->
     <div id="pane-ops" style="display:none">
@@ -666,7 +644,7 @@ const DATA_URL = window.location.protocol === 'file:'
   : "data.json";
 
 let G = null;
-let mainChart = null, weekChart = null, watchChart = null, trafficChart = null, countryChart = null, vmodalChart = null;
+let mainChart = null, trafficChart = null, countryChart = null, vmodalChart = null;
 let postPaceChart = null, subsDetailChart = null, dowChart = null, durationChart = null;
 let filterFrom = null, filterTo = null;
 let compareMode = false;
@@ -720,11 +698,10 @@ async function loadData(){
 // ════════════════════════════════
 function switchTab(name){
   activeTab = name;
-  ['overview','weekly','ops','schedule','videos','report'].forEach(t => {
+  ['overview','ops','schedule','videos','report'].forEach(t => {
     document.getElementById('pane-'+t).style.display = t === name ? '' : 'none';
     document.getElementById('tab-'+t).classList.toggle('on', t === name);
   });
-  if(name === 'weekly')   renderWeekly();
   if(name === 'ops')      renderOps();
   if(name === 'schedule') renderSchedule();
   if(name === 'videos')   renderVideoList();
@@ -1500,151 +1477,6 @@ function renderOps(){
 }
 
 // ════════════════════════════════
-// 今週 vs 先週タブ
-// ════════════════════════════════
-function getWeekDates(referenceDate, offsetWeeks){
-  // referenceDate からさかのぼってその週の月〜日を返す
-  const d = new Date(referenceDate+'T00:00:00');
-  const dow = d.getDay(); // 0=日, 1=月...
-  const mondayOffset = dow === 0 ? -6 : 1 - dow;
-  const monday = new Date(d); monday.setDate(d.getDate()+mondayOffset-(offsetWeeks*7));
-  const dates = [];
-  for(let i=0;i<7;i++){const dd=new Date(monday);dd.setDate(monday.getDate()+i);dates.push(localISO(dd));}
-  return dates;
-}
-
-function renderWeekly(){
-  const ad = G.analytics_daily || [];
-  const daily = allDaily();
-  const today = G.meta.data_through;
-
-  // 今週・先週の日付リスト
-  const thisWeek = getWeekDates(today, 0);
-  const lastWeek = getWeekDates(today, 1);
-
-  // Analytics daily Map
-  const adMap = new Map(ad.map(d=>[d.date,d]));
-  // fallback: snapshot diff map
-  const allV = allViewData();
-  const vMap = new Map(allV.map(d=>[d.date,d]));
-
-  const getViews = (dates) => dates.map(date=>{
-    if(adMap.has(date)) return adMap.get(date).views;
-    return vMap.get(date)?.views||0;
-  });
-  const getEstFlags = (dates) => dates.map(date=>{
-    if(adMap.has(date)) return false;
-    return !!vMap.get(date)?.estimated;
-  });
-  const thisEst = getEstFlags(thisWeek);
-  const lastEst = getEstFlags(lastWeek);
-  const getWatchMin = (dates) => dates.map(date=>(adMap.get(date)||{}).watch_min||0);
-  const getSubsGained = (dates) => dates.map(date=>(adMap.get(date)||{}).subs_gained||0);
-  const getSubsLost   = (dates) => dates.map(date=>(adMap.get(date)||{}).subs_lost||0);
-
-  const thisViews = getViews(thisWeek);
-  const lastViews = getViews(lastWeek);
-  const thisWatch = getWatchMin(thisWeek);
-  const lastWatch = getWatchMin(lastWeek);
-  const thisSubs  = getSubsGained(thisWeek).reduce((s,v)=>s+v,0);
-  const lastSubs  = getSubsGained(lastWeek).reduce((s,v)=>s+v,0);
-  const thisSubsL = getSubsLost(thisWeek).reduce((s,v)=>s+v,0);
-  const lastSubsL = getSubsLost(lastWeek).reduce((s,v)=>s+v,0);
-
-  const totalThis = thisViews.reduce((s,v)=>s+v,0);
-  const totalLast = lastViews.reduce((s,v)=>s+v,0);
-  const watchThis = thisWatch.reduce((s,v)=>s+v,0);
-  const watchLast = lastWatch.reduce((s,v)=>s+v,0);
-  const netSubsThis = thisSubs - thisSubsL;
-  const netSubsLast = lastSubs - lastSubsL;
-
-  const diffBadge = (a,b,fmtFn) => {
-    const d=a-b, cls=d>0?'up':d<0?'down':'flat';
-    return `<span class="ws-delta ${cls}">${d>=0?'▲':'▼'} ${fmtFn(Math.abs(d))}</span>`;
-  };
-
-  const wsItems = [
-    {label:'今週 視聴回数',   thisVal:fmtFull(totalThis)+(thisEst.some(Boolean)?'※':''), diff:diffBadge(totalThis,totalLast,n=>fmtFull(n)+'回'), sub:`先週: ${fmtFull(totalLast)}回${lastEst.some(Boolean)?'※':''}`},
-    {label:'今週 総再生時間', thisVal:fmtMin(watchThis),  diff:watchThis||watchLast?diffBadge(watchThis,watchLast,n=>fmtMin(n)):'<span class="ws-delta flat">—</span>', sub:watchLast?`先週: ${fmtMin(watchLast)}`:'Analytics未接続'},
-    {label:'今週 登録者純増',  thisVal:(netSubsThis>=0?'+':'')+fmtFull(netSubsThis), diff:netSubsThis||netSubsLast?diffBadge(netSubsThis,netSubsLast,n=>fmtFull(n)+'人'):'<span class="ws-delta flat">—</span>', sub:netSubsLast?`先週: ${netSubsLast>=0?'+':''}${fmtFull(netSubsLast)}人`:'Analytics未接続'},
-  ];
-
-  document.getElementById('weekSummary').innerHTML = wsItems.map(it=>`
-    <div class="ws-item">
-      <div class="ws-label">${it.label}</div>
-      <div class="ws-row"><span class="ws-val">${it.thisVal}</span>${it.diff}</div>
-      <div class="ws-sub">${it.sub}</div>
-    </div>`).join('');
-  const anyEst = thisEst.some(Boolean) || lastEst.some(Boolean);
-  document.getElementById('weekSummary').insertAdjacentHTML('beforeend',
-    anyEst ? `<div style="flex-basis:100%;font-size:11px;color:var(--muted-2,#8FA396);margin-top:6px">※ Analytics確定前の推定値を含みます（曜日パターンで按分）。確定データ取得後に自動更新されます。</div>` : '');
-
-  // 曜日ラベル
-  const DOW = ['月','火','水','木','金','土','日'];
-  const labels = thisWeek.map((d,i)=>DOW[i]+'('+d.slice(5)+')'+(thisEst[i]||lastEst[i]?'※':''));
-
-  // 視聴回数チャート
-  const hasData = totalThis>0||totalLast>0;
-  document.getElementById('weekChartNoData').style.display = hasData?'none':'block';
-  document.getElementById('weekChart').style.display = hasData?'block':'none';
-  if(weekChart){weekChart.destroy();weekChart=null;}
-  if(hasData){
-    weekChart = new Chart(document.getElementById('weekChart'),{
-      type:'bar',
-      data:{labels,datasets:[
-        {label:'今週',data:thisViews,borderRadius:4,
-         backgroundColor:thisViews.map((_,i)=>thisEst[i]?'rgba(91,214,138,.28)':'rgba(91,214,138,.75)'),
-         borderColor:thisViews.map((_,i)=>thisEst[i]?'rgba(91,214,138,.9)':'transparent'),
-         borderWidth:thisViews.map((_,i)=>thisEst[i]?1.5:0),
-         borderDash:[4,3]},
-        {label:'先週',data:lastViews,borderRadius:4,
-         backgroundColor:lastViews.map((_,i)=>lastEst[i]?'rgba(201,162,39,.22)':'rgba(201,162,39,.45)'),
-         borderColor:lastViews.map((_,i)=>lastEst[i]?'rgba(201,162,39,.8)':'transparent'),
-         borderWidth:lastViews.map((_,i)=>lastEst[i]?1.5:0),
-         borderDash:[4,3]},
-      ]},
-      options:{
-        ...CHART_BASE,
-        plugins:{...CHART_BASE.plugins,
-          legend:{display:true,labels:{color:'#8FA396',font:{size:11}}},
-          tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:ctx=>{const est=(ctx.datasetIndex===0?thisEst:lastEst)[ctx.dataIndex];return `${ctx.dataset.label}: ${fmtFull(ctx.raw)}回${est?'（推定）':''}`;}}}
-        },
-        scales:{
-          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5E726A',font:{size:11}}},
-          y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:10},callback:v=>fmt(v)}}
-        }
-      }
-    });
-  }
-
-  // 総再生時間チャート
-  const hasWatch = watchThis>0||watchLast>0;
-  document.getElementById('watchChartNoData').style.display = hasWatch?'none':'block';
-  document.getElementById('watchChart').style.display = hasWatch?'block':'none';
-  if(watchChart){watchChart.destroy();watchChart=null;}
-  if(hasWatch){
-    watchChart = new Chart(document.getElementById('watchChart'),{
-      type:'bar',
-      data:{labels,datasets:[
-        {label:'今週',data:thisWatch,backgroundColor:'rgba(91,166,214,.75)',borderWidth:0,borderRadius:4},
-        {label:'先週',data:lastWatch,backgroundColor:'rgba(91,166,214,.3)',borderWidth:0,borderRadius:4},
-      ]},
-      options:{
-        ...CHART_BASE,
-        plugins:{...CHART_BASE.plugins,
-          legend:{display:true,labels:{color:'#8FA396',font:{size:11}}},
-          tooltip:{...CHART_BASE.plugins.tooltip,callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmtMin(ctx.raw)}`}}
-        },
-        scales:{
-          x:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#5E726A',font:{size:11}}},
-          y:{grid:{color:'rgba(255,255,255,.06)'},ticks:{color:'#5E726A',font:{size:10},callback:v=>fmtMin(v)}}
-        }
-      }
-    });
-  }
-}
-
-// ════════════════════════════════
 // 動画一覧タブ
 // ════════════════════════════════
 function renderVideoList(){
@@ -2258,7 +2090,6 @@ function renderAll(){
   renderOverview();
   renderAnalytics(); // 概要タブ内に常時表示
   // 開いているタブだけ描画
-  if(activeTab==='weekly')   renderWeekly();
   if(activeTab==='ops')      renderOps();
   if(activeTab==='schedule') renderSchedule();
   if(activeTab==='videos')   renderVideoList();
