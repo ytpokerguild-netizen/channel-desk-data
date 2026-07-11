@@ -2157,12 +2157,24 @@ function renderReport(){
   document.getElementById('wrAiCard').style.display = ai ? '' : 'none';
   if(ai){
     document.getElementById('wrAiDate').textContent = ai.generated_at ? '生成: '+fmtDate(String(ai.generated_at).slice(0,10)) : '';
+    // suggestions は旧形式(文字列)と新形式({title, actions})の両対応
+    const sugItem = (s,i)=>{
+      const t = (typeof s === 'string') ? {title:s, actions:[]} : (s||{});
+      return `<div style="display:flex;gap:8px;margin-bottom:8px">
+        <span style="color:var(--gold);flex-shrink:0">${i+1}.</span>
+        <div style="flex:1">
+          <div style="font-weight:600">${escHtml(t.title||'')}</div>
+          ${(t.actions||[]).map(a=>`<div style="display:flex;gap:6px;font-size:12px;color:var(--muted);margin-top:3px"><span style="flex-shrink:0">→</span><span>${escHtml(a)}</span></div>`).join('')}
+        </div>
+      </div>`;
+    };
     document.getElementById('wrAi').innerHTML =
+      (ai.headline ? `<div style="font-size:13.5px;font-weight:700;padding:10px 12px;background:rgba(91,214,138,.08);border-left:3px solid #5BD68A;border-radius:0 8px 8px 0;margin-bottom:10px">${escHtml(ai.headline)}</div>` : '') +
       String(ai.analysis||'').split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 8px">${escHtml(p)}</p>`).join('') +
       ((ai.suggestions||[]).length ? `
         <div style="margin-top:10px;padding:10px 12px;background:rgba(201,162,39,.07);border:1px solid rgba(201,162,39,.25);border-radius:10px">
-          <div style="font-size:11px;color:var(--gold);letter-spacing:.05em;margin-bottom:6px">今週の提案</div>
-          ${ai.suggestions.map((s,i)=>`<div style="display:flex;gap:8px;margin-bottom:4px"><span style="color:var(--gold);flex-shrink:0">${i+1}.</span><span>${escHtml(s)}</span></div>`).join('')}
+          <div style="font-size:11px;color:var(--gold);letter-spacing:.05em;margin-bottom:8px">今週のアクションプラン</div>
+          ${ai.suggestions.map(sugItem).join('')}
         </div>` : '');
   }
 

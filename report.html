@@ -121,9 +121,13 @@ ${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num
 ${c.subscribers_end!=null?`<div class="note">週末時点の登録者数: ${fmtFull(Math.round(c.subscribers_end))} 人</div>`:''}
 
 ${ai?`<h2>AI分析と提案</h2>
+${ai.headline?`<div style="font-weight:700;font-size:13.5px;padding:9px 13px;background:#eef7f0;border-left:4px solid #4caf7d;border-radius:0 6px 6px 0;margin-bottom:9px">${esc(ai.headline)}</div>`:''}
 ${String(ai.analysis||'').split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 7px">${esc(p)}</p>`).join('')}
-${(ai.suggestions||[]).length?`<div class="suggest"><b style="color:#8a6d1a">今週の提案</b>
-<ol style="margin:5px 0 0;padding-left:20px">${ai.suggestions.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>`:''}
+${(ai.suggestions||[]).length?`<div class="suggest"><b style="color:#8a6d1a">今週のアクションプラン</b>
+<ol style="margin:5px 0 0;padding-left:20px">${ai.suggestions.map(s=>{
+  const t = (typeof s==='string') ? {title:s,actions:[]} : (s||{});
+  return `<li style="margin-bottom:6px"><b>${esc(t.title||'')}</b>${(t.actions||[]).length?`<ul style="margin:3px 0 0;padding-left:16px">${t.actions.map(a=>`<li style="margin-bottom:2px">${esc(a)}</li>`).join('')}</ul>`:''}</li>`;
+}).join('')}</ol></div>`:''}
 ${ai.generated_at?`<div class="note">分析生成日: ${fmtDate(String(ai.generated_at).slice(0,10))}</div>`:''}`:''}
 
 <h2>週間トップ動画</h2>
