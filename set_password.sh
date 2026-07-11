@@ -11,12 +11,11 @@ if pw != pw2:
 if not pw:
     print("空のパスワードは設定できません。"); raise SystemExit(1)
 h = hashlib.sha256(pw.encode()).hexdigest()
-for fname in ("index.html", "report.html"):
-    s = open(fname).read()
-    s2 = re.sub(r"const PW_HASH = '[^']*'", f"const PW_HASH = '{h}'", s)
-    if s == s2 and h not in s2:
-        print(f"{fname}: PW_HASH が見つかりませんでした。"); raise SystemExit(1)
-    open(fname, "w").write(s2)
-    print(f"{fname}: 更新しました")
-print("設定完了。git add index.html report.html && git commit && git push で反映されます。")
+# report.html は意図的にパスワードなし公開のため index.html のみ更新
+s = open("index.html").read()
+s2 = re.sub(r"const PW_HASH = '[^']*'", f"const PW_HASH = '{h}'", s)
+if s == s2 and h not in s2:
+    print("PW_HASH が見つかりませんでした。"); raise SystemExit(1)
+open("index.html","w").write(s2)
+print("設定完了。git add index.html && git commit && git push で反映されます。")
 EOF

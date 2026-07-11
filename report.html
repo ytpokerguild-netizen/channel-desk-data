@@ -27,12 +27,6 @@
   .toolbar select,.toolbar button,.toolbar a{font-family:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid #cbc5b4;background:#fff;color:#333;cursor:pointer;text-decoration:none}
   .toolbar button:hover,.toolbar a:hover{background:#f5f1e6}
   .msg{max-width:860px;margin:40px auto;text-align:center;color:#666}
-  /* パスワードゲート */
-  .gate{position:fixed;inset:0;background:#14201A;display:flex;align-items:center;justify-content:center;z-index:99}
-  .gate-box{background:#1B2E23;border:1px solid rgba(255,255,255,.1);border-radius:14px;padding:30px 34px;text-align:center}
-  .gate-box div{color:#8FA396;font-size:13px;margin-bottom:12px}
-  .gate-box input{background:#14201A;border:1px solid rgba(255,255,255,.15);border-radius:8px;color:#E8EDE9;padding:9px 12px;font-size:14px;width:220px}
-  .gate-box .err{color:#E2706E;font-size:12px;margin-top:9px;visibility:hidden}
   @media print{
     body{background:#fff}
     .sheet{box-shadow:none;padding:0;max-width:none;min-height:auto}
@@ -41,14 +35,6 @@
 </style>
 </head>
 <body>
-
-<div class="gate" id="pwGate">
-  <div class="gate-box">
-    <div>閲覧パスワードを入力してください</div>
-    <input type="password" id="pwInput" autofocus>
-    <div class="err" id="pwError">パスワードが違います</div>
-  </div>
-</div>
 
 <div class="toolbar" id="toolbar" style="display:none">
   <a href="index.html">← ダッシュボード</a>
@@ -185,30 +171,8 @@ async function loadReport(){
   }
 }
 
-// ── パスワードゲート（index.html と同じハッシュ。set_password.sh が両方を更新）──
-const PW_HASH = 'aa0316214deed9d4bb93e14e46dec14343210cbf679b0348cde5330fc6e47308';  // set_password.sh で設定
-async function sha256hex(str){
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,'0')).join('');
-}
-async function pwCheck(){
-  const v = document.getElementById('pwInput').value;
-  if(await sha256hex(v) === PW_HASH){
-    sessionStorage.setItem('cd_unlocked','1');
-    document.getElementById('pwGate').remove();
-    loadReport();
-  } else {
-    document.getElementById('pwError').style.visibility = 'visible';
-    document.getElementById('pwInput').value = '';
-  }
-}
-document.getElementById('pwInput').addEventListener('keydown', e=>{ if(e.key==='Enter') pwCheck(); });
-if(PW_HASH === 'REPLACE_ME_HASH' || sessionStorage.getItem('cd_unlocked')==='1'){
-  document.getElementById('pwGate').remove();
-  loadReport();
-} else {
-  document.getElementById('pwInput').focus();
-}
+// このページはパスワードなしで閲覧可能（ダッシュボード本体のみゲートあり）
+loadReport();
 </script>
 </body>
 </html>
