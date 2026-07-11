@@ -5,6 +5,9 @@ on:
     # 3時間おきに実行（JST 3/6/9/12/15/18/21/24時ごろ）。投稿計画シートの変更も最大3時間で反映される
     - cron: "0 */3 * * *"
   workflow_dispatch:  # 手動実行も可能
+  push:
+    paths:
+      - "trigger.txt"  # trigger.txt の変更push = 即時更新の合図（Claude経由の「今すぐ更新」用）
 
 jobs:
   fetch:
