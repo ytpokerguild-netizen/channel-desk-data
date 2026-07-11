@@ -787,6 +787,79 @@ def _parse_plan_date(s):
         pass
     return None
 
+# ──────────────────────────────────────────────────────────
+# 投稿計画 × YouTube実績 の自動照合
+# ──────────────────────────────────────────────────────────
+def _norm_title(s):
+    """タイトル正規化（全半角統一・空白除去・小文字化）"""
+    import unicodedata
+    s = unicodedata.normalize("NFKC", str(s or "")).lower()
+    return "".join(ch for ch in s if not ch.isspace())
+
+def match_post_plan(post_plan, videos):
+    """計画行と公開済み動画を自動照合し、行に _matched_* フィールドを付与する。
+    優先順位: 1) URL列のvideo_id完全一致（列があれば） 2) タイトル類似度×予定日±7日
+    シート側のステータス更新に依存せず「実際に投稿されたか」を判定するための仕組み。"""
+    import re, difflib
+
+    vids = []
+    for v in videos:
+        pub = (v.get("published_at") or "")[:10]
+        vids.append((v, pub, _norm_title(v.get("title"))))
+
+    used = set()
+    for row in post_plan:
+        for k in ("_matched_video_id", "_matched_published_at", "_matched_title",
+                  "_matched_duration_sec", "_delay_days", "_match_method"):
+            row.pop(k, None)
+
+        pd_ = _parse_plan_date(row.get("投稿予定日", ""))
+        best, method = None, None
+
+        # 1) URL列（残っていれば最優先・確実）
+        m = re.search(r"(?:v=|youtu\.be/|shorts/)([A-Za-z0-9_-]{11})", row.get("URL") or "")
+        if m:
+            for v, pub, nt in vids:
+                if v["video_id"] == m.group(1):
+                    best, method = (v, pub), "url"
+                    break
+
+        # 2) タイトル類似度 × 予定日近傍（±7日）
+        if best is None and row.get("タイトル") and pd_:
+            nt_plan = _norm_title(row["タイトル"])
+            cands = []
+            for v, pub, nt in vids:
+                if not pub or v["video_id"] in used:
+                    continue
+                try:
+                    dd = abs((date.fromisoformat(pub) - pd_).days)
+                except Exception:
+                    continue
+                if dd > 7:
+                    continue
+                ratio = difflib.SequenceMatcher(None, nt_plan, nt).ratio()
+                if ratio >= 0.60:
+                    cands.append((ratio, -dd, v, pub))
+            if cands:
+                cands.sort(key=lambda c: (c[0], c[1]), reverse=True)
+                _, _, v, pub = cands[0]
+                best, method = (v, pub), "title"
+
+        if best:
+            v, pub = best
+            used.add(v["video_id"])
+            row["_matched_video_id"]     = v["video_id"]
+            row["_matched_published_at"] = pub
+            row["_matched_title"]        = v.get("title", "")
+            row["_matched_duration_sec"] = v.get("duration_sec")
+            row["_match_method"]         = method
+            if pd_ and pub:
+                try:
+                    row["_delay_days"] = (date.fromisoformat(pub) - pd_).days
+                except Exception:
+                    pass
+    return post_plan
+
 def build_weekly_report(week_start, week_end, *, daily, analytics_daily,
                         video_daily, videos, post_plan, week_extra, prev_week_extra):
     """1週分（土〜金）のレポートを組み立てる"""
@@ -847,18 +920,25 @@ def build_weekly_report(week_start, week_end, *, daily, analytics_daily,
         if ws.isoformat() <= (v.get("published_at") or "")[:10] <= we.isoformat()],
         key=lambda v: v["published_at"])
 
-    # 投稿計画の進捗
+    # 投稿計画の進捗（自動照合結果があればそれを優先して投稿済み判定）
     planned = []
     for row in post_plan:
         pd_ = _parse_plan_date(row.get("投稿予定日", ""))
         if pd_ and ws <= pd_ <= we:
             planned.append({
-                "date":   pd_.isoformat(),
-                "title":  row.get("タイトル", ""),
-                "status": row.get("ステータス", ""),
-                "owner":  row.get("担当", ""),
+                "date":    pd_.isoformat(),
+                "title":   row.get("タイトル", ""),
+                "status":  row.get("ステータス", ""),
+                "owner":   row.get("担当", ""),
+                "type":     row.get("企画タイプ", ""),
+                "narrator": row.get("ナレーター", ""),
+                "ads":      row.get("動画内広告", ""),
+                "matched": bool(row.get("_matched_video_id")),
+                "video_id": row.get("_matched_video_id", ""),
+                "published_at": row.get("_matched_published_at", ""),
+                "delay_days":   row.get("_delay_days"),
             })
-    posted_cnt = sum(1 for p in planned if "済" in p["status"])
+    posted_cnt = sum(1 for p in planned if p["matched"] or "済" in p["status"])
 
     report = {
         "week_start":     ws.isoformat(),
@@ -1102,6 +1182,14 @@ def main():
         post_plan = new_post_plan
     else:
         print("  [WARN] 取得失敗 — 前回データを保持")
+
+    # ── 計画 × 実績の自動照合（シートのステータス更新に依存しない投稿済み判定）──
+    try:
+        post_plan = match_post_plan(post_plan, videos)
+        matched = sum(1 for r in post_plan if r.get("_matched_video_id"))
+        print(f"  自動照合: {matched}/{len(post_plan)} 行が公開動画と一致")
+    except Exception as e:
+        print(f"  [WARN] 自動照合失敗 — 照合なしで続行: {e}")
 
     # ── 週次レポート（土〜金、速報→確定で自動更新）──
     print("[10/10] 週次レポートを生成中...")

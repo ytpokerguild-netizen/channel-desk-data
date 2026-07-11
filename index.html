@@ -1709,79 +1709,88 @@ function renderSchedule(){
     return;
   }
 
-  // 日付文字列 "2026/6/1" → "2026-06-01" (ソート用)
-  function normalizeDate(s){
-    if(!s) return '';
-    const parts = s.split('/');
-    if(parts.length !== 3) return s;
+  // 日付文字列 "2026/6/1" → "2026-06-01"
+  function normalizeDate(str){
+    if(!str) return '';
+    const parts = String(str).split('/');
+    if(parts.length !== 3) return str;
     return `${parts[0]}-${parts[1].padStart(2,'0')}-${parts[2].padStart(2,'0')}`;
   }
+  const DOW = ['日','月','火','水','木','金','土'];
+  function dowOf(iso){
+    if(!iso) return '';
+    const d = new Date(iso + 'T00:00:00');
+    return isNaN(d) ? '' : DOW[d.getDay()];
+  }
 
-  // ステータスバッジ
-  function statusBadge(s){
-    if(s==='投稿済み') return `<span class="status-badge posted">投稿済み</span>`;
-    if(s==='ネタ')    return `<span class="status-badge neta">ネタ</span>`;
-    return `<span class="status-badge empty">${s||'日程のみ'}</span>`;
+  // 投稿済み判定: YouTube実績との自動照合(_matched_*) or ステータスに「済」
+  const isPosted = p => !!p._matched_video_id || (p['ステータス']||'').includes('済');
+  const vidOf = p => p._matched_video_id ||
+    (((p['URL']||'').match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/)||[])[1]) || null;
+
+  function statusBadge(p){
+    if(p._matched_video_id){
+      const manual = (p['ステータス']||'').includes('済');
+      return `<span class="status-badge posted">投稿済み${manual?'':'（自動判定）'}</span>`;
+    }
+    const st = p['ステータス'];
+    if(st==='投稿済み') return `<span class="status-badge posted">投稿済み</span>`;
+    if(st==='ネタ')    return `<span class="status-badge neta">ネタ</span>`;
+    return `<span class="status-badge empty">${st||'日程のみ'}</span>`;
   }
 
   // サマリー
   const total  = plan.length;
-  const posted = plan.filter(p=>p['ステータス']==='投稿済み').length;
-  const neta   = plan.filter(p=>p['ステータス']==='ネタ').length;
-  const blank  = plan.filter(p=>!p['ステータス']).length;
+  const posted = plan.filter(isPosted).length;
+  const delays = plan.filter(p=>p._matched_video_id && p._delay_days!=null);
+  const onTime = delays.filter(p=>p._delay_days===0).length;
   summaryEl.innerHTML = `
     <div class="ov-item"><div class="ov-label">総件数</div><div class="ov-val">${total}</div><div class="ov-sub">件</div></div>
-    <div class="ov-item"><div class="ov-label">投稿済み</div><div class="ov-val">${posted}</div><div class="ov-sub">件</div></div>
-    <div class="ov-item"><div class="ov-label">ネタ確定</div><div class="ov-val">${neta}</div><div class="ov-sub">件</div></div>
-    <div class="ov-item"><div class="ov-label">日程のみ</div><div class="ov-val">${blank}</div><div class="ov-sub">件（ネタ未定）</div></div>
+    <div class="ov-item"><div class="ov-label">投稿済み</div><div class="ov-val">${posted}</div><div class="ov-sub">件（実績と自動照合）</div></div>
+    <div class="ov-item"><div class="ov-label">未投稿</div><div class="ov-val">${total-posted}</div><div class="ov-sub">件</div></div>
+    <div class="ov-item"><div class="ov-label">予定どおり投稿</div><div class="ov-val">${delays.length?Math.round(onTime/delays.length*100)+'%':'—'}</div><div class="ov-sub">${delays.length?`${onTime}/${delays.length}本`:''}</div></div>
   `;
 
-  // URL から video_id を抽出
-  function extractVideoId(url){
-    if(!url) return null;
-    const m = url.match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
-    return m ? m[1] : null;
-  }
-
-  // video_id → G.videos の index を引く（高速化のため Map を使用）
+  // video_id → G.videos の index
   const videoMap = {};
   (G.videos||[]).forEach((v,i) => { videoMap[v.video_id] = {v, i: i+1}; });
 
-  // テーブル生成（showModal=true のとき 詳細ボタンを追加）
+  // シートに存在する追加列だけ表に出す
+  const extraCols = ['企画タイプ','ナレーター','動画内広告'].filter(c => plan.some(p => String(p[c]||'').trim()));
+
   function makeTable(rows, showModal){
     if(!rows.length) return '<div class="no-data" style="padding:20px 0;font-size:13px">対象データなし</div>';
     const actionCol = showModal ? '<th></th>' : '';
     return `<table class="sched-table">
       <thead><tr>
-        <th>投稿日</th><th>曜</th><th>タイトル</th><th>配信元</th><th>尺</th><th>担当</th><th>ステータス</th>${actionCol}
+        <th>投稿日</th><th>曜</th><th>タイトル</th>${extraCols.map(c=>`<th>${c}</th>`).join('')}<th>配信元</th><th>担当</th><th>ステータス</th>${actionCol}
       </tr></thead>
       <tbody>
         ${rows.map(p=>{
-          const date   = p['公開日'] || p['投稿予定日'] || '';
-          const vid_id = extractVideoId(p['URL']);
+          const plannedD = normalizeDate(p['投稿予定日']);
+          const actualD  = p._matched_published_at || '';
+          const dispDate = actualD || plannedD;
+          const delay    = p._delay_days;
+          const delayNote = (actualD && delay!=null && delay!==0)
+            ? ` <span style="color:${delay>0?'#E2706E':'var(--up,#5BD68A)'};font-size:10px">(予定${delay>0?'+':''}${delay}日)</span>` : '';
+          const vid_id = vidOf(p);
           const entry  = vid_id ? videoMap[vid_id] : null;
           const hasModal = !!(vid_id && (entry || p['タイトル']));
           let actionTd = '';
           if(showModal){
-            if(hasModal){
-              actionTd = `<td><button class="sched-detail-btn" data-vid="${vid_id}">📊 詳細</button></td>`;
-            } else if(p['URL']){
-              actionTd = `<td><a class="sched-yt-link" href="${p['URL']}" target="_blank" rel="noopener">▶ YT</a></td>`;
-            } else {
-              actionTd = '<td></td>';
-            }
+            actionTd = hasModal ? `<td><button class="sched-detail-btn" data-vid="${vid_id}">📊 詳細</button></td>` : '<td></td>';
           }
           const titleCell = hasModal
             ? `<span class="sched-title-link" data-vid="${vid_id}">${p['タイトル']||(entry?.v?.title)||''}</span>`
             : (p['タイトル']||'<span style="color:var(--muted-2)">未定</span>');
           return `<tr>
-            <td style="white-space:nowrap;font-size:11.5px;color:var(--muted)">${date}</td>
-            <td style="color:var(--muted-2);font-size:11px">${p['曜日']||''}</td>
+            <td style="white-space:nowrap;font-size:11.5px;color:var(--muted)">${dispDate.replace(/-/g,'/')}${delayNote}</td>
+            <td style="color:var(--muted-2);font-size:11px">${dowOf(dispDate)}</td>
             <td class="sched-title-col">${titleCell}</td>
+            ${extraCols.map(c=>`<td style="font-size:11px;color:var(--muted);white-space:nowrap">${p[c]||''}</td>`).join('')}
             <td style="font-size:11px;white-space:nowrap;color:var(--muted)">${p['配信元']||''}</td>
-            <td style="font-size:11.5px;font-variant-numeric:tabular-nums">${p['尺']||''}</td>
             <td style="font-size:11px;color:var(--muted)">${p['担当']||''}</td>
-            <td>${statusBadge(p['ステータス'])}</td>
+            <td>${statusBadge(p)}</td>
             ${actionTd}
           </tr>`;
         }).join('')}
@@ -1791,18 +1800,17 @@ function renderSchedule(){
 
   // 投稿予定（未投稿、日付昇順）
   const upcoming = plan
-    .filter(p => p['ステータス'] !== '投稿済み')
+    .filter(p => !isPosted(p))
     .map(p => ({...p, _d: normalizeDate(p['投稿予定日'])}))
     .sort((a,b) => a._d.localeCompare(b._d));
   upcomingEl.innerHTML = makeTable(upcoming, false);
   if(upcoming.length)
-    upcomingEl.insertAdjacentHTML('beforeend',
-      `<p class="sched-note">${upcoming.length} 件（ネタ ${neta} 件 / 日程のみ ${blank} 件）</p>`);
+    upcomingEl.insertAdjacentHTML('beforeend', `<p class="sched-note">${upcoming.length} 件</p>`);
 
-  // 最近の投稿済み（公開日降順、直近20件）
+  // 最近の投稿済み（実績公開日降順、直近20件）
   const recent = plan
-    .filter(p => p['ステータス']==='投稿済み')
-    .map(p => ({...p, _d: normalizeDate(p['公開日']||p['投稿予定日'])}))
+    .filter(isPosted)
+    .map(p => ({...p, _d: p._matched_published_at || normalizeDate(p['投稿予定日'])}))
     .sort((a,b) => b._d.localeCompare(a._d))
     .slice(0, 20);
   recentEl.innerHTML = makeTable(recent, true);
@@ -1817,14 +1825,15 @@ document.addEventListener('click', function(e){
   const vIdx = (G.videos||[]).findIndex(v=>v.video_id===vid_id);
   const v    = vIdx>=0 ? G.videos[vIdx] : null;
   const planEntry = (G.post_plan||[]).find(p=>{
+    if(p._matched_video_id === vid_id) return true;
     const m = (p['URL']||'').match(/(?:v=|youtu\.be\/|shorts\/)([A-Za-z0-9_-]{11})/);
     return m && m[1]===vid_id;
   });
   const modalV = v || (planEntry ? {
     video_id: vid_id,
     title: planEntry['タイトル']||'',
-    published_at: planEntry['公開日']||planEntry['投稿予定日']||'',
-    view_count: 0, duration_sec: 0
+    published_at: planEntry._matched_published_at||planEntry['公開日']||planEntry['投稿予定日']||'',
+    view_count: 0, duration_sec: planEntry._matched_duration_sec||0
   } : null);
   if(!modalV) return;
   const rank = vIdx>=0 ? vIdx+1 : '-';
@@ -2068,12 +2077,16 @@ function renderReport(){
   const nv = rep.new_videos || [];
   document.getElementById('wrPostPlan').innerHTML = `
     <div style="font-size:12.5px;margin-bottom:8px">計画 <b>${pp.planned}</b> 本 / 投稿済み <b style="color:var(--gold)">${pp.posted}</b> 本 / 実際に公開 <b>${nv.length}</b> 本</div>
-    ${(pp.items||[]).map(p=>`
+    ${(pp.items||[]).map(p=>{
+      const meta = [p.type, p.narrator, p.ads].filter(Boolean).join('・');
+      const done = p.matched || (p.status||'').includes('済');
+      return `
       <div style="display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--line);font-size:12px">
         <span style="color:var(--muted-2);width:74px;flex-shrink:0">${fmtDate(p.date)}</span>
         <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.title}</span>
-        <span style="flex-shrink:0;color:${(p.status||'').includes('済')?'var(--gold)':'var(--muted)'}">${p.status||'—'}</span>
-      </div>`).join('') || '<div style="font-size:12px;color:var(--muted-2)">この週の計画データなし</div>'}`;
+        ${meta?`<span style="flex-shrink:0;color:var(--muted-2);font-size:11px">${meta}</span>`:''}
+        <span style="flex-shrink:0;color:${done?'var(--gold)':'var(--muted)'}">${done?'投稿済み':(p.status||'—')}</span>
+      </div>`;}).join('') || '<div style="font-size:12px;color:var(--muted-2)">この週の計画データなし</div>'}`;
 }
 
 // ════════════════════════════════

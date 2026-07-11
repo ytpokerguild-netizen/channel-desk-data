@@ -132,8 +132,12 @@ ${ssP?`<tr><td>前週</td><td class="num">${ssP.p}%</td><td class="num">${100-ss
 
 <h2>投稿計画の進捗</h2>
 <div style="margin-bottom:7px">計画 <b>${pp.planned}</b> 本 ／ シート上「投稿済み」 <b>${pp.posted}</b> 本 ／ 実際に公開 <b>${(rep.new_videos||[]).length}</b> 本</div>
-${(pp.items||[]).length?`<table><tr><th style="width:78px">予定日</th><th>タイトル</th><th style="width:78px">ステータス</th></tr>
-${pp.items.map(p=>`<tr><td>${fmtDate(p.date)}</td><td>${esc(p.title)}</td><td>${esc(p.status||'—')}</td></tr>`).join('')}</table>`:'<div class="note">この週の計画データなし</div>'}
+${(pp.items||[]).length?`<table><tr><th style="width:78px">予定日</th><th>タイトル</th><th>企画・ナレーター・広告</th><th style="width:90px">ステータス</th></tr>
+${pp.items.map(p=>{
+  const meta = [p.type,p.narrator,p.ads].filter(Boolean).join('・');
+  const done = p.matched || (p.status||'').includes('済');
+  return `<tr><td>${fmtDate(p.date)}</td><td>${esc(p.title)}</td><td>${esc(meta)}</td><td>${done?'投稿済み':esc(p.status||'—')}</td></tr>`;
+}).join('')}</table>`:'<div class="note">この週の計画データなし</div>'}
 
 <div class="foot">CHANNEL DESK 自動生成 ／ 表示日時: ${new Date().toLocaleString('ja-JP')} ／ りいポーカーチャンネル【PokerGuild】</div>`;
 }
