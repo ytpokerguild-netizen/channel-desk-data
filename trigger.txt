@@ -1,1 +1,1 @@
-manual update trigger — この行のタイムスタンプ更新で即時データ取得が走る
+09:20 UTC
