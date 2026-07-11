@@ -362,7 +362,7 @@ def fetch_video_period(access_token, days):
         params = {
             "ids":        f"channel=={CHANNEL_ID}",
             "dimensions": "video",
-            "metrics":    "views,estimatedMinutesWatched,averageViewDuration",
+            "metrics":    "views,estimatedMinutesWatched,averageViewDuration,subscribersGained",
             "startDate":  start_date,
             "endDate":    end_date,
             "sort":       "-views",
@@ -381,6 +381,7 @@ def fetch_video_period(access_token, days):
                 "views":       int(float(row[1])),
                 "watch_min":   int(float(row[2])),
                 "avg_dur_sec": int(float(row[3])),
+                "subs_gained": int(float(row[4])) if len(row) > 4 else 0,
             }
 
         page_token = data.get("nextPageToken")
