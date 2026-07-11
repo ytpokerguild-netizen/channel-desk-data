@@ -2,8 +2,8 @@ name: Daily YouTube Analytics Fetch
 
 on:
   schedule:
-    # 毎朝 3:00 JST（= UTC 18:00 前日）に実行
-    - cron: "0 18 * * *"
+    # 3時間おきに実行（JST 3/6/9/12/15/18/21/24時ごろ）。投稿計画シートの変更も最大3時間で反映される
+    - cron: "0 */3 * * *"
   workflow_dispatch:  # 手動実行も可能
 
 jobs:

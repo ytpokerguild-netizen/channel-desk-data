@@ -699,7 +699,10 @@ async function loadData(){
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     document.getElementById('statusDot').className = 'status-dot live';
-    document.getElementById('updatedLabel').textContent = '更新: ' + fmtDate(G.meta.data_through);
+    const _fa = G.meta.fetched_at ? new Date(G.meta.fetched_at) : null;
+    document.getElementById('updatedLabel').textContent = _fa
+      ? `データ取得: ${_fa.getMonth()+1}/${_fa.getDate()} ${String(_fa.getHours()).padStart(2,'0')}:${String(_fa.getMinutes()).padStart(2,'0')}`
+      : '更新: ' + fmtDate(G.meta.data_through);
     document.getElementById('footNote').textContent =
       'channel-desk-data · ' + G.meta.channel_id + ' · ' + G.meta.data_through;
     initPeriod();
