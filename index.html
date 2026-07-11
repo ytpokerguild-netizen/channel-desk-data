@@ -2002,15 +2002,16 @@ document.addEventListener('click', function(e){
 
 // ── 動画別追加分析（国別 / 新規vsリピーター / 流入経路）──
 
+// YouTube Studio の表記に準拠（APIの値 → Studioの日本語ラベル）
 const TRAFFIC_LABEL = {
-  'SUBSCRIBER':'登録フィード','YT_SEARCH':'YouTube検索','SHORTS':'ショート',
-  'EXT_URL':'外部サイト','NOTIFICATION':'通知','RELATED_VIDEO':'関連動画',
-  'BROWSE':'ブラウジング','CHANNEL':'チャンネルページ','YT_CHANNEL':'チャンネルページ',
-  'DIRECT':'直接リンク','ADVERTISING':'広告','PLAYLIST':'再生リスト',
-  'END_SCREEN':'エンドスクリーン','NO_LINK_EMBEDDED':'埋め込み','OTHER':'その他',
+  'SUBSCRIBER':'ブラウジング機能','YT_SEARCH':'YouTube検索','SHORTS':'ショートフィード',
+  'EXT_URL':'外部','NOTIFICATION':'通知','RELATED_VIDEO':'関連動画',
+  'BROWSE':'ブラウジング機能','CHANNEL':'チャンネルページ','YT_CHANNEL':'チャンネルページ',
+  'DIRECT':'直接入力','ADVERTISING':'広告','PLAYLIST':'再生リスト',
+  'END_SCREEN':'終了画面','NO_LINK_EMBEDDED':'埋め込み','OTHER':'その他',
   'ANNOTATION':'アノテーション','CAMPAIGN_CARD':'プロモーション',
-  'SHORTS_CONTENT_LINKS':'ショートリンク','YT_OTHER_PAGE':'他のYTページ',
-  'NO_LINK_OTHER':'リンクなし/その他','SOUND_PAGE':'サウンドページ','HASHTAGS':'ハッシュタグ',
+  'SHORTS_CONTENT_LINKS':'ショート内リンク','YT_OTHER_PAGE':'その他のYouTube機能',
+  'NO_LINK_OTHER':'直接入力または不明','SOUND_PAGE':'音源ページ','HASHTAGS':'ハッシュタグ',
   'VIDEO_REMIXES':'リミックス','LIVE_REDIRECT':'ライブリダイレクト','PRODUCT_PAGE':'商品ページ',
   '3':'ブラウジング','9':'YouTube検索','10':'関連動画','4':'チャンネルページ',
   '5':'外部サイト','7':'Google検索','19':'通知','18':'エンドスクリーン',
