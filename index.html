@@ -438,7 +438,7 @@ body{
 
       <!-- Main chart -->
       <div class="chart-card">
-        <div class="chart-title"><span class="ct-label" id="chartLabel">再生数</span><span id="chartSubLabel" style="color:var(--muted-2)"></span></div>
+        <div class="chart-title"><span class="ct-label" id="chartLabel">視聴回数</span><span id="chartSubLabel" style="color:var(--muted-2)"></span></div>
         <div class="chart-box"><canvas id="mainChart"></canvas><div class="chart-nodata" id="chartNoData">このperiodのデータがありません</div></div>
         <div class="chart-legend" id="chartLegend"></div>
         <div class="data-gap-note" id="dataGapNote"></div>
@@ -483,7 +483,7 @@ body{
       <div class="week-summary" id="weekSummary"></div>
 
       <div class="chart-card standalone">
-        <div class="chart-title"><span class="ct-label">日次再生数 — 今週 vs 先週</span></div>
+        <div class="chart-title"><span class="ct-label">日次視聴回数 — 今週 vs 先週</span></div>
         <div class="chart-box"><canvas id="weekChart"></canvas><div class="chart-nodata" id="weekChartNoData">データが不足しています（7日分以上蓄積後に表示）</div></div>
         <div class="chart-legend">
           <div class="legend-item"><div class="legend-dot" style="background:var(--up)"></div>今週</div>
@@ -492,7 +492,7 @@ body{
       </div>
 
       <div class="chart-card standalone">
-        <div class="chart-title"><span class="ct-label">視聴時間（分）— 今週 vs 先週</span></div>
+        <div class="chart-title"><span class="ct-label">総再生時間（分）— 今週 vs 先週</span></div>
         <div class="chart-box"><canvas id="watchChart"></canvas><div class="chart-nodata" id="watchChartNoData">Analytics データなし（GitHub Secrets 設定後に自動取得）</div></div>
       </div>
 
@@ -522,11 +522,11 @@ body{
       <!-- 曜日別 & 動画尺別 -->
       <div class="analytics-grid">
         <div class="chart-card standalone">
-          <div class="chart-title"><span class="ct-label">投稿曜日 × 平均再生数</span></div>
+          <div class="chart-title"><span class="ct-label">投稿曜日 × 平均視聴回数</span></div>
           <div class="chart-box" style="height:220px"><canvas id="dowChart"></canvas></div>
         </div>
         <div class="chart-card standalone">
-          <div class="chart-title"><span class="ct-label">動画尺別 平均再生数（ショートのみ）</span></div>
+          <div class="chart-title"><span class="ct-label">動画尺別 平均視聴回数（ショートのみ）</span></div>
           <div class="chart-box" style="height:220px"><canvas id="durationChart"></canvas></div>
         </div>
       </div>
@@ -632,7 +632,7 @@ body{
       <div class="vmodal-stats" id="vmodalStats"></div>
       <div class="vmodal-meta" id="vmodalMeta"></div>
       <div class="vmodal-chart" id="vmodalChartWrap">
-        <div class="vmodal-chart-title" id="vmodalChartTitle">日次再生数推移</div>
+        <div class="vmodal-chart-title" id="vmodalChartTitle">日次視聴回数推移</div>
         <div class="vmodal-chart-box" id="vmodalChartBox"><canvas id="vmodalChart"></canvas></div>
         <div id="vmodalPeriodStats" style="display:none;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px;margin-top:8px"></div>
         <div style="font-size:10.5px;color:var(--muted-2);margin-top:6px" id="vmodalChartNote"></div>
@@ -747,7 +747,7 @@ function allViewData(){
   // Analytics 日次を優先
   (G.analytics_daily||[]).forEach(d=>{if(d.views>0) map.set(d.date,{date:d.date,views:d.views});});
   // フォールバック: スナップショット差分（Analytics確定前の暫定推定値）
-  // 欠損日への配分は「直近8週間の曜日別平均再生数」で重み付けする。
+  // 欠損日への配分は「直近8週間の曜日別平均視聴回数」で重み付けする。
   // 合計はスナップショット差分（実測）に一致し、日別配分のみ推定。
   // Analytics API の確定値（約2日遅れ）が届き次第、自動でそちらに置き換わる。
   const adHist = (G.analytics_daily||[]).filter(d=>d.views>0).slice(-56);
@@ -912,8 +912,8 @@ function renderTiles(){
   const mB = compareMode ? calcMetrics(filterFromB, filterToB) : null;
 
   const metrics = [
-    { key:'views',      label:'再生数',    valA:mA.totalViews,    unit:'回',   fmtFn:n=>fmt(n) },
-    { key:'watch_min',  label:'視聴時間',  valA:mA.totalWatchMin, unit:'',     fmtFn:n=>fmtMin(n) },
+    { key:'views',      label:'視聴回数',    valA:mA.totalViews,    unit:'回',   fmtFn:n=>fmt(n) },
+    { key:'watch_min',  label:'総再生時間',  valA:mA.totalWatchMin, unit:'',     fmtFn:n=>fmtMin(n) },
     { key:'sub_delta',  label:'登録者増減', valA:mA.subDelta,      unit:'人',   fmtFn:n=>(n>=0?'+':'')+fmtFull(n) },
     { key:'subscribers',label:'登録者数',  valA:mA.subLatest,     unit:'人',   fmtFn:n=>fmtFull(n) },
   ];
@@ -960,7 +960,7 @@ const CHART_BASE = {
 function renderMainChart(){
   const {daily:dA, views:vA} = filteredData(filterFrom, filterTo);
   const {daily:dB, views:vB} = compareMode ? filteredData(filterFromB, filterToB) : {};
-  const LABELS = {views:'再生数（日次）',watch_min:'視聴時間（日次）',sub_delta:'登録者増減（日次）',subscribers:'登録者数（累計）'};
+  const LABELS = {views:'視聴回数（日次）',watch_min:'総再生時間（日次）',sub_delta:'登録者増減（日次）',subscribers:'登録者数（累計）'};
   document.getElementById('chartLabel').textContent = LABELS[activeMetric]||'';
 
   const analyticsDaily = G.analytics_daily || [];
@@ -978,7 +978,7 @@ function renderMainChart(){
     }
     if(!compareMode){
       labels   = vA.map(d=>d.date.slice(5));
-      datasets = [{label:'再生数',type:'line',data:vA.map(d=>d.views),borderColor:'rgba(91,214,138,1)',borderWidth:2,backgroundColor:'rgba(91,214,138,.10)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4}];
+      datasets = [{label:'視聴回数',type:'line',data:vA.map(d=>d.views),borderColor:'rgba(91,214,138,1)',borderWidth:2,backgroundColor:'rgba(91,214,138,.10)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4}];
       ttFmt = ctx=>`${fmtFull(ctx.raw)}回 (${fmtDate(vA[ctx.dataIndex]?.date||'')})`;
     } else {
       const len=Math.max(vA.length,(vB||[]).length);
@@ -997,7 +997,7 @@ function renderMainChart(){
       return;
     }
     labels   = adA.map(d=>d.date.slice(5));
-    datasets = [{label:'視聴時間',type:'bar',data:adA.map(d=>d.watch_min),backgroundColor:'rgba(91,166,214,.6)',borderWidth:0,borderRadius:3}];
+    datasets = [{label:'総再生時間',type:'bar',data:adA.map(d=>d.watch_min),backgroundColor:'rgba(91,166,214,.6)',borderWidth:0,borderRadius:3}];
     ttFmt=ctx=>`${fmtMin(ctx.raw)} (${fmtDate(adA[ctx.dataIndex]?.date||'')})`;
   } else if(activeMetric === 'sub_delta'){
     // analytics_daily から日次増減（363日分）
@@ -1076,8 +1076,8 @@ function renderCompareStrip(){
       <th class="num" style="color:var(--gold)">B <span style="font-weight:400;color:var(--muted)">${pB}</span></th>
       <th class="num">A − B</th>
     </tr></thead><tbody>
-      <tr><td>再生数</td><td class="num">${fmtFull(mA.totalViews)}回</td><td class="num">${fmtFull(mB.totalViews)}回</td>${diffTd(mA.totalViews,mB.totalViews,n=>fmtFull(n)+'回')}</tr>
-      <tr><td>視聴時間</td><td class="num">${fmtMin(mA.totalWatchMin)}</td><td class="num">${fmtMin(mB.totalWatchMin)}</td>${diffTd(mA.totalWatchMin,mB.totalWatchMin,n=>fmtMin(n))}</tr>
+      <tr><td>視聴回数</td><td class="num">${fmtFull(mA.totalViews)}回</td><td class="num">${fmtFull(mB.totalViews)}回</td>${diffTd(mA.totalViews,mB.totalViews,n=>fmtFull(n)+'回')}</tr>
+      <tr><td>総再生時間</td><td class="num">${fmtMin(mA.totalWatchMin)}</td><td class="num">${fmtMin(mB.totalWatchMin)}</td>${diffTd(mA.totalWatchMin,mB.totalWatchMin,n=>fmtMin(n))}</tr>
       <tr><td>登録者増減</td><td class="num">${mA.subDelta!==null?(mA.subDelta>=0?'+':'')+fmtFull(mA.subDelta)+'人':'—'}</td><td class="num">${mB.subDelta!==null?(mB.subDelta>=0?'+':'')+fmtFull(mB.subDelta)+'人':'—'}</td>${mA.subDelta!==null&&mB.subDelta!==null?diffTd(mA.subDelta,mB.subDelta,n=>fmtFull(n)+'人'):'<td class="num">—</td>'}</tr>
     </tbody></table>`;
 }
@@ -1099,7 +1099,7 @@ function renderOverviewBar(){
   const hasPeriod=Object.keys(vp).length>0;
   document.getElementById('overviewBar').innerHTML=[
     {label:'登録者数',val:fmtFull(latest.subscribers),sub:'人'},
-    {label:'週間再生数',val:weekViews!==null?fmt(weekViews):'—',sub:weekViews!==null?fmtFull(weekViews)+'回':''},
+    {label:'週間視聴回数',val:weekViews!==null?fmt(weekViews):'—',sub:weekViews!==null?fmtFull(weekViews)+'回':''},
     {label:'週間登録者増減',val:weekSub!==null?(weekSub>=0?'+':'')+fmtFull(weekSub):'—',sub:'人'},
     {label:'動画本数',val:latest.video_count.toLocaleString(),sub:'本'},
     {label:'期間データ',val:hasPeriod?'✓':'—',sub:hasPeriod?'7/28/90/365日':'Analytics未設定'},
@@ -1242,8 +1242,8 @@ function renderAnalytics(){
   const jpPct   = totalCV>0 ? jp.views/totalCV*100 : 0;
   document.getElementById('jpShareLabel').textContent = totalCV>0 ? ` 全視聴の${jpPct.toFixed(1)}%` : '';
   document.getElementById('jpStats').innerHTML = totalCV>0 ? `
-    <span>視聴数 <strong style="color:var(--ink,#E8EDE9);font-size:15px;font-family:'Oswald',sans-serif">${fmtFull(jp.views)}</strong> 回</span>
-    <span>視聴時間 <strong style="color:var(--ink,#E8EDE9);font-size:15px;font-family:'Oswald',sans-serif">${fmtMin(jp.watch_min||0)}</strong></span>` : '';
+    <span>視聴回数 <strong style="color:var(--ink,#E8EDE9);font-size:15px;font-family:'Oswald',sans-serif">${fmtFull(jp.views)}</strong> 回</span>
+    <span>総再生時間 <strong style="color:var(--ink,#E8EDE9);font-size:15px;font-family:'Oswald',sans-serif">${fmtMin(jp.watch_min||0)}</strong></span>` : '';
   const abroad  = countries.filter(c=>c.country!=='JP');
   const abroadV = abroad.reduce((s,c)=>s+c.views,0);
   document.getElementById('jpAbroadNote').textContent = totalCV>0
@@ -1302,7 +1302,7 @@ function renderAnalytics(){
 
   document.getElementById('subsWrap').innerHTML = totalSS > 0 ? `
     <div class="subs-card">
-      <div class="label">再生数 — 登録者 vs 非登録者</div>
+      <div class="label">視聴回数 — 登録者 vs 非登録者</div>
       <div class="subs-donut-wrap">
         <div style="flex:1;min-width:100px">
           <div class="subs-bar">
@@ -1320,7 +1320,7 @@ function renderAnalytics(){
       </div>
     </div>
     <div class="subs-card">
-      <div class="label">視聴時間 — 登録者 vs 非登録者</div>
+      <div class="label">総再生時間 — 登録者 vs 非登録者</div>
       <div class="subs-donut-wrap">
         <div style="flex:1;min-width:100px">
           <div class="subs-bar">
@@ -1428,7 +1428,7 @@ function renderOps(){
     });
   }
 
-  // ── 曜日別 平均再生数 ──
+  // ── 曜日別 平均視聴回数 ──
   if(dowChart){ dowChart.destroy(); dowChart=null; }
   const dowViews = Array(7).fill(0), dowCount = Array(7).fill(0);
   videos.forEach(v=>{
@@ -1458,7 +1458,7 @@ function renderOps(){
     }
   });
 
-  // ── 動画尺別 平均再生数 ──
+  // ── 動画尺別 平均視聴回数 ──
   if(durationChart){ durationChart.destroy(); durationChart=null; }
   // ショート（3分以内）のみを対象に秒単位でバケット分割
   const durBuckets = [
@@ -1564,9 +1564,9 @@ function renderWeekly(){
   };
 
   const wsItems = [
-    {label:'今週 再生数',   thisVal:fmtFull(totalThis)+(thisEst.some(Boolean)?'※':''), diff:diffBadge(totalThis,totalLast,n=>fmtFull(n)+'回'), sub:`先週: ${fmtFull(totalLast)}回${lastEst.some(Boolean)?'※':''}`},
-    {label:'今週 視聴時間', thisVal:fmtMin(watchThis),  diff:watchThis||watchLast?diffBadge(watchThis,watchLast,n=>fmtMin(n)):'<span class="ws-delta flat">—</span>', sub:watchLast?`先週: ${fmtMin(watchLast)}`:'Analytics未接続'},
-    {label:'今週 登録者増',  thisVal:(netSubsThis>=0?'+':'')+fmtFull(netSubsThis), diff:netSubsThis||netSubsLast?diffBadge(netSubsThis,netSubsLast,n=>fmtFull(n)+'人'):'<span class="ws-delta flat">—</span>', sub:netSubsLast?`先週: ${netSubsLast>=0?'+':''}${fmtFull(netSubsLast)}人`:'Analytics未接続'},
+    {label:'今週 視聴回数',   thisVal:fmtFull(totalThis)+(thisEst.some(Boolean)?'※':''), diff:diffBadge(totalThis,totalLast,n=>fmtFull(n)+'回'), sub:`先週: ${fmtFull(totalLast)}回${lastEst.some(Boolean)?'※':''}`},
+    {label:'今週 総再生時間', thisVal:fmtMin(watchThis),  diff:watchThis||watchLast?diffBadge(watchThis,watchLast,n=>fmtMin(n)):'<span class="ws-delta flat">—</span>', sub:watchLast?`先週: ${fmtMin(watchLast)}`:'Analytics未接続'},
+    {label:'今週 登録者純増',  thisVal:(netSubsThis>=0?'+':'')+fmtFull(netSubsThis), diff:netSubsThis||netSubsLast?diffBadge(netSubsThis,netSubsLast,n=>fmtFull(n)+'人'):'<span class="ws-delta flat">—</span>', sub:netSubsLast?`先週: ${netSubsLast>=0?'+':''}${fmtFull(netSubsLast)}人`:'Analytics未接続'},
   ];
 
   document.getElementById('weekSummary').innerHTML = wsItems.map(it=>`
@@ -1583,7 +1583,7 @@ function renderWeekly(){
   const DOW = ['月','火','水','木','金','土','日'];
   const labels = thisWeek.map((d,i)=>DOW[i]+'('+d.slice(5)+')'+(thisEst[i]||lastEst[i]?'※':''));
 
-  // 再生数チャート
+  // 視聴回数チャート
   const hasData = totalThis>0||totalLast>0;
   document.getElementById('weekChartNoData').style.display = hasData?'none':'block';
   document.getElementById('weekChart').style.display = hasData?'block':'none';
@@ -1617,7 +1617,7 @@ function renderWeekly(){
     });
   }
 
-  // 視聴時間チャート
+  // 総再生時間チャート
   const hasWatch = watchThis>0||watchLast>0;
   document.getElementById('watchChartNoData').style.display = hasWatch?'none':'block';
   document.getElementById('watchChart').style.display = hasWatch?'block':'none';
@@ -1652,10 +1652,10 @@ function renderVideoList(){
   let videos, labelText;
 
   if(videoRankPeriod === 0){
-    // 全期間（Data API 総再生数）
+    // 全期間（Data API 総視聴回数）
     videos = (G.videos||[]).map(v=>({...v, _dv: v.views}))
       .sort((a,b)=>b._dv-a._dv);
-    labelText = '動画ランキング（総再生数順）';
+    labelText = '動画ランキング（総視聴回数順）';
   } else {
     const key = String(videoRankPeriod);
     const pd = vp[key] || {};
@@ -1721,12 +1721,12 @@ function openVideoModalData(v, rank, pd){
   document.getElementById('vmodalThumb').onerror = function(){ this.src=`https://i.ytimg.com/vi/${v.video_id}/mqdefault.jpg`; };
   document.getElementById('vmodalTitle').textContent = v.title;
   const stats = [
-    {label:'総再生数', value:fmtFull(v.views)},
+    {label:'総視聴回数', value:fmtFull(v.views)},
     {label:'高評価',   value:fmtFull(v.likes)},
     {label:'コメント', value:fmtFull(v.comments)},
   ];
-  if(pd.views)     stats.push({label:'7日再生数',   value:fmtFull(pd.views)+'回'});
-  if(pd.watch_min) stats.push({label:'7日視聴時間', value:fmtMin(pd.watch_min)});
+  if(pd.views)     stats.push({label:'7日視聴回数',   value:fmtFull(pd.views)+'回'});
+  if(pd.watch_min) stats.push({label:'7日総再生時間', value:fmtMin(pd.watch_min)});
   if(pd.avg_dur_sec) stats.push({label:'平均視聴時間', value:fmtDur(pd.avg_dur_sec)});
   if(pd.ctr)       stats.push({label:'クリック率',  value:pd.ctr+'%'});
   if(pd.impressions) stats.push({label:'インプレッション', value:(pd.impressions/10000).toFixed(1)+'万'});
@@ -1741,7 +1741,7 @@ function openVideoModalData(v, rank, pd){
     `<span>🆔 ${v.video_id}</span>`;
   document.getElementById('vmodalLink').href = `https://www.youtube.com/watch?v=${v.video_id}`;
 
-  // ── 再生数推移グラフ ──
+  // ── 視聴回数推移グラフ ──
   renderVideoModalChart(v.video_id, v.published_at);
 
   // ── 動画別追加分析 ──
@@ -1762,7 +1762,7 @@ function renderVideoModalChart(vid_id, published_at){
   document.getElementById('vmodalChartBox').style.display = 'block';
   document.getElementById('vmodalPeriodStats').style.display = 'none';
   document.getElementById('vmodalChartWrap').style.display = 'block';
-  document.getElementById('vmodalChartTitle').textContent = '日次再生数推移';
+  document.getElementById('vmodalChartTitle').textContent = '日次視聴回数推移';
 
   // ① Analytics API による日次データ
   const vdaily = (G.video_daily || {})[vid_id];
@@ -1800,7 +1800,7 @@ function renderVideoModalChart(vid_id, published_at){
 
     if(periodItems.length){
       document.getElementById('vmodalChartBox').style.display = 'none';
-      document.getElementById('vmodalChartTitle').textContent = '期間別再生数';
+      document.getElementById('vmodalChartTitle').textContent = '期間別視聴回数';
       const el = document.getElementById('vmodalPeriodStats');
       el.style.display = 'grid';
       el.innerHTML = periodItems.map(({label,data})=>`
@@ -2142,8 +2142,8 @@ function renderReport(){
   const est = rep.final ? '' : '※';
   const partial = !rep.final && c.views_snap==null && (rep.confirmed_days||0) < 7;
   const items = [
-    {label:'週間再生数'+est, val:fmtFull(views), diff:partial?'<span class="ws-delta flat">—</span>':diffBadge(views,viewsPrev,n=>fmtFull(n)+'回'), sub:partial?`確定${rep.confirmed_days}日分のみ（前週: ${fmtFull(viewsPrev)}回）`:`前週: ${fmtFull(viewsPrev)}回`},
-    {label:'視聴時間'+est, val:fmtMin(c.watch_min||0), diff:diffBadge(c.watch_min,c.watch_min_prev,fmtMin), sub:`前週: ${fmtMin(c.watch_min_prev||0)}`},
+    {label:'週間視聴回数'+est, val:fmtFull(views), diff:partial?'<span class="ws-delta flat">—</span>':diffBadge(views,viewsPrev,n=>fmtFull(n)+'回'), sub:partial?`確定${rep.confirmed_days}日分のみ（前週: ${fmtFull(viewsPrev)}回）`:`前週: ${fmtFull(viewsPrev)}回`},
+    {label:'総再生時間'+est, val:fmtMin(c.watch_min||0), diff:diffBadge(c.watch_min,c.watch_min_prev,fmtMin), sub:`前週: ${fmtMin(c.watch_min_prev||0)}`},
     {label:'登録者純増'+est, val:(subsNet>=0?'+':'')+fmtFull(subsNet||0), diff:diffBadge(subsNet,subsNetPrev,n=>fmtFull(n)+'人'), sub:c.subscribers_end!=null?`週末時点: ${fmtFull(Math.round(c.subscribers_end))}人`:''},
     {label:'週内の投稿', val:(rep.new_videos||[]).length+'本', diff:'', sub:rep.post_plan?`計画 ${rep.post_plan.planned}本中 ${rep.post_plan.posted}本投稿済み`:''},
   ];

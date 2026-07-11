@@ -78,8 +78,8 @@ function renderReportPage(rep){
   const partial   = !rep.final && c.views_snap==null && (rep.confirmed_days||0) < 7;
 
   const sumRows = [
-    ['週間再生数', fmtFull(views)+' 回'+(partial?`（確定${rep.confirmed_days}日分のみ）`:''), fmtFull(viewsPrev)+' 回', partial?'—':pct(views,viewsPrev)],
-    ['視聴時間',   fmtMin(c.watch_min||0), fmtMin(c.watch_min_prev||0), partial?'—':pct(c.watch_min,c.watch_min_prev)],
+    ['週間視聴回数', fmtFull(views)+' 回'+(partial?`（確定${rep.confirmed_days}日分のみ）`:''), fmtFull(viewsPrev)+' 回', partial?'—':pct(views,viewsPrev)],
+    ['総再生時間',   fmtMin(c.watch_min||0), fmtMin(c.watch_min_prev||0), partial?'—':pct(c.watch_min,c.watch_min_prev)],
     ['登録者純増', (subsNet>=0?'+':'')+fmtFull(subsNet||0)+' 人', c.subs_net_prev!=null?(c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+' 人':'—', pct(subsNet,c.subs_net_prev)],
     ['週内の投稿', (rep.new_videos||[]).length+' 本', '', ''],
   ];
@@ -119,7 +119,7 @@ ${(ai.suggestions||[]).length?`<div class="suggest"><b style="color:#8a6d1a">今
 ${ai.generated_at?`<div class="note">分析生成日: ${fmtDate(String(ai.generated_at).slice(0,10))}</div>`:''}`:''}
 
 <h2>週間トップ動画</h2>
-<table><tr><th style="width:26px">#</th><th>タイトル</th><th class="num">今週再生</th><th class="num">前週再生</th></tr>
+<table><tr><th style="width:26px">#</th><th>タイトル</th><th class="num">今週視聴回数</th><th class="num">前週視聴回数</th></tr>
 ${(rep.top_videos||[]).map((v,i)=>`<tr><td>${i+1}</td><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:#1a1a1a">${esc(v.title)}</a></td><td class="num">${fmtFull(v.views_week)}</td><td class="num">${fmtFull(v.views_prev_week)}</td></tr>`).join('')||'<tr><td colspan="4">データなし</td></tr>'}</table>
 
 <h2>流入経路</h2>
