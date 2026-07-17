@@ -478,6 +478,13 @@ body{
       </div>
 
 
+      <!-- 企画タイプ別パフォーマンス -->
+      <div class="chart-card standalone" id="planTypeCard" style="display:none;margin-top:14px">
+        <div class="chart-title"><span class="ct-label">🎬 企画タイプ別パフォーマンス（直近28日）</span></div>
+        <div style="font-size:10.5px;color:var(--muted-2);margin:-2px 0 8px" id="planTypeNote"></div>
+        <div id="planTypeBody"></div>
+      </div>
+
       <!-- 国別 & 新規vsリピーター（概要タブ内） -->
       <div class="analytics-grid" id="analyticsInOverview" style="display:none;margin-top:14px">
         <div class="chart-card standalone">
@@ -1318,9 +1325,88 @@ function renderWeeklyActionBar(){
   document.getElementById('weeklyActionTop').innerHTML = ft ? `▶ 今週の最優先アクション: <strong>${String(ft).replace(/</g,'&lt;')}</strong>` : '';
 }
 
+// ════════════════════════════════
+// 企画タイプ別パフォーマンス
+// ════════════════════════════════
+// タイトルから企画タイプを推定(シート入力があれば常にそちらを優先)
+function inferPlanType(title){
+  const t = String(title||'');
+  if(/店舗|アミューズ|カジノ店|ハンドショー/.test(t)) return {type:'店舗ハンド', inferred:true};
+  if(/解説|講座|入門|とは|戦略|考え方|の方法|やり方|基礎/.test(t)) return {type:'解説動画', inferred:true};
+  // 海外イベント/プレイヤー → 海外切り抜き
+  if(/WSOP|WPT|Triton|EPT|APT|海外|オーストラリア|ラスベガス|ハリウッド|世界大会|世界ランキング|世界最高峰|フィル|アイビー|ホルツ|ケニー|アントニー/i.test(t)) return {type:'海外切り抜き', inferred:true};
+  // 国内大会 → 大会プレー
+  if(/JOPT|戦国|日本一|日本王者|国内|Mini Main|頂上決戦|日本選手権/i.test(t)) return {type:'大会プレー', inferred:true};
+  return {type:null, inferred:true};
+}
+
+function renderPlanTypePerf(){
+  const card = document.getElementById('planTypeCard'); if(!card) return;
+  const p28 = (G.video_period||{})['28'] || {};
+  const vmeta = {}; (G.videos||[]).forEach(v=>vmeta[v.video_id]=v);
+  // シートの企画タイプ(手入力)を video_id にマップ
+  const sheetType = {}, sheetNar = {};
+  (G.post_plan||[]).forEach(r=>{
+    const vid = r._matched_video_id; if(!vid) return;
+    if((r['企画タイプ']||'').trim()) sheetType[vid] = r['企画タイプ'].trim();
+    if((r['ナレーター']||'').trim()) sheetNar[vid]  = r['ナレーター'].trim();
+  });
+
+  if(!Object.keys(p28).length){ card.style.display='none'; return; }
+  card.style.display='block';
+
+  let inferredCnt=0, total=0;
+  const groups = {};   // type → {n, views, retSum, retCnt, convSum, convCnt}
+  const narByType = {}; // type → {narrator → {n, views}}
+  for(const [vid, d] of Object.entries(p28)){
+    const v = vmeta[vid]; if(!v) continue;
+    total++;
+    let type = sheetType[vid];
+    if(!type){ const inf = inferPlanType(v.title); type = inf.type; if(type) inferredCnt++; }
+    if(!type) type = '未分類';
+    const g = groups[type] || (groups[type]={n:0,views:0,retSum:0,retCnt:0,convSum:0,convCnt:0});
+    g.n++; g.views += d.views||0;
+    if(d.avg_dur_sec && v.duration_sec){ g.retSum += Math.min(100, d.avg_dur_sec/v.duration_sec*100); g.retCnt++; }
+    if(d.subs_gained!=null && d.views){ g.convSum += d.subs_gained/d.views*1000; g.convCnt++; }
+    // ナレーター内訳
+    const nar = sheetNar[vid];
+    if(nar){ (narByType[type]=narByType[type]||{}); (narByType[type][nar]=narByType[type][nar]||{n:0,views:0}); narByType[type][nar].n++; narByType[type][nar].views+=d.views||0; }
+  }
+
+  const ORDER = ['海外切り抜き','大会プレー','店舗ハンド','解説動画','未分類'];
+  const rows = Object.entries(groups).sort((a,b)=>{
+    const ia=ORDER.indexOf(a[0]), ib=ORDER.indexOf(b[0]);
+    return (ia<0?99:ia)-(ib<0?99:ib);
+  });
+  const maxAvg = Math.max(...rows.map(([,g])=>g.views/g.n), 1);
+
+  document.getElementById('planTypeBody').innerHTML = rows.map(([type,g])=>{
+    const avgV = Math.round(g.views/g.n);
+    const ret  = g.retCnt ? Math.round(g.retSum/g.retCnt) : null;
+    const conv = g.convCnt ? (g.convSum/g.convCnt).toFixed(1) : null;
+    const nars = narByType[type] ? Object.entries(narByType[type]).sort((a,b)=>b[1].views-a[1].views) : [];
+    const narLine = nars.length ? `<div style="font-size:10.5px;color:var(--muted-2);margin-top:3px;margin-left:2px">ナレーター: ${nars.map(([nm,x])=>`${nm} ${x.n}本(平均${fmt(Math.round(x.views/x.n))})`).join(' ／ ')}</div>` : '';
+    return `
+      <div style="padding:9px 0;border-bottom:1px solid var(--line)">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;margin-bottom:4px">
+          <span style="font-weight:600">${type}<span style="color:var(--muted-2);font-weight:400;font-size:11px"> ${g.n}本</span></span>
+          <span>平均 <strong style="font-family:'Oswald',sans-serif">${fmt(avgV)}</strong>回 ${ret!=null?`・維持 ${ret}%`:''} ${conv!=null?`・登録 ${conv}/千回`:''}</span>
+        </div>
+        <div style="height:5px;background:var(--line-strong);border-radius:3px"><div style="height:5px;background:var(--gold);border-radius:3px;width:${Math.max(3,Math.round(avgV/maxAvg*100))}%"></div></div>
+        ${narLine}
+      </div>`;
+  }).join('');
+
+  const narFilled = Object.keys(sheetNar).length;
+  document.getElementById('planTypeNote').innerHTML =
+    `期間内に実績のある ${total}本を集計。企画タイプは${inferredCnt>0?`うち${inferredCnt}本をタイトルから自動推定（シートに入力があれば優先）`:'シート入力を使用'}。`
+    + (narFilled===0 ? ' <span style="color:var(--gold)">シートの「ナレーター」列を入力すると人物別の内訳も表示されます。</span>' : '');
+}
+
 function renderOverview(){
   renderWeeklyActionBar();
   renderDailyBrief();
+  renderPlanTypePerf();
   updateRangeInfo();
   renderTiles();
   renderMainChart();
