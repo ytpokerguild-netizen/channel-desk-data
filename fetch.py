@@ -31,7 +31,49 @@ MAX_VIDEOS         = 500  # 動画取得上限
 
 # 投稿計画スプレッドシート（公開 CSV エクスポート）
 SPREADSHEET_ID = "1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI"
-SHEET_GID      = "574456276"  # 投稿管理タブ
+SHEET_GID      = "574456276"    # 投稿管理タブ
+ARCHIVE_GID    = "1927840516"   # 動画アーカイブタブ（video_id → 企画タイプ/ナレーターの手入力）
+
+# ──────────────────────────────────────────────────────────
+# Google スプレッドシート: 動画アーカイブ（video_id → 企画タイプ/ナレーター）
+# ──────────────────────────────────────────────────────────
+def fetch_video_archive():
+    """動画アーカイブタブから video_id ごとの手入力(企画タイプ/ナレーター)を取得。
+    Returns: {video_id: {"type": ..., "narrator": ...}}（値が入っている行のみ）"""
+    import csv, io
+    url = (f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}"
+           f"/export?format=csv&gid={ARCHIVE_GID}")
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    try:
+        with urlopen(req, timeout=30) as resp:
+            content = resp.read().decode("utf-8-sig")
+    except Exception as e:
+        print(f"  [WARN] 動画アーカイブ取得失敗: {e}")
+        return {}
+
+    rows = list(csv.reader(io.StringIO(content)))
+    if not rows:
+        return {}
+    header = [h.strip() for h in rows[0]]
+    try:
+        i_id = header.index("video_id")
+    except ValueError:
+        print("  [WARN] アーカイブに video_id 列がありません")
+        return {}
+    i_type = header.index("企画タイプ") if "企画タイプ" in header else -1
+    i_nar  = header.index("ナレーター") if "ナレーター" in header else -1
+
+    result = {}
+    for r in rows[1:]:
+        if len(r) <= i_id or not r[i_id].strip():
+            continue
+        vid = r[i_id].strip()
+        typ = r[i_type].strip() if i_type >= 0 and len(r) > i_type else ""
+        nar = r[i_nar].strip()  if i_nar  >= 0 and len(r) > i_nar  else ""
+        if typ or nar:
+            result[vid] = {"type": typ, "narrator": nar}
+    print(f"  動画アーカイブ: {len(result)} 本に手入力あり")
+    return result
 
 # ──────────────────────────────────────────────────────────
 # Google スプレッドシート: 投稿計画（CSV エクスポート、認証不要）
@@ -1187,6 +1229,10 @@ def main():
     else:
         print("  [WARN] 取得失敗 — 前回データを保持")
 
+    # ── 動画アーカイブ（video_id → 企画タイプ/ナレーターの手入力）──
+    print("  動画アーカイブを取得中...")
+    video_archive = fetch_video_archive()
+
     # ── 計画 × 実績の自動照合（シートのステータス更新に依存しない投稿済み判定）──
     try:
         post_plan = match_post_plan(post_plan, videos)
@@ -1226,6 +1272,7 @@ def main():
         "video_analytics_extra": video_analytics_extra, # 動画別追加分析（国別/登録者別）上位30本
         "videos":                videos,                # 動画メタデータ + 現在 stats
         "post_plan":             post_plan,             # 投稿計画（Google スプレッドシート）
+        "video_archive":         video_archive,         # 動画アーカイブ（video_id→企画タイプ/ナレーター手入力）
         "weekly_reports":        weekly_reports,        # 週次レポート（土〜金、最大26週）
     }
 

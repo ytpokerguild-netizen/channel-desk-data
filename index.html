@@ -1344,12 +1344,19 @@ function renderPlanTypePerf(){
   const card = document.getElementById('planTypeCard'); if(!card) return;
   const p28 = (G.video_period||{})['28'] || {};
   const vmeta = {}; (G.videos||[]).forEach(v=>vmeta[v.video_id]=v);
-  // シートの企画タイプ(手入力)を video_id にマップ
+  // 分類の優先順位: 動画アーカイブ(手入力) > 投稿計画(手入力) > タイトル推定
   const sheetType = {}, sheetNar = {};
+  // 1) 投稿計画(照合済み行)
   (G.post_plan||[]).forEach(r=>{
     const vid = r._matched_video_id; if(!vid) return;
     if((r['企画タイプ']||'').trim()) sheetType[vid] = r['企画タイプ'].trim();
     if((r['ナレーター']||'').trim()) sheetNar[vid]  = r['ナレーター'].trim();
+  });
+  // 2) 動画アーカイブ(video_id直接・こちらを優先で上書き)
+  const arch = G.video_archive || {};
+  Object.entries(arch).forEach(([vid,m])=>{
+    if(m.type)     sheetType[vid] = m.type;
+    if(m.narrator) sheetNar[vid]  = m.narrator;
   });
 
   if(!Object.keys(p28).length){ card.style.display='none'; return; }
