@@ -385,7 +385,7 @@ body{
     </div>
     <div class="status-dot" id="statusDot"></div>
     <span class="updated" id="updatedLabel">読み込み中…</span>
-    <button class="btn" onclick="loadData()">↻ 更新</button>
+    <button class="btn" onclick="loadData(true)">↻ 更新</button>
   </div>
 
   <div id="loadingState"><div class="spin"></div>データを読み込んでいます…</div>
@@ -475,12 +475,14 @@ body{
       <div class="analytics-grid" id="analyticsInOverview" style="display:none;margin-top:14px">
         <div class="chart-card standalone">
           <div class="chart-title"><span class="ct-label">🇯🇵 日本国内の視聴 — 地域別（28日）</span><span id="jpShareLabel" style="color:var(--muted-2)"></span></div>
+          <div style="font-size:10px;color:var(--muted-2);margin:-2px 0 6px">※上部の期間切替とは連動せず、常に直近28日</div>
           <div id="jpStats" style="display:flex;gap:18px;margin:2px 0 10px;font-size:12px;color:var(--muted)"></div>
           <div id="jpCityBars"></div>
           <div id="jpAbroadNote" style="font-size:11px;color:var(--muted-2);margin-top:8px"></div>
         </div>
         <div class="chart-card standalone" style="display:flex;flex-direction:column">
           <div class="chart-title"><span class="ct-label">視聴者層 — 登録者 vs 非登録者（28日）</span></div>
+          <div style="font-size:10px;color:var(--muted-2);margin:-2px 0 6px">※上部の期間切替とは連動せず、常に直近28日</div>
           <div class="period-note" id="analyticsNote" style="margin-bottom:10px">— データなし —</div>
           <div class="subs-wrap" id="subsWrap" style="flex-direction:column;margin-bottom:0"></div>
         </div>
@@ -677,12 +679,12 @@ function fmtDur(s){ if(!s) return '—'; const m=Math.floor(s/60), sec=s%60; ret
 // ════════════════════════════════
 // データ読み込み
 // ════════════════════════════════
-async function loadData(){
+async function loadData(bust){
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('errorState').style.display = 'none';
   try {
-    const r = await fetch(DATA_URL + '?t=' + Date.now());
+    const r = await fetch(DATA_URL + (bust ? '?t=' + Date.now() : ''));
     if(!r.ok) throw new Error('HTTP ' + r.status);
     G = await r.json();
     document.getElementById('loadingState').style.display = 'none';
@@ -706,6 +708,17 @@ async function loadData(){
       'channel-desk-data · ' + G.meta.channel_id + ' · ' + G.meta.data_through;
     initPeriod();
     renderAll();
+    // 重量データ(動画別日次)は分割ファイルから遅延ロード(P-D)
+    if(!G.video_daily || !Object.keys(G.video_daily).length){
+      try{
+        const r2 = await fetch('video_daily.json' + (bust ? '?t=' + Date.now() : ''));
+        if(r2.ok){
+          G.video_daily = await r2.json();
+          renderDailyBrief();
+          if(activeTab==='report') renderReport();
+        }
+      }catch(e){ /* 分割ファイル未生成時は無視 */ }
+    }
   } catch(e) {
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('errorState').style.display = 'block';
@@ -1127,15 +1140,27 @@ function renderOverviewBar(){
   const dataEnd=allV.length?allV[allV.length-1].date:'';
   const vp=G.video_period||{};
   const hasPeriod=Object.keys(vp).length>0;
+  // 平均視聴時間の前週比と解約数(確定7日 vs その前7日)
+  const adC = (G.analytics_daily||[]).filter(d=>d.views>0);
+  let durNote = '直近28日', lost7 = null;
+  if(adC.length >= 14){
+    const a = adC.slice(-7), b = adC.slice(-14,-7);
+    const da = a.reduce((sum,d)=>sum+(d.watch_min||0),0)*60/(a.reduce((sum,d)=>sum+d.views,0)||1);
+    const db = b.reduce((sum,d)=>sum+(d.watch_min||0),0)*60/(b.reduce((sum,d)=>sum+d.views,0)||1);
+    durNote = `平均視聴時間 前週比 ${da-db>=0?'+':''}${(da-db).toFixed(1)}秒`;
+    lost7 = a.reduce((sum,d)=>sum+(d.subs_lost||0),0);
+  }
   document.getElementById('overviewBar').innerHTML=[
     {label:'登録者数',val:fmtFull(latest.subscribers),sub:'人'},
     {label:'週間視聴回数',val:weekViews!==null?fmt(weekViews):'—',sub:weekViews!==null?fmtFull(weekViews)+'回':''},
     {label:'週間登録者増減',val:weekSub!==null?(weekSub>=0?'+':'')+fmtFull(weekSub):'—',sub:'人'},
     {label:'動画本数',val:latest.video_count.toLocaleString(),sub:'本'},
-    {label:'平均視聴維持率',val:(G.analytics_extra?.ctr?.avg_view_pct||0)>0?G.analytics_extra.ctr.avg_view_pct+'%':'—',sub:'直近28日'},
-    {label:'期間データ',val:hasPeriod?'✓':'—',sub:hasPeriod?'7/28/90/365日':'Analytics未設定'},
-    {label:'データ期間',val:allV.length+'日',sub:fmtDate(dataStart)+'〜'+fmtDate(dataEnd)},
+    {label:'平均視聴維持率',val:(G.analytics_extra?.ctr?.avg_view_pct||0)>0?G.analytics_extra.ctr.avg_view_pct+'%':'—',sub:durNote},
+    {label:'登録解除（確定7日）',val:lost7!=null?'−'+fmtFull(lost7):'—',sub:'人'},
   ].map(it=>`<div class="ov-item"><div class="ov-label">${it.label}</div><div class="ov-val">${it.val}</div><div class="ov-sub">${it.sub}</div></div>`).join('');
+  // データ期間はフッターへ移設(P-F)
+  document.getElementById('footNote').textContent =
+    `channel-desk-data · ${G.meta.channel_id} · ${G.meta.data_through} ／ データ ${allV.length}日分（${fmtDate(dataStart)}〜${fmtDate(dataEnd)}）`;
 }
 
 function updateRangeInfo(){
@@ -1157,64 +1182,82 @@ function _daysBetween(a, b){ return Math.round((new Date(b+'T00:00:00') - new Da
 function renderDailyBrief(){
   const wrap = document.getElementById('dailyBrief'); if(!wrap) return;
   const titleEl = document.getElementById('dailyBriefTitle');
-  // 集計途中の「今日」を除外し、完全な日だけで判定する(3時間おき更新のため最終日は部分データ)
-  const cutoff = (G.meta.fetched_at||'').slice(0,10);
-  const allV = allViewData().filter(d => !cutoff || d.date < cutoff);
-  if(allV.length < 9){ wrap.innerHTML=''; titleEl.textContent=''; return; }
+  const ad = (G.analytics_daily||[]).filter(d=>d.views>0);
+  if(ad.length < 9){ wrap.innerHTML=''; titleEl.textContent=''; return; }
 
   const COLORS = {up:'#5BD68A', down:'#E2706E', flat:'var(--muted)'};
-  const judge = (val, base) => {
+  // P-C: 確定データ以外(推定・丸め・欠損)には▲▼と色を出さないガード
+  const judge = (val, base, confirmed) => {
+    if(!confirmed) return {cls:'flat', pct:null};
     if(base==null || !isFinite(base) || base===0) return {cls:'flat', pct:null};
     const pct = (val-base)/Math.abs(base)*100;
     return {cls: pct>10?'up':pct<-10?'down':'flat', pct};
   };
   const arrow = cls => cls==='up'?' ▲':cls==='down'?' ▼':'';
-  const pctTxt = (j, baseLabel) => j.pct==null ? '' : `${j.pct>=0?'+':''}${j.pct.toFixed(0)}% vs ${baseLabel}`;
+  const pctTxt = (j,lbl) => j.pct==null?'':`${j.pct>=0?'+':''}${j.pct.toFixed(0)}% vs ${lbl}`;
 
+  const latest   = ad[ad.length-1];      // 最新の確定日(基準日)
+  const baseDate = latest.date;
+  const prior7   = ad.slice(-8,-1);
+  const todayISO2 = localISO(new Date());
+  const lagDays  = _daysBetween(baseDate, todayISO2);
   const items = [];
 
-  // 1) 昨日の視聴回数 vs 直近7日平均
-  const last = allV[allV.length-1];
-  const prev7 = allV.slice(-8,-1);
-  const avg7 = prev7.reduce((sum,d)=>sum+d.views,0)/prev7.length;
-  const jv = judge(last.views, avg7);
-  items.push({label:`昨日の視聴回数（${fmtDate(last.date).slice(5)}${last.estimated?'・推定':''}）`,
-    val:fmtFull(last.views), cls:jv.cls, sub:pctTxt(jv,'7日平均')||('7日平均 '+fmtFull(Math.round(avg7)))});
+  // 1) 視聴回数(確定値で判定、より新しい推定値は参考表示)
+  const avgV = prior7.reduce((sum,d)=>sum+d.views,0)/prior7.length;
+  const jv = judge(latest.views, avgV, true);
+  const cutoff = (G.meta.fetched_at||'').slice(0,10);
+  const est = allViewData().filter(d=>d.estimated && d.date>baseDate && (!cutoff || d.date<cutoff));
+  const estLast = est.length ? est[est.length-1] : null;
+  items.push({label:`視聴回数 — ${fmtDate(baseDate).slice(5)}（確定）`, val:fmtFull(latest.views), cls:jv.cls,
+    sub:[pctTxt(jv,'7日平均'), estLast?`速報 ${fmtDate(estLast.date).slice(5)}: ${fmt(estLast.views)}（推定・判定対象外）`:''].filter(Boolean).join(' ・ ')});
 
-  // 2) 昨日の登録者純増 vs 7日平均
-  const daily = allDaily().filter(d => !cutoff || d.date < cutoff);
-  if(daily.length >= 2){
-    const net = daily[daily.length-1].subscribers - daily[daily.length-2].subscribers;
-    let base = null;
-    if(daily.length >= 9) base = (daily[daily.length-2].subscribers - daily[daily.length-9].subscribers)/7;
-    const js_ = judge(net, base);
-    items.push({label:'昨日の登録者純増', val:(net>=0?'+':'')+fmtFull(net), cls:js_.cls,
-      sub:pctTxt(js_,'7日平均')||(base!=null?`7日平均 ${base>=0?'+':''}${base.toFixed(1)}`:'')});
+  // 2) 登録者純増: analytics_daily の実数(gained−lost)を第一ソースに (P-A)
+  if(latest.subs_gained != null){
+    const net = (latest.subs_gained||0) - (latest.subs_lost||0);
+    const baseNet = prior7.reduce((sum,d)=>sum+(d.subs_gained||0)-(d.subs_lost||0),0)/prior7.length;
+    const js_ = judge(net, baseNet, true);
+    items.push({label:`登録者純増 — ${fmtDate(baseDate).slice(5)}（確定）`, val:(net>=0?'+':'')+fmtFull(net), cls:js_.cls,
+      sub:`内訳 +${latest.subs_gained||0} / −${latest.subs_lost||0}${js_.pct!=null?' ・ '+pctTxt(js_,'7日平均'):''}`});
+  } else {
+    const daily = allDaily().filter(d => !cutoff || d.date < cutoff);
+    if(daily.length >= 2){
+      const net = daily[daily.length-1].subscribers - daily[daily.length-2].subscribers;
+      items.push({label:'登録者純増（丸め値）', val:(net>=0?'+':'')+fmtFull(net), cls:'flat',
+        sub:'※10人単位の丸め値のため判定なし'});
+    }
   }
 
-  // 3) 直近新作の初速 vs 過去20本の同時点中央値
-  const todayISO2 = allV.length ? allV[allV.length-1].date : (G.meta.data_through || localISO(new Date()));
+  // 3) 新作初速: 分子・分母とも video_daily の同一確定窓で統一 (P-B)
   const vids = (G.videos||[]).filter(v=>v.published_at)
     .map(v=>({...v, _pub:(v.published_at||'').slice(0,10)}))
     .sort((a,b)=>b._pub.localeCompare(a._pub));
   const vd = G.video_daily || {};
-  const newest = vids.find(v => _daysBetween(v._pub, todayISO2) <= 3);
+  const newest = vids.find(v => _daysBetween(v._pub, todayISO2) <= 4);
   if(newest){
-    const elapsed = Math.max(1, _daysBetween(newest._pub, todayISO2));
-    const olds = vids.filter(v => v!==newest && _daysBetween(v._pub, todayISO2) > elapsed+2).slice(0,20);
-    const samples = olds.map(v=>{
-      const cutoff = _addDaysISO(v._pub, elapsed-1);
-      return (vd[v.video_id]||[]).filter(r=>r.date>=v._pub && r.date<=cutoff).reduce((sum,r)=>sum+r.views,0);
-    }).filter(x=>x>0).sort((a,b)=>a-b);
-    const med = samples.length ? samples[Math.floor(samples.length/2)] : null;
-    const jn = judge(newest.views, med);
-    items.push({label:`新作初速（公開${elapsed}日目）`, val:fmtFull(newest.views), cls:jn.cls,
-      sub:(pctTxt(jn,'過去20本中央値')||'') , title:newest.title});
+    const winDays = _daysBetween(newest._pub, baseDate) + 1;   // 公開日〜基準日の確定窓
+    const rows = (vd[newest.video_id]||[]).filter(r=>r.date>=newest._pub && r.date<=baseDate);
+    if(winDays >= 1 && rows.length >= 1){
+      const num = rows.reduce((sum,r)=>sum+r.views,0);
+      const olds = vids.filter(v=>v!==newest && _daysBetween(v._pub, baseDate) > winDays+1).slice(0,20);
+      const samples = olds.map(v=>{
+        const co = _addDaysISO(v._pub, winDays-1);
+        return (vd[v.video_id]||[]).filter(r=>r.date>=v._pub && r.date<=co).reduce((sum,r)=>sum+r.views,0);
+      }).filter(x=>x>0).sort((a,b)=>a-b);
+      const med = samples.length ? samples[Math.floor(samples.length/2)] : null;
+      const jn = judge(num, med, true);
+      items.push({label:`新作初速 — 確定${winDays}日分`, val:fmtFull(num), cls:jn.cls,
+        sub:pctTxt(jn,'過去20本の同時点中央値')||'', title:newest.title});
+    } else {
+      items.push({label:'新作初速', val:'集計待ち', cls:'flat',
+        sub:`${fmtDate(newest._pub).slice(5)}公開 — 確定データ到着後に判定`, title:newest.title});
+    }
   } else {
-    items.push({label:'新作初速', val:'—', cls:'flat', sub:'直近3日の新規投稿なし'});
+    items.push({label:'新作初速', val:'—', cls:'flat', sub:'直近4日の新規投稿なし'});
   }
 
-  titleEl.textContent = '📌 デイリーブリーフ — 昨日の結果と判定';
+  titleEl.textContent = `📌 デイリーブリーフ — 確定データによる判定（基準日: ${fmtDate(baseDate).slice(5)}）`
+    + (lagDays>2 ? ` ※確定値は現在${lagDays}日遅れ` : '');
   wrap.innerHTML = items.map(it=>`
     <div class="ov-item" style="border-left:3px solid ${COLORS[it.cls]}" ${it.title?`title="${String(it.title).replace(/"/g,'&quot;')}"`:''}>
       <div class="ov-label">${it.label}</div>

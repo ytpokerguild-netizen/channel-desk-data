@@ -1047,6 +1047,9 @@ def load_existing_data():
         video_period          = ex.get("video_period",          {})
         analytics_extra       = ex.get("analytics_extra",       {})
         video_daily           = ex.get("video_daily",           {})
+        if not video_daily and os.path.exists("video_daily.json"):
+            with open("video_daily.json", "r", encoding="utf-8") as vf:
+                video_daily = json.load(vf)
         post_plan             = ex.get("post_plan",             [])
         video_analytics_extra = ex.get("video_analytics_extra", {})
         prev_videos           = ex.get("videos",                [])
@@ -1226,8 +1229,12 @@ def main():
         "weekly_reports":        weekly_reports,        # 週次レポート（土〜金、最大26週）
     }
 
+    # 重量データ(動画別日次)は別ファイルに分離し、本体はコンパクト化(初期ロード削減)
+    with open("video_daily.json", "w", encoding="utf-8") as f:
+        json.dump(video_daily, f, ensure_ascii=False, separators=(",", ":"))
+    output["video_daily"] = {}  # 本体には含めない(video_daily.json を参照)
     with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(output, f, ensure_ascii=False, indent=2)
+        json.dump(output, f, ensure_ascii=False, separators=(",", ":"))
 
     print(f"\n[OK] {OUTPUT_FILE} 書き出し完了")
     print(f"  チャンネルスナップ: {len(daily)} 日 / Analytics日次: {len(analytics_daily)} 日")
