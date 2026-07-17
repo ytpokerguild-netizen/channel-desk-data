@@ -110,6 +110,15 @@ body{
   color-scheme:dark;
 }
 .range-info{font-size:11.5px;color:var(--muted-2);margin-left:auto;white-space:nowrap}
+.adv-filter{display:contents}
+.filter-toggle{display:none}
+@media(max-width:680px){
+  .filter-toggle{display:inline-block}
+  .adv-filter{display:none;flex-basis:100%;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+  .adv-filter.open{display:flex}
+  .adv-filter .divider{display:none}
+  .range-info{flex-basis:100%;margin-left:0;margin-top:4px}
+}
 
 /* ── Metric tiles ── */
 .metric-tiles{
@@ -398,10 +407,8 @@ body{
 
     <!-- Tab nav -->
     <nav class="tab-nav">
-      <button onclick="switchTab('overview')"   id="tab-overview"   class="on">📊 チャンネルアナリティクス</button>
+      <button onclick="switchTab('overview')"   id="tab-overview"   class="on">📊 アナリティクス</button>
       <button onclick="switchTab('ops')"        id="tab-ops"            >📋 運営</button>
-      <button onclick="switchTab('schedule')"   id="tab-schedule"       >📝 投稿</button>
-      <button onclick="switchTab('videos')"     id="tab-videos"         >🎬 動画一覧</button>
       <button onclick="switchTab('report')"     id="tab-report"         >📈 週次レポート</button>
     </nav>
 
@@ -430,14 +437,17 @@ body{
           <button onclick="setQuick(365,this)">365日</button>
           <button onclick="setQuick(0,this)">全期間</button>
         </div>
-        <div class="divider"></div>
-        <label>A</label>
-        <input type="date" id="dateFrom" onchange="onDateChange()">
-        <label>〜</label>
-        <input type="date" id="dateTo" onchange="onDateChange()">
-        <button class="btn" id="compareBtn" onclick="toggleCompare()">比較</button>
-        <button class="btn" onclick="setComparePreset(7)">前週比</button>
-        <button class="btn" onclick="setComparePreset(28)">前月比</button>
+        <button class="btn filter-toggle" id="filterToggle" onclick="toggleAdvFilter()">日付・比較 ▾</button>
+        <div class="adv-filter" id="advFilter">
+          <div class="divider"></div>
+          <label>A</label>
+          <input type="date" id="dateFrom" onchange="onDateChange()">
+          <label>〜</label>
+          <input type="date" id="dateTo" onchange="onDateChange()">
+          <button class="btn" id="compareBtn" onclick="toggleCompare()">比較</button>
+          <button class="btn" onclick="setComparePreset(7)">前週比</button>
+          <button class="btn" onclick="setComparePreset(28)">前月比</button>
+        </div>
         <span class="range-info" id="rangeInfo"></span>
       </div>
 
@@ -467,6 +477,13 @@ body{
       <!-- Overview bar -->
       <div class="overview-bar" id="overviewBar"></div>
 
+      <!-- ここから下は詳細分析 -->
+      <div style="display:flex;align-items:center;gap:12px;margin:22px 0 4px">
+        <div style="height:1px;background:var(--line-strong);flex:1"></div>
+        <span style="font-size:11px;color:var(--muted-2);letter-spacing:.08em;white-space:nowrap">詳細分析</span>
+        <div style="height:1px;background:var(--line-strong);flex:1"></div>
+      </div>
+
       <!-- チャンネル流入経路 -->
       <div class="chart-card standalone" id="trafficOverviewCard" style="display:none;margin-top:14px">
         <div class="chart-title"><span class="ct-label" id="trafficOverviewTitle">チャンネル流入経路</span></div>
@@ -483,6 +500,18 @@ body{
         <div class="chart-title"><span class="ct-label">🎬 企画タイプ別パフォーマンス（直近28日）</span></div>
         <div style="font-size:10.5px;color:var(--muted-2);margin:-2px 0 8px" id="planTypeNote"></div>
         <div id="planTypeBody"></div>
+      </div>
+
+      <!-- 曜日別 & 動画尺別 -->
+      <div class="analytics-grid">
+        <div class="chart-card standalone">
+          <div class="chart-title"><span class="ct-label">投稿曜日 × 平均視聴回数</span></div>
+          <div class="chart-box" style="height:220px"><canvas id="dowChart"></canvas></div>
+        </div>
+        <div class="chart-card standalone">
+          <div class="chart-title"><span class="ct-label">動画尺別 平均視聴回数（ショートのみ）</span></div>
+          <div class="chart-box" style="height:220px"><canvas id="durationChart"></canvas></div>
+        </div>
       </div>
 
       <!-- 国別 & 新規vsリピーター（概要タブ内） -->
@@ -524,25 +553,8 @@ body{
         </div>
       </div>
 
-      <!-- 曜日別 & 動画尺別 -->
-      <div class="analytics-grid">
-        <div class="chart-card standalone">
-          <div class="chart-title"><span class="ct-label">投稿曜日 × 平均視聴回数</span></div>
-          <div class="chart-box" style="height:220px"><canvas id="dowChart"></canvas></div>
-        </div>
-        <div class="chart-card standalone">
-          <div class="chart-title"><span class="ct-label">動画尺別 平均視聴回数（ショートのみ）</span></div>
-          <div class="chart-box" style="height:220px"><canvas id="durationChart"></canvas></div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ════════════════════════ TAB: 投稿 ════════════════════════ -->
-    <div id="pane-schedule" style="display:none">
-
-      <!-- サマリーバー -->
-      <div class="overview-bar" id="scheduleSummary"></div>
+      <!-- 投稿サマリー -->
+      <div class="overview-bar" id="scheduleSummary" style="margin-top:8px"></div>
 
       <!-- 投稿予定（未投稿） -->
       <div class="card" id="schedUpcomingCard">
@@ -556,21 +568,6 @@ body{
         <div class="sched-table-wrap" id="schedRecent"></div>
       </div>
 
-    </div>
-
-    <!-- ════════════════════════ TAB: 動画一覧 ════════════════════════ -->
-    <div id="pane-videos" style="display:none">
-      <div class="card">
-        <h3><span class="dot"></span><span id="videoRankLabel">動画ランキング</span><span style="margin-left:auto;font-size:11px;color:var(--muted-2);text-transform:none;font-family:'Noto Sans JP',sans-serif" id="videoCount"></span></h3>
-        <div class="period-seg" id="videoRankSeg" style="margin-bottom:14px">
-          <button onclick="setVideoRankPeriod(0,this)" class="on">全期間</button>
-          <button onclick="setVideoRankPeriod(7,this)">7日</button>
-          <button onclick="setVideoRankPeriod(28,this)">28日</button>
-          <button onclick="setVideoRankPeriod(90,this)">90日</button>
-          <button onclick="setVideoRankPeriod(365,this)">365日</button>
-        </div>
-        <div class="video-list" id="videoBody"></div>
-      </div>
     </div>
 
     <!-- ════════════════════════ TAB: 週次レポート ════════════════════════ -->
@@ -746,13 +743,11 @@ async function loadData(bust){
 // ════════════════════════════════
 function switchTab(name){
   activeTab = name;
-  ['overview','ops','schedule','videos','report'].forEach(t => {
+  ['overview','ops','report'].forEach(t => {
     document.getElementById('pane-'+t).style.display = t === name ? '' : 'none';
     document.getElementById('tab-'+t).classList.toggle('on', t === name);
   });
-  if(name === 'ops')      renderOps();
-  if(name === 'schedule') renderSchedule();
-  if(name === 'videos')   renderVideoList();
+  if(name === 'ops'){ renderOps(); renderSchedule(); }   // 運営タブに投稿計画も統合
   if(name === 'report')   renderReport();
 }
 
@@ -1293,6 +1288,13 @@ function renderDailyBrief(){
     </div>`).join('');
 }
 
+// モバイル: 日付・比較フィルタの折りたたみ開閉
+function toggleAdvFilter(){
+  const el = document.getElementById('advFilter');
+  const open = el.classList.toggle('open');
+  document.getElementById('filterToggle').textContent = open ? '日付・比較 ▴' : '日付・比較 ▾';
+}
+
 // 比較プリセット(前週比/前月比)
 function setComparePreset(days){
   const all = allViewData(); if(!all.length) return;
@@ -1724,6 +1726,12 @@ function renderOps(){
     });
   }
 
+}
+
+// ── 曜日別・動画尺別（アナリティクスタブに配置。renderOverviewから呼ぶ）──
+function renderDowDuration(){
+  const videos = G.videos || [];
+  if(!videos.length) return;
   // ── 曜日別 平均視聴回数 ──
   if(dowChart){ dowChart.destroy(); dowChart=null; }
   const dowViews = Array(7).fill(0), dowCount = Array(7).fill(0);
