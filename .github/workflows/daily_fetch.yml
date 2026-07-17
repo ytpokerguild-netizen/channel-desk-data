@@ -41,3 +41,19 @@ jobs:
           git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "chore: update analytics data $(date -u +%Y-%m-%d)"
           git push
+
+      - name: データ鮮度チェック（24時間超で LINE 通知）
+        if: success()
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
+        run: python check_staleness.py
+
+      - name: 失敗時 LINE 通知
+        if: failure()
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
+        run: |
+          python line_notify.py "⚠️ CHANNEL DESK: データ更新に失敗しました（GitHub Actions）。実行ログを確認してください。
+          https://github.com/ytpokerguild-netizen/channel-desk-data/actions"
