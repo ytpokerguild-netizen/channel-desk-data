@@ -417,7 +417,7 @@ body{
 
       <!-- 今週のアクション(週次AI分析の結論を常駐) -->
       <div id="weeklyActionBar" style="display:none;background:linear-gradient(90deg,rgba(201,162,39,.13),rgba(201,162,39,.03));border:1px solid rgba(201,162,39,.3);border-radius:12px;padding:11px 15px;margin-bottom:14px;cursor:pointer" onclick="switchTab('report')">
-        <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gold);letter-spacing:.05em;margin-bottom:4px">🤖 今週のAI分析<span id="weeklyActionWeek" style="color:var(--muted-2);font-weight:400"></span><span style="margin-left:auto;color:var(--muted-2)">タップで週次レポート →</span></div>
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--gold);letter-spacing:.05em;margin-bottom:4px">🤖 AI分析（確定値）<span id="weeklyActionWeek" style="color:var(--muted-2);font-weight:400"></span><span style="margin-left:auto;color:var(--muted-2)">タップで週次レポート →</span></div>
         <div id="weeklyActionHeadline" style="font-size:13px;font-weight:700;line-height:1.5;margin-bottom:5px"></div>
         <div id="weeklyActionTop" style="font-size:12px;color:var(--muted)"></div>
       </div>
@@ -1315,16 +1315,32 @@ function setComparePreset(days){
 // 週次AI分析の結論を概要タブ最上部に常駐(最新の分析済みレポート)
 function renderWeeklyActionBar(){
   const bar = document.getElementById('weeklyActionBar'); if(!bar) return;
-  const reps = (G.weekly_reports||[]).filter(r=>r.ai_analysis&&r.ai_analysis.headline)
+  // 確定(final)かつAI分析済みの最新週を採用。headline が無い週は analysis の冒頭文で代替する。
+  // ※ Analytics は約2〜3日遅れで確定するため、直近に終わった週はまだ final にならない。
+  //   したがってここに出るのは通常1〜2週前の週であり、それが正しい挙動。
+  const reps = (G.weekly_reports||[]).filter(r=>r.final && r.ai_analysis)
     .sort((a,b)=>b.week_start.localeCompare(a.week_start));
   if(!reps.length){ bar.style.display='none'; return; }
   const rep = reps[0], ai = rep.ai_analysis;
   bar.style.display='block';
-  document.getElementById('weeklyActionWeek').textContent = ` ${fmtDate(rep.week_start).slice(5)}〜${fmtDate(rep.week_end).slice(5)}週`;
-  document.getElementById('weeklyActionHeadline').textContent = ai.headline;
+  const lagW = Math.floor(_daysBetween(rep.week_end, localISO(new Date())) / 7);
+  // 分析待ちの確定週が溜まっていないか自己診断する（AI分析タスクが止まると気づけないため）
+  const pending = (G.weekly_reports||[]).filter(r=>r.final && !r.ai_analysis
+    && r.week_start.localeCompare(rep.week_start) > 0).length;
+  document.getElementById('weeklyActionWeek').textContent =
+    ` ${fmtDate(rep.week_start).slice(5)}〜${fmtDate(rep.week_end).slice(5)}週`
+    + (lagW>=1 ? `（${lagW}週前・確定済み）` : '')
+    + (pending ? ` ⚠ より新しい確定週 ${pending} 件が分析待ち` : '');
+  let head = ai.headline;
+  if(!head){
+    const a = String(ai.analysis||'').replace(/\s+/g,' ').trim();
+    const m = a.match(/^[\s\S]{1,140}?。/);
+    head = m ? m[0] : a.slice(0,120) + (a.length>120?'…':'');
+  }
+  document.getElementById('weeklyActionHeadline').textContent = head;
   const first = (ai.suggestions||[])[0];
   const ft = first ? (typeof first==='string'?first:(first.title||'')) : '';
-  document.getElementById('weeklyActionTop').innerHTML = ft ? `▶ 今週の最優先アクション: <strong>${String(ft).replace(/</g,'&lt;')}</strong>` : '';
+  document.getElementById('weeklyActionTop').innerHTML = ft ? `▶ 最優先アクション: <strong>${String(ft).replace(/</g,'&lt;')}</strong>` : '';
 }
 
 // ════════════════════════════════
