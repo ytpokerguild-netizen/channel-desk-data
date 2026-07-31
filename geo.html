@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>なぜ大阪が多いのか ｜ CHANNEL DESK</title>
+<style>
+  :root{
+    color-scheme: light;
+    --plane:#f9f9f7; --surface:#fcfcfb;
+    --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
+    --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
+    --s1:#2a78d6; --s2:#eb6834;
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --plane:#0d0d0d; --surface:#1a1a19;
+    --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+    --s1:#3987e5; --s2:#d95926;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:where(:not([data-theme="light"])){
+      color-scheme: dark;
+      --plane:#0d0d0d; --surface:#1a1a19;
+      --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
+      --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
+      --s1:#3987e5; --s2:#d95926;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--plane);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
+    line-height:1.85;font-size:15.5px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:760px;margin:0 auto;padding:44px 24px 80px}
+  header{position:relative;margin-bottom:6px}
+  .kicker{font-size:11.5px;letter-spacing:.14em;color:var(--muted);margin:0 0 10px;font-weight:600}
+  h1{font-size:29px;line-height:1.4;margin:0 0 12px;font-weight:660;letter-spacing:-.02em}
+  .meta{font-size:12.5px;color:var(--muted);margin:0}
+  .theme-btn{position:absolute;top:0;right:0;font-size:12px;color:var(--ink2);background:var(--surface);
+    border:1px solid var(--border);border-radius:6px;padding:5px 11px;cursor:pointer;font-family:inherit}
+  h2{font-size:20px;margin:46px 0 8px;font-weight:650;letter-spacing:-.012em}
+  p{margin:14px 0}
+  .answer{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--s1);
+    border-radius:11px;padding:22px 26px;margin:26px 0 0}
+  .answer p{margin:0}
+  .answer p+p{margin-top:12px}
+  .big{font-size:17.5px;font-weight:600;line-height:1.7}
+  figure{margin:26px 0 10px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:20px 18px 12px}
+  figcaption{font-size:13px;color:var(--ink2);margin:0 0 14px;line-height:1.7}
+  figcaption b{color:var(--ink);font-weight:650}
+  .legend{display:flex;flex-wrap:wrap;gap:18px;margin:0 0 14px;font-size:12.5px;color:var(--ink2)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .sw{width:11px;height:11px;border-radius:3px;display:inline-block;flex:none}
+  svg{display:block;width:100%;height:auto;overflow:visible}
+  .tick{font-size:10.5px;fill:var(--muted);font-variant-numeric:tabular-nums}
+  .catlbl{font-size:12px;fill:var(--ink2)}
+  .gl{stroke:var(--grid);stroke-width:1}
+  ul{margin:14px 0;padding-left:1.35em}
+  li{margin:9px 0}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0}
+  .box{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 20px}
+  .box h3{margin:0 0 6px;font-size:14px;font-weight:680}
+  .box ul{margin:8px 0 0;padding-left:1.2em;font-size:14px}
+  .box li{margin:6px 0}
+  .ng h3{color:var(--s2)}
+  .ok h3{color:var(--s1)}
+  table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0}
+  th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+  th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
+  th{font-size:11.5px;color:var(--muted);font-weight:650}
+  details{margin:18px 0;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
+  summary{cursor:pointer;padding:13px 18px;font-size:13.5px;color:var(--ink2);font-weight:650}
+  summary:hover{color:var(--ink)}
+  details[open] summary{border-bottom:1px solid var(--border)}
+  .dtbody{padding:6px 18px 16px;font-size:14px}
+  .dtbody p{margin:11px 0}
+  footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.8}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;
+    background:color-mix(in srgb,var(--ink) 6.5%,transparent);padding:1.5px 5px;border-radius:4px}
+  .tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .09s;background:var(--surface);
+    border:1px solid var(--border);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--ink);
+    box-shadow:0 5px 20px rgba(0,0,0,.15);z-index:50;line-height:1.6;white-space:nowrap}
+  .tip .k{color:var(--ink2)}
+  .hit{fill:transparent;cursor:pointer}
+  @media (max-width:620px){ .two{grid-template-columns:1fr} h1{font-size:24px} .theme-btn{position:static;margin-bottom:14px} }
+  @media print{ .theme-btn{display:none} body{background:#fff} figure,.box,.answer{break-inside:avoid} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <button class="theme-btn" id="themeBtn">◐ 表示切替</button>
+  <p class="kicker">CHANNEL DESK</p>
+  <h1>なぜ大阪が多いのか</h1>
+  <p class="meta">YouTube 地域データの読み方 ／ りいポーカーチャンネル【PokerGuild】／ 2026年7月31日</p>
+</header>
+
+<div class="answer">
+  <p class="big">大阪の人がよく見ているわけではありません。</p>
+  <p>
+    スマホの通信は、<b>端末がある場所ではなく、通信会社の設備がある場所</b>として記録されます。
+    関西の携帯回線の出口が大阪にあるため、<b>関西一円の視聴がまとめて「大阪」として数えられています。</b>
+  </p>
+</div>
+
+<h2>東京を見ると分かります</h2>
+<p>同じデータで東京23区の内訳を見ると、答えが出ています。</p>
+
+<figure>
+  <figcaption>
+    <b>東京9区：人口の割合と視聴の割合</b>（データに現れた9区の内訳・人口の多い順）
+  </figcaption>
+  <div class="legend">
+    <span><i class="sw" style="background:var(--s1)"></i>人口の割合</span>
+    <span><i class="sw" style="background:var(--s2)"></i>視聴の割合</span>
+  </div>
+  <div id="chart"></div>
+</figure>
+
+<p>
+  <b>人が住んでいる区ほど、視聴が少ない。</b>
+  世田谷区は人口22%で視聴9%。逆に千代田区は<b>人口1.5%で視聴12%</b>。
+  上位に並ぶ千代田・新宿・渋谷・港は<b>全部オフィス街</b>で、通信会社の設備が集まっている場所です。
+  住んでいる人の数と噛み合っていません。
+</p>
+
+<h2>このデータは使えるのか</h2>
+<p class="big" style="margin:14px 0">使えません。</p>
+<p>
+  都市別は住んでいる場所を表していません。国別は正確ですが、<b>98.2%が日本</b>なので見るところがありません。
+</p>
+<p>
+  ダッシュボードの不具合ではなく、YouTube が返す数字の性質です。Google Analytics でも同じことが起きています。設定を直しても変わりません。
+</p>
+<p>
+  視聴者の地域性を知りたい場合は、コメント欄やアンケートなど、通信経路に依存しない方法で見る必要があります。
+</p>
+
+<details>
+  <summary>他に確かめたこと（結論は変わりません）</summary>
+  <div class="dtbody">
+    <p>
+      <b>関西全体では平均並みでした。</b>もし関西にポーカー視聴の需要が集中しているなら、京都・神戸・堺も高く出るはずです。
+      公平に比べ直すと関西3市は平均並み。とくに<b>大阪市の隣の堺市が関西で最下位</b>でした。
+      文化や需要の偏りなら、市境でこう切れることはありません。
+    </p>
+    <p>
+      <b>5週間ずっと24〜25%で動いていません。</b>特定の動画がバズった結果なら比率は動きます。
+      過去のデータを141件のコミット履歴から復元して確認しましたが、ほぼ一定でした。
+    </p>
+    <p>
+      <b>逆の立場も検証しました。</b>「本当に関西に需要がある」という説を最大限に擁護する調査を別に行いましたが、
+      出てきた数字は説を支えませんでした。ポーカー店舗の人口あたり密度は<b>東京のほうが高く</b>（東京13.4店／大阪8.7店・百万人あたり）、
+      動画共有サイトの利用率は<b>大阪54.0%に対して全国平均53.7%</b>とほぼ同じ。関西で5年以上続く地上波ポーカー番組はありますが、
+      その放送圏の中核である兵庫県（神戸市）は平均並みでした。
+    </p>
+    <p>
+      <b>技術的な裏付けも取りました。</b>格安SIMは携帯網との接続点を東京と大阪の2箇所しか持っていません（通信会社が公表）。
+      東京では千代田区（大手町）・新宿区・港区・江東区に主要な接続拠点があり、上の視聴ランキングの上位と一致します。
+      国内のIP位置情報サービスの1つは、携帯回線の市区町村判定は不可能と明言しています。
+    </p>
+    <p>
+      <b>なお、全部が間違いではありません。</b>自宅の光回線と、位置情報を許可している人の視聴は正しく記録されます。
+      だから京都や神戸も出てきます。ただし<b>大阪と東京は実際より多め、それ以外は少なめ</b>の数字です。
+    </p>
+    <table id="tbl">
+      <thead><tr><th>都市／区</th><th>視聴回数</th><th>人口</th></tr></thead><tbody></tbody>
+    </table>
+  </div>
+</details>
+
+<footer>
+  <p>
+    データ: YouTube Analytics（都市別・直近28日／<span id="fPeriod"></span>）。人口: 2025年国勢調査 人口速報集計結果。
+  </p>
+</footer>
+
+</div>
+<div class="tip" id="tip"></div>
+
+<script>
+const DATA = {"period": {"start": "2026-07-03", "end": "2026-07-30"}, "jp_views": 2389027, "city_views": 1002462, "attrib": 42.0, "base": 34382, "cities": [{"en": "Chiyoda City", "ja": "千代田区", "views": 25687, "wm": 11957, "pop": 66199, "group": "都心区", "wpv": 0.465, "index": 11.29}, {"en": "Shinjuku City", "ja": "新宿区", "views": 65714, "wm": 32194, "pop": 361634, "group": "都心区", "wpv": 0.49, "index": 5.29}, {"en": "Shibuya", "ja": "渋谷区", "views": 37428, "wm": 17753, "pop": 239119, "group": "都心区", "wpv": 0.474, "index": 4.55}, {"en": "Minato City", "ja": "港区", "views": 31490, "wm": 15394, "pop": 272662, "group": "都心区", "wpv": 0.489, "index": 3.36}, {"en": "Osaka", "ja": "大阪市", "views": 242472, "wm": 116484, "pop": 2808624, "group": "大阪市", "wpv": 0.48, "index": 2.51}, {"en": "Fukuoka", "ja": "福岡市", "views": 75541, "wm": 36535, "pop": 1663892, "group": "その他の都市", "wpv": 0.484, "index": 1.32}, {"en": "Nagoya", "ja": "名古屋市", "views": 98879, "wm": 46199, "pop": 2345892, "group": "その他の都市", "wpv": 0.467, "index": 1.23}, {"en": "Sapporo", "ja": "札幌市", "views": 64355, "wm": 32849, "pop": 1964034, "group": "その他の都市", "wpv": 0.51, "index": 0.95}, {"en": "Kyoto", "ja": "京都市", "views": 40489, "wm": 19649, "pop": 1431713, "group": "その他の都市", "wpv": 0.485, "index": 0.82}, {"en": "Yokohama", "ja": "横浜市", "views": 90311, "wm": 44344, "pop": 3754840, "group": "その他の都市", "wpv": 0.491, "index": 0.7}, {"en": "Koto City", "ja": "江東区", "views": 11987, "wm": 5920, "pop": 553358, "group": "東京の住宅区", "wpv": 0.494, "index": 0.63}, {"en": "Setagaya City", "ja": "世田谷区", "views": 20425, "wm": 10084, "pop": 956608, "group": "東京の住宅区", "wpv": 0.494, "index": 0.62}, {"en": "Kobe", "ja": "神戸市", "views": 30561, "wm": 15081, "pop": 1497630, "group": "その他の都市", "wpv": 0.493, "index": 0.59}, {"en": "Hiroshima", "ja": "広島市", "views": 22869, "wm": 11521, "pop": 1172423, "group": "その他の都市", "wpv": 0.504, "index": 0.57}, {"en": "Saitama", "ja": "さいたま市", "views": 25045, "wm": 12675, "pop": 1345016, "group": "その他の都市", "wpv": 0.506, "index": 0.54}, {"en": "Chiba", "ja": "千葉市", "views": 18049, "wm": 8967, "pop": 994970, "group": "その他の都市", "wpv": 0.497, "index": 0.53}, {"en": "Kawasaki", "ja": "川崎市", "views": 27564, "wm": 13900, "pop": 1561132, "group": "その他の都市", "wpv": 0.504, "index": 0.51}, {"en": "Ota City", "ja": "大田区", "views": 12625, "wm": 6262, "pop": 759409, "group": "東京の住宅区", "wpv": 0.496, "index": 0.48}, {"en": "Kitakyushu", "ja": "北九州市", "views": 13422, "wm": 6676, "pop": 904289, "group": "その他の都市", "wpv": 0.497, "index": 0.43}, {"en": "Shinagawa City", "ja": "品川区", "views": 5197, "wm": 2462, "pop": 426403, "group": "東京の住宅区", "wpv": 0.474, "index": 0.35}, {"en": "Sendai", "ja": "仙台市", "views": 12730, "wm": 5872, "pop": 1096951, "group": "その他の都市", "wpv": 0.461, "index": 0.34}, {"en": "Sakai", "ja": "堺市", "views": 9200, "wm": 4399, "pop": 803333, "group": "その他の都市", "wpv": 0.478, "index": 0.33}, {"en": "Okayama", "ja": "岡山市", "views": 7915, "wm": 3957, "pop": 707916, "group": "その他の都市", "wpv": 0.5, "index": 0.33}, {"en": "Hamamatsu", "ja": "浜松市", "views": 7043, "wm": 3237, "pop": 765750, "group": "その他の都市", "wpv": 0.46, "index": 0.27}, {"en": "Adachi City", "ja": "足立区", "views": 5464, "wm": 2594, "pop": 702718, "group": "東京の住宅区", "wpv": 0.475, "index": 0.23}], "ts": [{"date": "2026-07-03", "osaka": 24.46, "tokyo": 22.82, "ws": "2026-06-05", "we": "2026-07-02"}, {"date": "2026-07-04", "osaka": 24.62, "tokyo": 22.68, "ws": "2026-06-06", "we": "2026-07-03"}, {"date": "2026-07-05", "osaka": 24.69, "tokyo": 22.64, "ws": "2026-06-07", "we": "2026-07-04"}, {"date": "2026-07-06", "osaka": 24.81, "tokyo": 22.55, "ws": "2026-06-08", "we": "2026-07-05"}, {"date": "2026-07-07", "osaka": 24.99, "tokyo": 22.41, "ws": "2026-06-09", "we": "2026-07-06"}, {"date": "2026-07-08", "osaka": 25.07, "tokyo": 22.36, "ws": "2026-06-10", "we": "2026-07-07"}, {"date": "2026-07-09", "osaka": 25.07, "tokyo": 22.33, "ws": "2026-06-11", "we": "2026-07-08"}, {"date": "2026-07-10", "osaka": 25.11, "tokyo": 22.28, "ws": "2026-06-12", "we": "2026-07-09"}, {"date": "2026-07-11", "osaka": 25.21, "tokyo": 22.09, "ws": "2026-06-13", "we": "2026-07-10"}, {"date": "2026-07-12", "osaka": 25.29, "tokyo": 21.95, "ws": "2026-06-14", "we": "2026-07-11"}, {"date": "2026-07-13", "osaka": 25.43, "tokyo": 21.88, "ws": "2026-06-15", "we": "2026-07-12"}, {"date": "2026-07-14", "osaka": 25.53, "tokyo": 21.74, "ws": "2026-06-16", "we": "2026-07-13"}, {"date": "2026-07-15", "osaka": 25.53, "tokyo": 21.69, "ws": "2026-06-17", "we": "2026-07-14"}, {"date": "2026-07-16", "osaka": 25.56, "tokyo": 21.65, "ws": "2026-06-18", "we": "2026-07-15"}, {"date": "2026-07-17", "osaka": 25.44, "tokyo": 21.65, "ws": "2026-06-19", "we": "2026-07-16"}, {"date": "2026-07-18", "osaka": 25.14, "tokyo": 21.84, "ws": "2026-06-20", "we": "2026-07-17"}, {"date": "2026-07-19", "osaka": 25.18, "tokyo": 21.76, "ws": "2026-06-21", "we": "2026-07-18"}, {"date": "2026-07-20", "osaka": 24.64, "tokyo": 21.64, "ws": "2026-06-22", "we": "2026-07-19"}, {"date": "2026-07-21", "osaka": 24.59, "tokyo": 21.52, "ws": "2026-06-23", "we": "2026-07-20"}, {"date": "2026-07-22", "osaka": 24.55, "tokyo": 21.36, "ws": "2026-06-24", "we": "2026-07-21"}, {"date": "2026-07-23", "osaka": 24.55, "tokyo": 21.25, "ws": "2026-06-25", "we": "2026-07-22"}, {"date": "2026-07-24", "osaka": 24.6, "tokyo": 21.15, "ws": "2026-06-26", "we": "2026-07-23"}, {"date": "2026-07-25", "osaka": 24.57, "tokyo": 21.12, "ws": "2026-06-27", "we": "2026-07-24"}, {"date": "2026-07-26", "osaka": 24.6, "tokyo": 21.13, "ws": "2026-06-28", "we": "2026-07-25"}, {"date": "2026-07-27", "osaka": 24.49, "tokyo": 21.11, "ws": "2026-06-29", "we": "2026-07-26"}, {"date": "2026-07-28", "osaka": 24.43, "tokyo": 21.16, "ws": "2026-06-30", "we": "2026-07-27"}, {"date": "2026-07-29", "osaka": 24.3, "tokyo": 21.39, "ws": "2026-07-01", "we": "2026-07-28"}, {"date": "2026-07-30", "osaka": 24.22, "tokyo": 21.52, "ws": "2026-07-02", "we": "2026-07-29"}, {"date": "2026-07-31", "osaka": 24.19, "tokyo": 21.55, "ws": "2026-07-03", "we": "2026-07-30"}], "kansai4": 1.43, "kansai3": 0.63, "wards_sum": {"views": 216017, "pop": 4338110, "index": 1.45, "n": 9}, "wpv_all": 0.486};
+const $=s=>document.querySelector(s), fmt=n=>n.toLocaleString('ja-JP');
+const NS='http://www.w3.org/2000/svg';
+function el(t,a={},p){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(p)p.appendChild(e);return e;}
+const tip=$('#tip');
+function moveTip(e){const pad=14,w=tip.offsetWidth,h=tip.offsetHeight;
+  let x=e.clientX+pad,y=e.clientY-h-pad;
+  if(x+w>innerWidth-8)x=e.clientX-w-pad; if(y<8)y=e.clientY+pad;
+  tip.style.left=x+'px';tip.style.top=y+'px';}
+function bindTip(n,html){n.addEventListener('mouseenter',e=>{tip.innerHTML=html;tip.style.opacity=1;moveTip(e);});
+  n.addEventListener('mousemove',moveTip);n.addEventListener('mouseleave',()=>tip.style.opacity=0);}
+
+$('#fPeriod').textContent = DATA.period.start.replace(/-/g,'/')+'〜'+DATA.period.end.replace(/-/g,'/');
+
+const wards = DATA.cities.filter(c=>c.ja.endsWith('区')).sort((a,b)=>b.pop-a.pop);
+const tp = wards.reduce((s,c)=>s+c.pop,0), tv = wards.reduce((s,c)=>s+c.views,0);
+
+/* grouped bars: population share vs view share (same % axis) */
+(function(){
+  const W=700, ML=78, MR=54, MT=8, MB=34, ROW=54, BAR=17, GAP=2;
+  const H=MT+wards.length*ROW+MB;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'東京9区の人口の割合と視聴の割合'},$('#chart'));
+  const iw=W-ML-MR, max=32, x=v=>ML+iw*v/max;
+  [0,10,20,30].forEach(v=>{
+    el('line',{x1:x(v),x2:x(v),y1:MT,y2:MT+wards.length*ROW,class:'gl'},svg);
+    const t=el('text',{x:x(v),y:H-MB+21,class:'tick','text-anchor':'middle'},svg);t.textContent=v+'%';
+  });
+  wards.forEach((c,i)=>{
+    const top=MT+i*ROW, mid=top+ROW/2;
+    const lb=el('text',{x:ML-11,y:mid+4,class:'catlbl','text-anchor':'end'},svg);lb.textContent=c.ja;
+    const ps=100*c.pop/tp, vs=100*c.views/tv;
+    [[ps,'var(--s1)',top+ROW/2-BAR-GAP/2,'人口'],[vs,'var(--s2)',top+ROW/2+GAP/2,'視聴']].forEach(([val,col,y,nm])=>{
+      const w=Math.max(x(val)-ML,2);
+      el('rect',{x:ML,y:y,width:w,height:BAR,rx:4,fill:col},svg);
+      el('rect',{x:ML,y:y,width:Math.min(4,w),height:BAR,fill:col},svg);
+      const t=el('text',{x:ML+w+7,y:y+BAR-4,class:'tick',style:'fill:var(--ink2);font-weight:650;font-size:11px'},svg);
+      t.textContent=val.toFixed(1)+'%';
+    });
+    const hit=el('rect',{x:ML,y:top,width:iw+MR-6,height:ROW,class:'hit'},svg);
+    bindTip(hit,`<b>${c.ja}</b><br><span class="k">人口</span> ${fmt(c.pop)}人（${ps.toFixed(1)}%）<br>`+
+                `<span class="k">視聴回数</span> ${fmt(c.views)}回（${vs.toFixed(1)}%）`);
+  });
+})();
+
+{ const tb=$('#tbl tbody');
+  DATA.cities.forEach(c=>{const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${c.ja}</td><td>${fmt(c.views)}</td><td>${fmt(c.pop)}</td>`;tb.appendChild(tr);}); }
+
+$('#themeBtn').addEventListener('click',()=>{
+  const c=document.documentElement.getAttribute('data-theme');
+  document.documentElement.setAttribute('data-theme',c==='dark'?'light':'dark');});
+</script>
+</body>
+</html>
