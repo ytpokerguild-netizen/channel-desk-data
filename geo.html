@@ -3,18 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>なぜ大阪が多いのか ｜ CHANNEL DESK</title>
+<title>大阪は多くなかった ── 地域別データの誤読と正しい見方｜CHANNEL DESK</title>
 <style>
   :root{
     color-scheme: light;
-    --plane:#f9f9f7; --surface:#fcfcfb;
+    --plane:#f9f9f7; --surface:#fcfcfb; --wash:#f0efec;
     --ink:#0b0b0b; --ink2:#52514e; --muted:#898781;
     --grid:#e1e0d9; --axis:#c3c2b7; --border:rgba(11,11,11,0.10);
     --s1:#2a78d6; --s2:#eb6834;
   }
   :root[data-theme="dark"]{
     color-scheme: dark;
-    --plane:#0d0d0d; --surface:#1a1a19;
+    --plane:#0d0d0d; --surface:#1a1a19; --wash:#262623;
     --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
     --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
     --s1:#3987e5; --s2:#d95926;
@@ -22,7 +22,7 @@
   @media (prefers-color-scheme: dark){
     :root:where(:not([data-theme="light"])){
       color-scheme: dark;
-      --plane:#0d0d0d; --surface:#1a1a19;
+      --plane:#0d0d0d; --surface:#1a1a19; --wash:#262623;
       --ink:#ffffff; --ink2:#c3c2b7; --muted:#898781;
       --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,0.10);
       --s1:#3987e5; --s2:#d95926;
@@ -32,50 +32,52 @@
   body{margin:0;background:var(--plane);color:var(--ink);
     font-family:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;
     line-height:1.85;font-size:15.5px;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:760px;margin:0 auto;padding:44px 24px 80px}
-  header{position:relative;margin-bottom:6px}
+  .wrap{max-width:780px;margin:0 auto;padding:44px 24px 80px}
+  header{position:relative}
   .kicker{font-size:11.5px;letter-spacing:.14em;color:var(--muted);margin:0 0 10px;font-weight:600}
-  h1{font-size:29px;line-height:1.4;margin:0 0 12px;font-weight:660;letter-spacing:-.02em}
+  h1{font-size:28px;line-height:1.4;margin:0 0 12px;font-weight:660;letter-spacing:-.02em}
   .meta{font-size:12.5px;color:var(--muted);margin:0}
   .theme-btn{position:absolute;top:0;right:0;font-size:12px;color:var(--ink2);background:var(--surface);
     border:1px solid var(--border);border-radius:6px;padding:5px 11px;cursor:pointer;font-family:inherit}
-  h2{font-size:20px;margin:46px 0 8px;font-weight:650;letter-spacing:-.012em}
+  h2{font-size:20px;margin:48px 0 8px;font-weight:650;letter-spacing:-.012em}
+  h3{font-size:15px;margin:26px 0 2px;font-weight:660}
   p{margin:14px 0}
   .answer{background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--s1);
     border-radius:11px;padding:22px 26px;margin:26px 0 0}
-  .answer p{margin:0}
-  .answer p+p{margin-top:12px}
-  .big{font-size:17.5px;font-weight:600;line-height:1.7}
+  .answer p:first-child{margin-top:0}
+  .answer p:last-child{margin-bottom:0}
+  .big{font-size:18px;font-weight:640;line-height:1.65}
   figure{margin:26px 0 10px;background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:20px 18px 12px}
   figcaption{font-size:13px;color:var(--ink2);margin:0 0 14px;line-height:1.7}
   figcaption b{color:var(--ink);font-weight:650}
   .legend{display:flex;flex-wrap:wrap;gap:18px;margin:0 0 14px;font-size:12.5px;color:var(--ink2)}
   .legend span{display:inline-flex;align-items:center;gap:7px}
   .sw{width:11px;height:11px;border-radius:3px;display:inline-block;flex:none}
+  .sw.band{background:var(--wash);border:1px solid var(--border);border-radius:2px}
   svg{display:block;width:100%;height:auto;overflow:visible}
   .tick{font-size:10.5px;fill:var(--muted);font-variant-numeric:tabular-nums}
   .catlbl{font-size:12px;fill:var(--ink2)}
   .gl{stroke:var(--grid);stroke-width:1}
-  ul{margin:14px 0;padding-left:1.35em}
-  li{margin:9px 0}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:20px 0}
-  .box{background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:16px 20px}
-  .box h3{margin:0 0 6px;font-size:14px;font-weight:680}
-  .box ul{margin:8px 0 0;padding-left:1.2em;font-size:14px}
-  .box li{margin:6px 0}
-  .ng h3{color:var(--s2)}
-  .ok h3{color:var(--s1)}
-  table{border-collapse:collapse;width:100%;font-size:13px;margin:12px 0}
-  th,td{padding:7px 10px;text-align:right;border-bottom:1px solid var(--border);font-variant-numeric:tabular-nums}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;margin:14px 0}
+  th,td{padding:8px 11px;text-align:right;border-bottom:1px solid var(--border);
+    font-variant-numeric:tabular-nums;vertical-align:top}
   th:first-child,td:first-child{text-align:left;font-variant-numeric:normal}
   th{font-size:11.5px;color:var(--muted);font-weight:650}
+  td.txt{text-align:left;font-variant-numeric:normal;line-height:1.65}
+  td.hi{font-weight:680;color:var(--ink)}
+  tbody tr:hover{background:color-mix(in srgb,var(--ink) 4%,transparent)}
+  ul{margin:14px 0;padding-left:1.35em}
+  li{margin:9px 0}
+  ol{margin:14px 0;padding-left:1.5em}
+  ol li{margin:11px 0}
   details{margin:18px 0;border:1px solid var(--border);border-radius:9px;background:var(--surface)}
   summary{cursor:pointer;padding:13px 18px;font-size:13.5px;color:var(--ink2);font-weight:650}
   summary:hover{color:var(--ink)}
   details[open] summary{border-bottom:1px solid var(--border)}
   .dtbody{padding:6px 18px 16px;font-size:14px}
   .dtbody p{margin:11px 0}
-  footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--border);font-size:12px;color:var(--muted);line-height:1.8}
+  footer{margin-top:56px;padding-top:22px;border-top:1px solid var(--border);
+    font-size:12px;color:var(--muted);line-height:1.8}
   code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;
     background:color-mix(in srgb,var(--ink) 6.5%,transparent);padding:1.5px 5px;border-radius:4px}
   .tip{position:fixed;pointer-events:none;opacity:0;transition:opacity .09s;background:var(--surface);
@@ -83,8 +85,8 @@
     box-shadow:0 5px 20px rgba(0,0,0,.15);z-index:50;line-height:1.6;white-space:nowrap}
   .tip .k{color:var(--ink2)}
   .hit{fill:transparent;cursor:pointer}
-  @media (max-width:620px){ .two{grid-template-columns:1fr} h1{font-size:24px} .theme-btn{position:static;margin-bottom:14px} }
-  @media print{ .theme-btn{display:none} body{background:#fff} figure,.box,.answer{break-inside:avoid} }
+  @media (max-width:620px){ h1{font-size:23px} .theme-btn{position:static;margin-bottom:14px} table{font-size:12.5px} }
+  @media print{ .theme-btn{display:none} body{background:#fff} figure,.answer{break-inside:avoid} }
 </style>
 </head>
 <body>
@@ -93,20 +95,106 @@
 <header>
   <button class="theme-btn" id="themeBtn">◐ 表示切替</button>
   <p class="kicker">CHANNEL DESK</p>
-  <h1>なぜ大阪が多いのか</h1>
-  <p class="meta">YouTube 地域データの読み方 ／ りいポーカーチャンネル【PokerGuild】／ 2026年7月31日</p>
+  <h1>大阪は多くなかった<br>── 地域別データの誤読と正しい見方</h1>
+  <p class="meta">りいポーカーチャンネル【PokerGuild】／ 集計期間 <span id="mPeriod"></span>（28日間）／ 2026年7月31日</p>
 </header>
 
 <div class="answer">
-  <p class="big">大阪の人がよく見ているわけではありません。</p>
+  <p class="big">「大阪で異常に見られている」という前提が、間違いでした。</p>
   <p>
-    スマホの通信は、<b>端末がある場所ではなく、通信会社の設備がある場所</b>として記録されます。
-    関西の携帯回線の出口が大阪にあるため、<b>関西一円の視聴がまとめて「大阪」として数えられています。</b>
+    大阪は日本国内の視聴の <b>10.1%</b>。日本の全国向けサイトにおける大阪市の標準は <b>10〜15%</b> で、
+    <b>当チャンネルは標準の下限</b>です。多くない。むしろ少ないほうです。
+  </p>
+  <p>
+    大阪が市区町村ランキングの1位に見えるのは、日本のどのサイトでも起きる現象です。
+    <b>東京が23区に分割して数えられ、大阪は1つにまとまる</b>ため。加えて、関西の携帯回線がインターネットに出る場所が大阪にあるため。
+    チャンネル固有の話ではありません。
   </p>
 </div>
 
-<h2>東京を見ると分かります</h2>
-<p>同じデータで東京23区の内訳を見ると、答えが出ています。</p>
+<h2>この表が誤解を招く3つの理由</h2>
+<p>
+  ダッシュボードの「日本国内の視聴 — 地域別」は、数字自体は正しく表示しています。
+  ただし<b>読み手が確実に読み違える作りになっています</b>。
+</p>
+
+<ol>
+  <li>
+    <b>「地域別」というラベルが、居住地の意味に読める。</b>
+    実際に測っているのは居住地ではなく<b>通信がインターネットに出た場所</b>です。言葉と中身がずれています。
+  </li>
+  <li>
+    <b>注記が東京にだけ限定されている。</b>
+    「東京は…実際より少なめに出ることがあります」とありますが、少なめに出るのは東京だけではありません。
+    正確には<b>大阪・名古屋・福岡が多め、東京と京都以下は少なめ</b>です。
+  </li>
+  <li>
+    <b>最大のカテゴリが一番下の小さな注記になっている。</b>
+    「その他の地域 61.9%」が最も大きい。<b>上位10都市は日本の視聴の38%しか説明していません。</b>
+  </li>
+</ol>
+
+<h3>1行ずつ、実際には何を表しているか</h3>
+<table>
+  <thead><tr><th style="width:31%">表示</th><th class="txt">実際に何を表しているか</th></tr></thead>
+  <tbody>
+    <tr><td class="hi">大阪 242,472回・10.1%</td>
+        <td class="txt">関西一円の、端末の位置情報をオフにしているモバイル視聴の集約先。大阪市民の視聴という意味ではない。<b>日本の標準（10〜15%）の下限</b>で、この数字自体は普通。</td></tr>
+    <tr><td class="hi">東京（23区）216,017回・9.0%</td>
+        <td class="txt">上位に入った9区の合計のみ。練馬区・江戸川区・杉並区・板橋区など人口の多い区が抜け落ちて下の「その他」に沈んでいる。<b>実際の東京はもっと多い。</b></td></tr>
+    <tr><td>名古屋 4.1%／福岡 3.2%</td>
+        <td class="txt">この2都市にも通信の出口拠点がある。大阪と同じ集約が小規模に起きている。</td></tr>
+    <tr><td>京都 1.7%／神戸 1.3%</td>
+        <td class="txt">比較的まともな数字。自宅の光回線と、位置情報を許可している人の視聴が正しく記録された分。ただし携帯分は大阪に流出しているので実際より少なめ。</td></tr>
+    <tr><td class="hi">その他の地域 61.9%</td>
+        <td class="txt"><b>最大のカテゴリ。</b>上位10都市に入らなかった全部。ここが6割を占めるため、上のランキングは全体像ではない。</td></tr>
+    <tr><td>全視聴の98.2%が日本</td>
+        <td class="txt">国レベルの判定精度は95〜99%。<b>ここは信用できる。</b></td></tr>
+  </tbody>
+</table>
+
+<h2>他のサイトと並べると分かる</h2>
+<p>
+  日本のWebサイトで、都市別トラフィックの実数を公開している事例と並べました。
+</p>
+
+<figure>
+  <figcaption>
+    <b>大阪市の構成比の比較</b>（各サイトの全トラフィックに対する割合）。
+    グレーの帯は、全国向けサイトにおける大阪市の標準レンジ（10〜15%）。
+  </figcaption>
+  <div class="legend">
+    <span><i class="sw band"></i>標準レンジ 10〜15%</span>
+    <span><i class="sw" style="background:var(--s1)"></i>他サイトの事例</span>
+    <span><i class="sw" style="background:var(--s2)"></i>当チャンネル</span>
+  </div>
+  <div id="chartA"></div>
+</figure>
+
+<p>
+  <b>当チャンネルの 10.15% は標準レンジの下限にあります。</b>
+  全国向けの技術ブログが14.43%、公的機関のプロジェクトサイトが10.07%。うちはその間の、下寄りです。
+</p>
+<p>
+  一番上の建設業界向けニュースサイト（33.70%）は、関西の建設情報に強い基盤を持つB2Bメディアです。
+  <b>本当に関西に偏っているサイトは、このように見えます。</b>
+</p>
+
+<h3>関西が本当に強いサイトとの違い</h3>
+<table>
+  <thead><tr><th>　</th><th>大阪市</th><th>京都市</th><th>神戸市</th><th>堺市</th><th>関西4市 計</th></tr></thead>
+  <tbody>
+    <tr><td>建設ニュース（関西基盤）</td><td>33.70%</td><td>5.24%</td><td>4.60%</td><td>1.89%</td><td class="hi">45.4%</td></tr>
+    <tr><td><b>当チャンネル</b></td><td>10.15%</td><td>1.69%</td><td>1.28%</td><td>0.39%</td><td class="hi">13.5%</td></tr>
+  </tbody>
+</table>
+<p>
+  関西4市の合計で <b>3.4倍</b> の差があります。
+  <b>当チャンネルが関西に特別強い、という事実はありません。</b>
+</p>
+
+<h2>それでも大阪が1位に来る理由</h2>
+<p>同じデータで東京23区の内訳を見ると、仕組みが分かります。</p>
 
 <figure>
   <figcaption>
@@ -116,64 +204,112 @@
     <span><i class="sw" style="background:var(--s1)"></i>人口の割合</span>
     <span><i class="sw" style="background:var(--s2)"></i>視聴の割合</span>
   </div>
-  <div id="chart"></div>
+  <div id="chartB"></div>
 </figure>
 
 <p>
   <b>人が住んでいる区ほど、視聴が少ない。</b>
   世田谷区は人口22%で視聴9%。逆に千代田区は<b>人口1.5%で視聴12%</b>。
   上位に並ぶ千代田・新宿・渋谷・港は<b>全部オフィス街</b>で、通信会社の設備が集まっている場所です。
-  住んでいる人の数と噛み合っていません。
+</p>
+<p>
+  スマホの通信は、端末がある場所ではなく<b>通信会社の設備がある場所</b>として記録されます。
+  そして大手の格安SIMは、その出口を<b>東京と大阪の2箇所しか持っていません</b>（通信会社自身が公表しています）。
+  だから西日本の携帯視聴はまとめて大阪に、東日本は大手町（千代田区）や新宿に集まります。
+  東京は23区に割れて数えられるため、1つにまとまっている大阪が1位に立ちます。
+</p>
+<p>
+  これは日本の欠陥ではありません。アメリカが出口を全国に分散させているのは、国土が広くて遅延が許容できないからです。
+  イギリスはロンドンとマンチェスターの2極で、日本とよく似ています。
+  <b>位置がずれる仕組み自体は世界共通</b>で、日本はずれる距離が大きいだけです。
 </p>
 
-<h2>このデータは使えるのか</h2>
-<p class="big" style="margin:14px 0">使えません。</p>
+<h2>なぜYouTubeはこのデータを出しているのか</h2>
 <p>
-  都市別は住んでいる場所を表していません。国別は正確ですが、<b>98.2%が日本</b>なので見るところがありません。
+  Googleは都市レベルの判定精度が<b>50〜75%</b>であることを承知の上で、2022年からこのデータを提供しています。
+  理由は<b>大数の法則</b>です。100万回の視聴なら25万件がノイズでも75万件は正しいので、
+  都市間の相対比較や増減の方向は読めます。
 </p>
 <p>
-  ダッシュボードの不具合ではなく、YouTube が返す数字の性質です。Google Analytics でも同じことが起きています。設定を直しても変わりません。
+  実際の用途は、ミュージシャンのツアー開催地と会場キャパシティの選定、地域限定グッズの展開、
+  広告予算の傾斜配分など。<b>絶対値ではなく相対的な方向性のシグナルとして使われています。</b>
 </p>
 <p>
-  視聴者の地域性を知りたい場合は、コメント欄やアンケートなど、通信経路に依存しない方法で見る必要があります。
+  なお都道府県レベルの次元（<code>province</code>）は<b>アメリカでのみ提供</b>されており、日本では取得できません。
+  Google自身が国ごとに信頼できる粒度を出し分けている、と解釈されています。
+</p>
+
+<h3>当チャンネルは構造的に最悪の条件にある</h3>
+<p>判定精度は視聴環境で大きく変わります。</p>
+<ul>
+  <li><b>位置情報を許可しているアプリ視聴</b> — GPSとWi-Fiが使われ、ほぼ正確</li>
+  <li><b>テレビ・自宅の光回線</b> — 安定しているが、プロバイダの拠点に寄る</li>
+  <li><b>位置情報オフのモバイル通信</b> — 手がかりがIPアドレスしかなく、最悪</li>
+</ul>
+<p>
+  <b>当チャンネルは視聴回数の82.5%が60秒以下のショート動画です。</b>
+  ショートはほぼ全てモバイルアプリからの視聴で、位置情報を許可していない層が大きい。
+  <b>3番目の条件に集中しています。</b>これが、このチャンネルの地域データが特に読みにくい具体的な理由です。
+</p>
+
+<h2>正しい見方</h2>
+<div class="answer">
+  <p style="margin-top:0">
+    <b>絶対値を居住地として読むことはできません。</b>
+    「大阪の人が10.1%」ではなく「関西の携帯視聴の集約先が10.1%」です。
+  </p>
+  <p style="margin-bottom:0">
+    <b>使えるのは、ベースラインとの比較です。</b>
+    全国向けサイトの標準は大阪市10〜15%。この幅から外れたときに初めて意味を持ちます。
+    今回それをやった結果が「うちは10.1%で標準の下限、関西に特別強くはない」という結論で、
+    <b>この見方であればデータは機能します。</b>
+  </p>
+</div>
+<p>
+  視聴者の地域性をこれ以上詳しく知りたい場合は、コメント欄やアンケートなど、
+  通信経路に依存しない方法で見る必要があります。
 </p>
 
 <details>
   <summary>他に確かめたこと（結論は変わりません）</summary>
   <div class="dtbody">
     <p>
-      <b>関西全体では平均並みでした。</b>もし関西にポーカー視聴の需要が集中しているなら、京都・神戸・堺も高く出るはずです。
-      公平に比べ直すと関西3市は平均並み。とくに<b>大阪市の隣の堺市が関西で最下位</b>でした。
-      文化や需要の偏りなら、市境でこう切れることはありません。
+      <b>5週間ずっと動いていません。</b>特定の動画がバズった結果なら比率は動きます。
+      過去のデータをリポジトリのコミット履歴141件から復元して29点で確認しましたが、ほぼ一定でした。
+      構造的な現象であって、コンテンツ側の要因ではないことを示します。
     </p>
     <p>
-      <b>5週間ずっと24〜25%で動いていません。</b>特定の動画がバズった結果なら比率は動きます。
-      過去のデータを141件のコミット履歴から復元して確認しましたが、ほぼ一定でした。
+      <b>視聴の質も横並びです。</b>1視聴あたりの視聴時間は全25都市で0.46〜0.51分。
+      大阪の視聴者に特別な行動特性は見られません。
     </p>
     <p>
       <b>逆の立場も検証しました。</b>「本当に関西に需要がある」という説を最大限に擁護する調査を別に行いましたが、
       出てきた数字は説を支えませんでした。ポーカー店舗の人口あたり密度は<b>東京のほうが高く</b>（東京13.4店／大阪8.7店・百万人あたり）、
-      動画共有サイトの利用率は<b>大阪54.0%に対して全国平均53.7%</b>とほぼ同じ。関西で5年以上続く地上波ポーカー番組はありますが、
-      その放送圏の中核である兵庫県（神戸市）は平均並みでした。
+      動画共有サイトの利用率は<b>大阪54.0%に対して全国平均53.7%</b>とほぼ同じ。
+      関西で5年以上続く地上波ポーカー番組はありますが、その放送圏の中核である兵庫県（神戸市）は平均並みでした。
     </p>
     <p>
-      <b>技術的な裏付けも取りました。</b>格安SIMは携帯網との接続点を東京と大阪の2箇所しか持っていません（通信会社が公表）。
+      <b>技術的な裏付け。</b>格安SIMは携帯網との接続点を東京と大阪の2箇所しか持っていません（通信会社が公表）。
       東京では千代田区（大手町）・新宿区・港区・江東区に主要な接続拠点があり、上の視聴ランキングの上位と一致します。
       国内のIP位置情報サービスの1つは、携帯回線の市区町村判定は不可能と明言しています。
+      MaxMindは自社の判定精度を、国レベル99.8%、米国の州レベル約80%、都市レベル（半径50km以内）約66%と公表しています。
     </p>
     <p>
-      <b>なお、全部が間違いではありません。</b>自宅の光回線と、位置情報を許可している人の視聴は正しく記録されます。
-      だから京都や神戸も出てきます。ただし<b>大阪と東京は実際より多め、それ以外は少なめ</b>の数字です。
+      <b>今後の見込み。</b>5Gで通信の出口を利用者の近くに分散させる構成（ローカルブレイクアウト）が普及すれば、
+      判定精度は改善します。ただし当面は法人向け・IoT用途が先で、一般のスマホ通信が全国分散するのはもっと先です。
     </p>
     <table id="tbl">
-      <thead><tr><th>都市／区</th><th>視聴回数</th><th>人口</th></tr></thead><tbody></tbody>
+      <thead><tr><th>都市／区</th><th>視聴回数</th><th>日本全体比</th><th>人口</th></tr></thead><tbody></tbody>
     </table>
   </div>
 </details>
 
 <footer>
   <p>
-    データ: YouTube Analytics（都市別・直近28日／<span id="fPeriod"></span>）。人口: 2025年国勢調査 人口速報集計結果。
+    <b>データ</b>: YouTube Analytics（<code>city</code> ディメンション・上位25都市・直近28日／<span id="fPeriod"></span>）。
+    人口: 2025年国勢調査 人口速報集計結果。
+    比較事例: 全国向け技術ブログ（2019年）、建設業界向けニュースサイト（2019年12月）、スポーツ庁委託事業サイト（2020年）の公開データ。
+    比較事例はいずれもGoogle Analyticsのセッション／ユーザー数、当チャンネルは視聴回数であり、指標は完全に同一ではない。
   </p>
 </footer>
 
@@ -193,16 +329,57 @@ function moveTip(e){const pad=14,w=tip.offsetWidth,h=tip.offsetHeight;
 function bindTip(n,html){n.addEventListener('mouseenter',e=>{tip.innerHTML=html;tip.style.opacity=1;moveTip(e);});
   n.addEventListener('mousemove',moveTip);n.addEventListener('mouseleave',()=>tip.style.opacity=0);}
 
+$('#mPeriod').textContent = DATA.period.start.replace(/-/g,'/')+'〜'+DATA.period.end.replace(/-/g,'/');
 $('#fPeriod').textContent = DATA.period.start.replace(/-/g,'/')+'〜'+DATA.period.end.replace(/-/g,'/');
 
-const wards = DATA.cities.filter(c=>c.ja.endsWith('区')).sort((a,b)=>b.pop-a.pop);
-const tp = wards.reduce((s,c)=>s+c.pop,0), tv = wards.reduce((s,c)=>s+c.views,0);
+const JP = DATA.jp_views;
+const osaka = DATA.cities.find(c=>c.ja==='大阪市');
 
-/* grouped bars: population share vs view share (same % axis) */
+/* ---- chart A: baseline comparison ---- */
 (function(){
-  const W=700, ML=78, MR=54, MT=8, MB=34, ROW=54, BAR=17, GAP=2;
+  const rows=[
+    {n:'建設ニュース（関西基盤のB2B）', v:33.70, mine:false},
+    {n:'技術ブログ（全国向け）',        v:14.43, mine:false},
+    {n:'当チャンネル',                 v:100*osaka.views/JP, mine:true},
+    {n:'スポーツ庁プロジェクト',        v:10.07, mine:false},
+  ];
+  const W=720, ML=176, MR=54, MT=10, MB=36, ROW=42, BAR=18;
+  const H=MT+rows.length*ROW+MB;
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'大阪市の構成比の比較'},$('#chartA'));
+  const iw=W-ML-MR, max=36, x=v=>ML+iw*v/max;
+  // standard band 10-15%
+  el('rect',{x:x(10),y:MT,width:x(15)-x(10),height:rows.length*ROW,fill:'var(--wash)'},svg);
+  [0,10,20,30].forEach(v=>{
+    el('line',{x1:x(v),x2:x(v),y1:MT,y2:MT+rows.length*ROW,class:'gl'},svg);
+    const t=el('text',{x:x(v),y:H-MB+21,class:'tick','text-anchor':'middle'},svg);t.textContent=v+'%';
+  });
+  const bl=el('text',{x:(x(10)+x(15))/2,y:H-MB+21,class:'tick','text-anchor':'middle',
+    style:'fill:var(--ink2);font-weight:650'},svg);
+  bl.textContent='標準';
+  rows.forEach((r,i)=>{
+    const cy=MT+i*ROW+ROW/2;
+    const lb=el('text',{x:ML-11,y:cy+4,class:'catlbl','text-anchor':'end',
+      style:r.mine?'fill:var(--ink);font-weight:680':''},svg);
+    lb.textContent=r.n;
+    const col=r.mine?'var(--s2)':'var(--s1)';
+    const w=Math.max(x(r.v)-ML,2);
+    el('rect',{x:ML,y:cy-BAR/2,width:w,height:BAR,rx:4,fill:col},svg);
+    el('rect',{x:ML,y:cy-BAR/2,width:Math.min(4,w),height:BAR,fill:col},svg);
+    const t=el('text',{x:ML+w+8,y:cy+4,class:'tick',
+      style:'fill:var(--ink2);font-weight:650;font-size:11.5px'},svg);
+    t.textContent=r.v.toFixed(2)+'%';
+    const hit=el('rect',{x:ML,y:cy-ROW/2,width:iw+MR-6,height:ROW,class:'hit'},svg);
+    bindTip(hit,`<b>${r.n}</b><br><span class="k">大阪市の構成比</span> ${r.v.toFixed(2)}%`);
+  });
+})();
+
+/* ---- chart B: Tokyo wards, population share vs view share ---- */
+(function(){
+  const wards=DATA.cities.filter(c=>c.ja.endsWith('区')).sort((a,b)=>b.pop-a.pop);
+  const tp=wards.reduce((s,c)=>s+c.pop,0), tv=wards.reduce((s,c)=>s+c.views,0);
+  const W=720, ML=78, MR=54, MT=8, MB=34, ROW=54, BAR=17, GAP=2;
   const H=MT+wards.length*ROW+MB;
-  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'東京9区の人口の割合と視聴の割合'},$('#chart'));
+  const svg=el('svg',{viewBox:`0 0 ${W} ${H}`,role:'img','aria-label':'東京9区の人口の割合と視聴の割合'},$('#chartB'));
   const iw=W-ML-MR, max=32, x=v=>ML+iw*v/max;
   [0,10,20,30].forEach(v=>{
     el('line',{x1:x(v),x2:x(v),y1:MT,y2:MT+wards.length*ROW,class:'gl'},svg);
@@ -212,11 +389,12 @@ const tp = wards.reduce((s,c)=>s+c.pop,0), tv = wards.reduce((s,c)=>s+c.views,0)
     const top=MT+i*ROW, mid=top+ROW/2;
     const lb=el('text',{x:ML-11,y:mid+4,class:'catlbl','text-anchor':'end'},svg);lb.textContent=c.ja;
     const ps=100*c.pop/tp, vs=100*c.views/tv;
-    [[ps,'var(--s1)',top+ROW/2-BAR-GAP/2,'人口'],[vs,'var(--s2)',top+ROW/2+GAP/2,'視聴']].forEach(([val,col,y,nm])=>{
+    [[ps,'var(--s1)',mid-BAR-GAP/2],[vs,'var(--s2)',mid+GAP/2]].forEach(([val,col,y])=>{
       const w=Math.max(x(val)-ML,2);
       el('rect',{x:ML,y:y,width:w,height:BAR,rx:4,fill:col},svg);
       el('rect',{x:ML,y:y,width:Math.min(4,w),height:BAR,fill:col},svg);
-      const t=el('text',{x:ML+w+7,y:y+BAR-4,class:'tick',style:'fill:var(--ink2);font-weight:650;font-size:11px'},svg);
+      const t=el('text',{x:ML+w+7,y:y+BAR-4,class:'tick',
+        style:'fill:var(--ink2);font-weight:650;font-size:11px'},svg);
       t.textContent=val.toFixed(1)+'%';
     });
     const hit=el('rect',{x:ML,y:top,width:iw+MR-6,height:ROW,class:'hit'},svg);
@@ -226,8 +404,10 @@ const tp = wards.reduce((s,c)=>s+c.pop,0), tv = wards.reduce((s,c)=>s+c.views,0)
 })();
 
 { const tb=$('#tbl tbody');
-  DATA.cities.forEach(c=>{const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${c.ja}</td><td>${fmt(c.views)}</td><td>${fmt(c.pop)}</td>`;tb.appendChild(tr);}); }
+  DATA.cities.slice().sort((a,b)=>b.views-a.views).forEach(c=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${c.ja}</td><td>${fmt(c.views)}</td><td>${(100*c.views/JP).toFixed(2)}%</td><td>${fmt(c.pop)}</td>`;
+    tb.appendChild(tr);}); }
 
 $('#themeBtn').addEventListener('click',()=>{
   const c=document.documentElement.getAttribute('data-theme');
