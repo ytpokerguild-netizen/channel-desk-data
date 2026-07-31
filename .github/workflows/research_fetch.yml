@@ -1,0 +1,39 @@
+name: Geo Research Fetch (調査用・手動のみ)
+
+# 地域データ（city ディメンション）の性質調査用。定期実行はしない。
+# 本番の daily_fetch.yml / fetch.py には一切影響しない。
+# 書き込むのは research/geo_research.json のみ。
+
+on:
+  workflow_dispatch:
+
+jobs:
+  research:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # research/geo_research.json をコミットするために必要
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch geo research data
+        env:
+          REFRESH_TOKEN:       ${{ secrets.REFRESH_TOKEN }}
+          OAUTH_CLIENT_ID:     ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
+        run: python research_fetch.py
+
+      - name: Commit research output
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add research/geo_research.json
+          git diff --cached --quiet && echo "No changes" && exit 0
+          git commit -m "research: geo (city dimension) investigation data"
+          git push
