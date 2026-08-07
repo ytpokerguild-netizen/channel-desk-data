@@ -362,6 +362,13 @@ body{
   background:rgba(255,255,255,.06);color:var(--muted);white-space:nowrap;
 }
 .ops-meta-note{font-size:11px;color:var(--muted-2);margin-top:12px;line-height:1.6}
+.card-link{
+  margin-left:auto;font-family:"Noto Sans JP",sans-serif;text-transform:none;letter-spacing:0;
+  font-size:11px;font-weight:500;color:var(--blue);text-decoration:none;white-space:nowrap;
+  border:1px solid rgba(91,166,214,.3);border-radius:6px;padding:3px 9px;
+  transition:background .15s,border-color .15s;
+}
+.card-link:hover{background:rgba(91,166,214,.12);border-color:var(--blue)}
 .ops-more{margin-top:10px}
 .ops-more>summary{
   cursor:pointer;font-size:11.5px;color:var(--muted);
@@ -569,6 +576,7 @@ body{
         <h3>
           <span class="dot"></span>宿題・ネクストアクション
           <span id="opsMinutesMeta" style="font-family:inherit;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted-2)"></span>
+          <a class="card-link" href="https://docs.google.com/spreadsheets/d/1v--hBNlRU431gr-4DX4fm9L1Xr6w28-Hv93ufo-w-wo/edit" target="_blank" rel="noopener">運営ログを開く ↗</a>
         </h3>
         <div class="sched-table-wrap">
           <table class="sched-table" id="opsActionTable"></table>
@@ -599,7 +607,7 @@ body{
 
       <!-- 投稿予定（未投稿） -->
       <div class="card" id="schedUpcomingCard">
-        <h3><span class="dot"></span>投稿予定（未投稿）</h3>
+        <h3><span class="dot"></span>投稿予定（未投稿）<a class="card-link" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=574456276" target="_blank" rel="noopener">投稿計画表を開く ↗</a></h3>
         <div class="sched-table-wrap" id="schedUpcoming"></div>
       </div>
 
