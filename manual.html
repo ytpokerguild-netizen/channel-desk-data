@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>マニュアル｜CHANNEL DESK</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0E1A14; --panel:#16241C; --panel-2:#1B2E23;
+  --line:rgba(255,255,255,.08); --line-strong:rgba(255,255,255,.16);
+  --ink:#E8EDE9; --muted:#8FA396; --muted-2:#5E726A;
+  --gold:#C9A227; --gold-soft:#E0C45C; --up:#5BD68A; --blue:#5BA6D6;
+  --radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:radial-gradient(1200px 600px at 50% -200px,rgba(201,162,39,.06),transparent),var(--bg);
+  color:var(--ink);font-family:"Noto Sans JP",sans-serif;font-size:14px;line-height:1.75;
+  min-height:100vh;
+}
+.wrap{max-width:900px;margin:0 auto;padding:18px 16px 60px}
+a{color:inherit}
+
+/* ── Topbar（index.html と同じ見た目）── */
+.topbar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:12px 16px;margin-bottom:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.03),transparent),var(--panel);
+  border:1px solid var(--line);border-radius:var(--radius);
+}
+.brand{display:flex;align-items:center;gap:10px;margin-right:auto;text-decoration:none;color:inherit}
+.brand .mark{
+  width:34px;height:34px;border-radius:8px;display:grid;place-items:center;
+  background:linear-gradient(160deg,#1f3a2b,#0d1d15);
+  border:1px solid var(--line-strong);color:var(--gold);font-size:18px;
+}
+.brand h1{font-family:"Oswald",sans-serif;font-weight:500;letter-spacing:.14em;font-size:17px;line-height:1}
+.brand .sub{font-size:11px;color:var(--muted);letter-spacing:.1em;margin-top:3px}
+.btn{
+  font-size:12px;font-weight:500;color:var(--ink);background:var(--panel-2);
+  border:1px solid var(--line-strong);border-radius:9px;padding:7px 13px;
+  cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;
+  transition:border-color .15s,background .15s;
+}
+.btn:hover{border-color:var(--gold);background:#22382c}
+
+.page-title{font-family:"Oswald",sans-serif;font-weight:400;letter-spacing:.1em;font-size:20px;margin-bottom:6px}
+.page-lead{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.8}
+
+.sec{margin-bottom:26px}
+.sec-h{
+  font-family:"Oswald",sans-serif;font-weight:400;letter-spacing:.08em;font-size:12px;
+  color:var(--muted);text-transform:uppercase;margin-bottom:10px;
+  display:flex;align-items:center;gap:8px;
+}
+.sec-h::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--gold);flex:0 0 auto}
+
+.card{
+  display:block;background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius);padding:15px 17px;margin-bottom:9px;text-decoration:none;color:inherit;
+  transition:border-color .15s,background .15s,transform .1s;
+}
+a.card:hover{border-color:var(--gold);background:var(--panel-2)}
+a.card:active{transform:translateY(1px)}
+.card-top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}
+.card-title{font-size:14.5px;font-weight:500}
+a.card .card-title{color:var(--gold-soft)}
+.card-desc{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.7}
+.card-meta{font-size:11px;color:var(--muted-2);margin-top:7px}
+
+.tag{
+  flex:0 0 auto;font-size:10px;padding:1px 8px;border-radius:20px;white-space:nowrap;
+  background:rgba(255,255,255,.06);color:var(--muted);
+}
+.tag.open{background:rgba(91,214,138,.12);color:var(--up)}
+.tag.local{background:rgba(91,166,214,.13);color:var(--blue)}
+.tag.wip{background:rgba(201,162,39,.15);color:var(--gold-soft)}
+
+.note{
+  border:1px solid var(--line);border-left:3px solid var(--gold);
+  border-radius:8px;padding:12px 15px;font-size:12.5px;color:var(--muted);line-height:1.8;
+}
+.note b{color:var(--ink)}
+.foot{margin-top:34px;font-size:11px;color:var(--muted-2);text-align:center;line-height:1.9}
+@media(max-width:600px){ .wrap{padding:12px 11px 44px} .card{padding:13px 14px} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <a class="brand" href="index.html">
+      <div class="mark">♠</div>
+      <div>
+        <h1>CHANNEL&nbsp;DESK</h1>
+        <div class="sub">りいポーカーチャンネル</div>
+      </div>
+    </a>
+    <a class="btn" href="index.html">← ダッシュボードに戻る</a>
+  </div>
+
+  <div class="page-title">📘 マニュアル</div>
+  <div class="page-lead">
+    チャンネル運営に関する手順書の置き場です。「どこに何があるか」をここに集約しています。<br>
+    <span class="tag open">公開</span> はリンクから開けます。<span class="tag local">Dropbox</span> は「PGコンソール」フォルダの中にあります（リンクはありません）。
+  </div>
+
+  <!-- ── 制作 ── -->
+  <div class="sec">
+    <div class="sec-h">制作</div>
+
+    <a class="card" href="https://ytpokerguild-netizen.github.io/pgch-manual/" target="_blank" rel="noopener">
+      <div class="card-top">
+        <span class="card-title">切り抜きショート動画 制作・投稿マニュアル</span>
+        <span class="tag open">公開</span>
+      </div>
+      <div class="card-desc">
+        海外配信の切り抜きショートを作って投稿するまでの全工程。
+        STEP① ネタ探し → ② 素材の録画(OBS) → ③ 台本作成 → ④ ナレーション音声 → ⑤ 編集(Premiere Pro)
+        → ⑥ 自己チェック → ⑦ アップロード・公開 → ⑧ 公開後にやること。承認フローとトラブル対応つき。
+      </div>
+      <div class="card-meta">全11章・1ページ / 新しく入った人はまずこれ</div>
+    </a>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">トンマナシート（運用マニュアル）</span>
+        <span class="tag wip">作成中</span>
+      </div>
+      <div class="card-desc">
+        編集のトーン＆マナーをまとめたもの。原型を作ってから、気づいた点を都度追記していく運用です。
+        できたらここに追加します。
+      </div>
+    </div>
+  </div>
+
+  <!-- ── データの見方 ── -->
+  <div class="sec">
+    <div class="sec-h">データの見方</div>
+
+    <a class="card" href="geo.html">
+      <div class="card-top">
+        <span class="card-title">地域別データの読み方 — 「大阪が多い」は誤読だった</span>
+        <span class="tag open">公開</span>
+      </div>
+      <div class="card-desc">
+        ダッシュボードの都市別ランキングで大阪が1位に出る理由と、その数字をどう読むか。
+        分母の取り方を間違えると結論が逆になります。都市判定の精度、東京が23区に割れる件、
+        ショート中心だとIP位置判定に不利な理由まで。
+      </div>
+      <div class="card-meta">実際に一度読み違えて、レポートの結論が逆になった経緯があります</div>
+    </a>
+
+    <a class="card" href="report.html">
+      <div class="card-top">
+        <span class="card-title">週次レポート</span>
+        <span class="tag open">公開</span>
+      </div>
+      <div class="card-desc">
+        確定値でまとめた週ごとのレポート。ダッシュボードの「週次レポート」タブと同じ内容を、
+        単独ページで開けるようにしたものです。共有用。
+      </div>
+    </a>
+  </div>
+
+  <!-- ── 運用・システム ── -->
+  <div class="sec">
+    <div class="sec-h">運用・システム</div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">チャンネル分析AI_運用手順.md</span>
+        <span class="tag local">Dropbox</span>
+      </div>
+      <div class="card-desc">
+        週次のAI分析を回すための手順書。<b>このファイルを Claude に添付して「その手順どおりに週次分析をやって」と言うだけ</b>で動きます。
+        どのアカウントからでも実行できます。分析者としての振る舞い（割合には必ず分母を書く／材料が足りないときは無理に結論を作らない 等）もここに書いてあります。
+      </div>
+      <div class="card-meta">分析の仕様はこれが正本。直せば次回から反映されます</div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">引き継ぎ書_CHANNEL_DESK.md</span>
+        <span class="tag local">Dropbox</span>
+      </div>
+      <div class="card-desc">
+        このダッシュボードの仕組み全体。データがどこから来てどう更新されるか、
+        ファイルの役割、触るときの注意点。保守を引き継ぐときはまずこれ。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">LINE通知セットアップ手順.md</span>
+        <span class="tag local">Dropbox</span>
+      </div>
+      <div class="card-desc">毎朝のブリーフと障害通知をLINEに送る設定。通知先を増やすときはここ。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">投稿管理シート改修手順.md</span>
+        <span class="tag local">Dropbox</span>
+      </div>
+      <div class="card-desc">投稿計画スプレッドシートの構成と、直すときの手順。</div>
+    </div>
+  </div>
+
+  <!-- ── 入力するもの ── -->
+  <div class="sec">
+    <div class="sec-h">入力するもの</div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">Youtube投稿計画表（動画アーカイブ / 投稿管理）</span>
+        <span class="tag local">スプレッドシート</span>
+      </div>
+      <div class="card-desc">
+        投稿予定と、公開済み動画の企画タイプ・ナレーター。ダッシュボードが自動で読み込みます。
+        新しいネタは<b>いちばん上</b>に足してください（新しいものが上に来る並びです）。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-top">
+        <span class="card-title">PG運営ログ（非公開）</span>
+        <span class="tag local">スプレッドシート・共有オフ</span>
+      </div>
+      <div class="card-desc">
+        議事録の構造化版。<b>会議のあとに 宿題 / 決定事項 / 施策 の3シートに行を足します（5〜10分）。</b>
+        公開列を ○ にした行だけが、ダッシュボードの「運営」タブに出ます。空欄と × は出ません。
+        施策シートの<b>開始日</b>を入れておくと、AIが施策の前後で数字を比較できるようになります。
+      </div>
+      <div class="card-meta">共有はオフのまま。ここには機微な内容を書いて構いません</div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>このページは公開されています。</b>
+    URL を知っていれば誰でも開けます（パスワードはかかっていません）。
+    そのため、非公開のスプレッドシートや Dropbox のファイルは<b>名前だけ載せてリンクは貼っていません</b>。
+    新しい手順書を足すときも、リンクを貼ってよいのは公開して差し支えないものだけにしてください。
+  </div>
+
+  <div class="foot">
+    CHANNEL DESK · マニュアル<br>
+    更新するには manual.html を編集してください
+  </div>
+
+</div>
+</body>
+</html>
