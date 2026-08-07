@@ -32,11 +32,23 @@ jobs:
           OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
         run: python fetch.py
 
+      # 運営ログ（非公開スプレッドシート）→ ops.json
+      # 既存の REFRESH_TOKEN とは別のトークンを使う。ここが失敗しても
+      # data.json の更新は止めない（continue-on-error）。
+      # SHEETS_REFRESH_TOKEN が未設定のときは何もせず正常終了する。
+      - name: 運営ログを反映（ops.json）
+        continue-on-error: true
+        env:
+          SHEETS_REFRESH_TOKEN: ${{ secrets.SHEETS_REFRESH_TOKEN }}
+          OAUTH_CLIENT_ID:      ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET:  ${{ secrets.OAUTH_CLIENT_SECRET }}
+        run: python fetch_ops.py
+
       - name: Commit and push data.json
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.json video_daily.json
+          git add data.json video_daily.json ops.json
           # 変更がなければスキップ
           git diff --cached --quiet && echo "No changes" && exit 0
           git commit -m "chore: update analytics data $(date -u +%Y-%m-%d)"
