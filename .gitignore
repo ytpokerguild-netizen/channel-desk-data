@@ -13,3 +13,8 @@ token.json
 auth_url.txt
 auth_result.txt
 .venv/
+
+# 運営ログ(非公開・議事録の構造化版)は絶対にコミットしない
+*運営ログ*.xlsx
+ops_source.xlsx
+~$*.xlsx
