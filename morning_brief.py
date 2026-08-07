@@ -2,18 +2,16 @@
 """
 morning_brief.py — 毎朝の LINE ブリーフ。
 
-公開済みの data.json / video_daily.json を読み、
+公開済みの data.json を読み、
   ・視聴回数（確定最新日 vs 直近7日平均）
   ・登録者純増（gained − lost）
-  ・最新公開動画の初速（過去20本の同一経過日数窓の中央値比）
 を判定してグループへ送信する。
 
 判定記号: 🟢 好調 / 🟡 標準 / 🔴 要改善 / ⚪ 判定なし
 ※ 推定値・欠損・確定前のデータには 🟢🟡🔴 を出さない（フロントの色ガードと同じ思想）。
    ・視聴回数/登録者純増は analytics_daily の確定値のみ使用 → 常に判定可
-   ・新作初速は video_daily の確定行が無ければ ⚪「集計待ち」
 """
-import json, statistics
+import json
 from datetime import date, datetime, timezone, timedelta
 from urllib.request import urlopen, Request
 from line_notify import send_line
@@ -60,10 +58,6 @@ def verdict(pct, up=10, down=-10, good_up=None, bad_down=None):
 
 def build_message():
     d = fetch_json("data.json")
-    try:
-        vd = fetch_json("video_daily.json")
-    except Exception:
-        vd = {}
 
     header = "📊 CHANNEL DESK 朝ブリーフ（" + mdslash(date.today().isoformat()) + "）"
 
@@ -103,38 +97,10 @@ def build_message():
     pn = (net - basenet) / abs(basenet) * 100 if basenet else 0
     lines.append(f"{verdict(pn)} 登録者純増 {net:+d}人（内訳 +{g}/-{l}）")
 
-    # 3) 新作初速（分子・分母とも video_daily の同一確定窓）
-    vids = sorted(
-        [v for v in d.get("videos", []) if v.get("published_at")],
-        key=lambda v: v["published_at"], reverse=True,
-    )
-    newest = next((v for v in vids if days_between(v["published_at"][:10], today_iso) <= 4), None)
-    if newest:
-        pub = newest["published_at"][:10]
-        win = days_between(pub, base_date) + 1  # 公開日〜確定基準日までの日数
-        rows = [r for r in vd.get(newest["video_id"], []) if pub <= r["date"] <= base_date]
-        if win >= 1 and rows:
-            num = sum(r["views"] for r in rows)
-            olds = [v for v in vids
-                    if v is not newest and days_between(v["published_at"][:10], base_date) > win + 1][:20]
-            samples = []
-            for v in olds:
-                vp = v["published_at"][:10]
-                co = (date.fromisoformat(vp) + timedelta(days=win - 1)).isoformat()
-                s = sum(r["views"] for r in vd.get(v["video_id"], []) if vp <= r["date"] <= co)
-                if s > 0:
-                    samples.append(s)
-            if samples:
-                med = statistics.median(samples)
-                r = (num - med) / med * 100 if med else 0
-                sym = verdict(r, good_up=15, bad_down=-15)
-                lines.append(f"{sym} 新作初速 {fmt(num)}回（公開{win}日目・中央値比{r:+.0f}%）")
-            else:
-                lines.append(f"⚪ 新作初速 {fmt(num)}回（比較対象不足）")
-        else:
-            lines.append(f"⚪ 新作初速 集計待ち（{mdslash(pub)}公開・確定データ未着）")
-    else:
-        lines.append("⚪ 新作初速 直近4日の新規投稿なし")
+    # 「新作初速」は 2026-08-07 に廃止。
+    # 理由: 最新1本だけを対象にする設計と「ほぼ毎日投稿 + 確定値2〜4日ラグ」が噛み合わず、
+    # 直近60日で一度も算出できていなかった（毎朝「⚪ 新作初速 集計待ち」を送り続けていた）。
+    # 復活させるなら対象を「確定済みで判定できる最新の1本」に変える必要がある。旧実装は git 履歴にある。
 
     lag_note = f"・確定値は{lag}日遅れ" if lag > 2 else ""
     body = (

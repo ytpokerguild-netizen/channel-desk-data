@@ -957,10 +957,15 @@ function toggleCompare(){
   renderOverview();
 }
 function initPeriod(){
-  filterFrom = null; filterTo = null;
-  document.getElementById('dateFrom').value = '';
-  document.getElementById('dateTo').value   = '';
-  document.querySelector('#quickSeg button:nth-child(5)').classList.add('on');
+  // 既定は「28日」（2026-08-07 変更）。全期間だと直近の変化が均されて見えないため。
+  // ボタンの並びは 7日/28日/90日/365日/全期間 なので nth-child(2)。
+  const btn = document.querySelector('#quickSeg button:nth-child(2)');
+  if(btn){ setQuick(28, btn); }
+  else {   // 並びを変えたときのフォールバック（全期間）
+    filterFrom = null; filterTo = null;
+    document.getElementById('dateFrom').value = '';
+    document.getElementById('dateTo').value   = '';
+  }
 }
 function setMetric(key){ activeMetric = key; renderOverview(); }
 
@@ -1294,39 +1299,10 @@ function renderDailyBrief(){
     }
   }
 
-  // 3) 新作初速: 分子・分母とも video_daily の同一確定窓で統一 (P-B)
-  const vids = (G.videos||[]).filter(v=>v.published_at)
-    .map(v=>({...v, _pub:(v.published_at||'').slice(0,10)}))
-    .sort((a,b)=>b._pub.localeCompare(a._pub));
-  const vd = G.video_daily || {};
-  const newest = vids.find(v => _daysBetween(v._pub, todayISO2) <= 4);
-  if(newest){
-    const winDays = _daysBetween(newest._pub, baseDate) + 1;   // 公開日〜基準日の確定窓
-    const rows = (vd[newest.video_id]||[]).filter(r=>r.date>=newest._pub && r.date<=baseDate);
-    if(winDays >= 1 && rows.length >= 1){
-      const num = rows.reduce((sum,r)=>sum+r.views,0);
-      const olds = vids.filter(v=>v!==newest && _daysBetween(v._pub, baseDate) > winDays+1).slice(0,20);
-      const samples = olds.map(v=>{
-        const co = _addDaysISO(v._pub, winDays-1);
-        return (vd[v.video_id]||[]).filter(r=>r.date>=v._pub && r.date<=co).reduce((sum,r)=>sum+r.views,0);
-      }).filter(x=>x>0).sort((a,b)=>a-b);
-      const med = samples.length ? samples[Math.floor(samples.length/2)] : null;
-      const jn = judge(num, med, med!=null);
-      // 合否ラベル(中央値比 +15%以上=好調 / -15%以下=要改善 / 中間=標準)
-      let verdict = '';
-      if(med!=null){
-        const r = (num-med)/med*100;
-        verdict = r>=15 ? '🟢 好調' : r<=-15 ? '🔴 要改善' : '🟡 標準';
-      }
-      items.push({label:`新作初速 — 公開${winDays}日目${verdict?' '+verdict:''}`, val:fmtFull(num), cls:jn.cls,
-        sub:(med!=null?`中央値 ${fmtFull(med)} 比 ${pctTxt(jn,'過去20本')}`:'比較対象不足'), title:newest.title});
-    } else {
-      items.push({label:'新作初速', val:'集計待ち', cls:'flat',
-        sub:`${fmtDate(newest._pub).slice(5)}公開 — 確定データ到着後に判定`, title:newest.title});
-    }
-  } else {
-    items.push({label:'新作初速', val:'—', cls:'flat', sub:'直近4日の新規投稿なし'});
-  }
+  // 「新作初速」は 2026-08-07 に廃止。
+  // 理由: 最新1本だけを対象にする設計と「ほぼ毎日投稿 + 確定値2〜4日ラグ」が噛み合わず、
+  // 直近60日で一度も算出できていなかった（常に「集計待ち」）。復活させるなら
+  // 対象を「確定済みで判定できる最新の1本」に変える必要がある。旧実装は git 履歴にある。
 
   titleEl.textContent = `📌 デイリーブリーフ — 確定データによる判定（基準日: ${fmtDate(baseDate).slice(5)}）`
     + (lagDays>2 ? ` ※確定値は現在${lagDays}日遅れ` : '');
