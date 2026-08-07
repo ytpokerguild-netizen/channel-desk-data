@@ -1742,7 +1742,7 @@ function renderOpsMinutes(){
       <td><span class="status-badge ${cls}">${esc(a.status)}</span></td>
       <td style="${dim?'color:var(--muted)':''}">${esc(a.text)}</td>
       <td class="ops-owner">${esc(a.owner)}</td>
-      <td class="ops-owner">${esc(a.due||'—')}</td>
+      <td class="ops-owner">${esc(/^\d{4}-\d{2}-\d{2}$/.test(a.due||'') ? fmtDate(a.due) : (a.due||'—'))}</td>
     </tr>`;
   }).join('');
   const ACTION_HEAD =
@@ -1778,8 +1778,8 @@ function renderOpsMinutes(){
       ${sub ? `<div class="ops-meta-note">${sub}</div>` : ''}
     </div>` : '';
 
-  const decLi = d => `<li><span class="ops-tag">${esc(d.category||'—')}</span><span>${esc(d.text)}${d.date?` <span style="color:var(--muted-2)">（${esc(fmtDate(d.date))}）</span>`:''}</span></li>`;
-  const meaLi = m => `<li><span class="ops-tag">${esc(m.start ? fmtDate(m.start) : '開始日未設定')}</span><span>${esc(m.text)}<span style="color:var(--muted-2)"> / ${esc(m.target||'—')}・${esc(m.metric||'—')}</span></span></li>`;
+  const decLi = d => `<li><span>${esc(d.text)}</span></li>`;
+  const meaLi = m => `<li><span class="ops-tag">${esc(m.start ? fmtDate(m.start) : '開始日未設定')}</span><span>${esc(m.text)}</span></li>`;
 
   const [decRecent, decOlder] = split(decisions.map(decLi));
   const [meaRecent, meaOlder] = split(measures.map(meaLi));
