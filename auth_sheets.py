@@ -7,9 +7,13 @@ GitHub Actions が「PG運営ログ（非公開）」を読めるようにする
 
 ━━ 使い方 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  1. このファイルを client_secret.json と同じフォルダに置いて実行する
+  1. 実行する（client_secret.json は無くても動きます）
 
          python3 auth_sheets.py
+
+     client_secret.json が同じフォルダにあればそれを使います。
+     無ければ「クライアントID」と「クライアントシークレット」の入力を求められるので、
+     Google Cloud Console の該当ページからコピーして貼ってください。
 
   2. 表示された URL をブラウザで開き、**運営ログのオーナーのアカウント
      （korekiite@gmail.com）** でログインして許可する
@@ -32,6 +36,7 @@ GitHub Actions が「PG運営ログ（非公開）」を読めるようにする
   * スプレッドシートの共有設定は変えなくて構いません。自分のシートを自分で読むだけです
   * 標準ライブラリだけで動きます（pip install は不要）
 """
+import getpass
 import http.server
 import json
 import os
@@ -67,15 +72,36 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
 
 def main():
-    if not os.path.exists("client_secret.json"):
-        sys.exit("client_secret.json が見つかりません。\n"
-                 "このスクリプトは client_secret.json と同じフォルダで実行してください。")
-    with open("client_secret.json", encoding="utf-8") as f:
-        cfg = json.load(f)
-    info = cfg.get("installed") or cfg.get("web") or {}
-    client_id, client_secret = info.get("client_id"), info.get("client_secret")
+    client_id = client_secret = None
+
+    # ① client_secret.json があればそこから読む
+    if os.path.exists("client_secret.json"):
+        with open("client_secret.json", encoding="utf-8") as f:
+            cfg = json.load(f)
+        info = cfg.get("installed") or cfg.get("web") or {}
+        client_id, client_secret = info.get("client_id"), info.get("client_secret")
+        if client_id and client_secret:
+            print("client_secret.json を使います。")
+
+    # ② 環境変数
     if not (client_id and client_secret):
-        sys.exit("client_secret.json の形式が想定と違います（client_id / client_secret が読めません）")
+        client_id = os.environ.get("OAUTH_CLIENT_ID") or None
+        client_secret = os.environ.get("OAUTH_CLIENT_SECRET") or None
+        if client_id and client_secret:
+            print("環境変数 OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET を使います。")
+
+    # ③ 手入力（client_secret.json が無い場合はこれ）
+    if not (client_id and client_secret):
+        print("client_secret.json が見つかりませんでした。")
+        print("Google Cloud Console の「APIとサービス > 認証情報」で OAuth 2.0 クライアント ID を開き、")
+        print("画面に出ている2つの値をコピーして貼り付けてください。\n")
+        try:
+            client_id = input("クライアント ID     : ").strip()
+            client_secret = getpass.getpass("クライアント シークレット（入力は表示されません）: ").strip()
+        except (EOFError, KeyboardInterrupt):
+            sys.exit("\n中止しました。")
+    if not (client_id and client_secret):
+        sys.exit("クライアント ID / シークレットが空です。中止しました。")
 
     auth_url = "https://accounts.google.com/o/oauth2/v2/auth?" + urllib.parse.urlencode({
         "client_id": client_id,
