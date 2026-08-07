@@ -1727,7 +1727,7 @@ function renderOpsMinutes(){
       <td><span class="status-badge ${cls}">${esc(a.status)}</span></td>
       <td style="${dim?'color:var(--muted)':''}">${esc(a.text)}</td>
       <td class="ops-owner">${esc(a.owner)}</td>
-      <td class="ops-owner">${esc(/^\d{4}-\d{2}-\d{2}$/.test(a.due||'') ? fmtDate(a.due) : (a.due||'—'))}</td>
+      <td class="ops-owner">${esc(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(a.due||'') ? fmtDate(a.due.replace(/\//g,'-')) : (a.due||'—'))}</td>
     </tr>`;
   }).join('');
   const ACTION_HEAD =
