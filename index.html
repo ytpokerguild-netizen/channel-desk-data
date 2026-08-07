@@ -442,6 +442,7 @@ body{
     <nav class="tab-nav">
       <button onclick="switchTab('overview')"   id="tab-overview"   class="on">📊 アナリティクス</button>
       <button onclick="switchTab('ops')"        id="tab-ops"            >📋 運営</button>
+      <button onclick="switchTab('coupon')"     id="tab-coupon"         >🎟 クーポン</button>
       <button onclick="switchTab('report')"     id="tab-report"         >📈 週次レポート</button>
     </nav>
 
@@ -615,6 +616,42 @@ body{
       <div class="card">
         <h3><span class="dot"></span>最近の投稿済み（直近20件）</h3>
         <div class="sched-table-wrap" id="schedRecent"></div>
+      </div>
+
+    </div>
+
+    <!-- ════════════════════════ TAB: クーポン ════════════════════════ -->
+    <div id="pane-coupon" style="display:none">
+
+      <div class="overview-bar" id="cpSummary"></div>
+      <div class="ops-meta-note" id="cpNote" style="margin:0 0 14px"></div>
+
+      <div class="card" id="cpDailyCard">
+        <h3><span class="dot"></span>日別のコード入力
+          <span style="font-family:inherit;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted-2)">
+            ／ 動画の公開日を重ねています</span>
+        </h3>
+        <div id="cpDaily"></div>
+      </div>
+
+      <div class="analytics-grid">
+        <div class="chart-card standalone">
+          <div class="chart-title"><span class="ct-label">コード入力から使用までの時間</span></div>
+          <div id="cpLag" style="margin-top:8px"></div>
+        </div>
+        <div class="chart-card standalone">
+          <div class="chart-title"><span class="ct-label">初回に参加したトーナメント</span></div>
+          <div id="cpTournaments" style="margin-top:8px"></div>
+        </div>
+      </div>
+
+      <div class="card" id="cpWeeklyCard">
+        <h3><span class="dot"></span>週ごとの成績
+          <span style="font-family:inherit;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted-2)"
+                id="cpWeeklyMeta"></span>
+        </h3>
+        <div class="sched-table-wrap"><table class="sched-table" id="cpWeeklyTable"></table></div>
+        <div class="ops-meta-note" id="cpWeeklyNote"></div>
       </div>
 
     </div>
@@ -802,11 +839,12 @@ async function loadData(bust){
 // ════════════════════════════════
 function switchTab(name){
   activeTab = name;
-  ['overview','ops','report'].forEach(t => {
+  ['overview','ops','coupon','report'].forEach(t => {
     document.getElementById('pane-'+t).style.display = t === name ? '' : 'none';
     document.getElementById('tab-'+t).classList.toggle('on', t === name);
   });
   if(name === 'ops'){ renderOps(); renderSchedule(); }   // 運営タブに投稿計画も統合
+  if(name === 'coupon'){ renderCoupon(); }
   if(name === 'report')   renderReport();
 }
 
@@ -1687,6 +1725,129 @@ function renderAnalytics(){
       </div>
     </div>
   ` : `<div style="color:var(--muted-2);font-size:13px">登録者別データなし</div>`;
+}
+
+// ════════════════════════════════
+// クーポンタブ（JOPT Games）
+// ════════════════════════════════
+// 個人情報は data.json に入っていない（fetch.py が集計してから書き出している）。
+// ここで扱えるのは人数・割合・日別の集計だけ。
+function renderCoupon(){
+  const c = (G && G.coupon) || null;
+  const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const sumEl = document.getElementById('cpSummary');
+  const noteEl = document.getElementById('cpNote');
+
+  if(!c || c.error || !c.total){
+    sumEl.innerHTML = '';
+    noteEl.innerHTML = c && c.error
+      ? `⚠ クーポンシートを読み込めませんでした（${esc(c.error)}）。共有設定が変わった可能性があります。`
+      : 'クーポンのデータは次回の自動更新後に表示されます。';
+    ['cpDailyCard','cpWeeklyCard'].forEach(id=>{const e=document.getElementById(id); if(e) e.style.display='none';});
+    document.getElementById('cpLag').innerHTML = '';
+    document.getElementById('cpTournaments').innerHTML = '';
+    return;
+  }
+  ['cpDailyCard','cpWeeklyCard'].forEach(id=>{const e=document.getElementById(id); if(e) e.style.display='';});
+
+  const rate = c.total ? c.used / c.total * 100 : 0;
+  sumEl.innerHTML = [
+    {label:'コード入力',      val:fmtFull(c.total)+'人',  sub:c.snapshot_date ? fmtDate(c.snapshot_date)+' 時点' : ''},
+    {label:'チケット使用',    val:fmtFull(c.used)+'人',   sub:`使用率 ${rate.toFixed(1)}%`},
+    {label:'未使用',          val:fmtFull(c.unused)+'人', sub:'コードは入れたが未プレイ'},
+    {label:'残チケット保有',  val:fmtFull(c.rest_holders)+'人', sub:`合計 ${fmtFull(c.rest_tickets)}枚がまだ使える`},
+  ].map(it=>`<div class="ov-item"><div class="ov-label">${it.label}</div><div class="ov-val">${it.val}</div><div class="ov-sub">${it.sub}</div></div>`).join('');
+
+  noteEl.innerHTML = c.has_code_column
+    ? '※ 個人（UID・ニックネーム）は集計前に落としているため、ここには出ません。'
+    : '※ シートに「コード」列が無いため、<b>どの動画から来たかは特定できません</b>。'
+      + '週ごとにコードを分けて「コード」列を足してもらえれば、週ごとの帰属が確定します。'
+      + '<br>※ 個人（UID・ニックネーム）は集計前に落としているため、ここには出ません。';
+
+  // ── 日別のコード入力（動画公開日を重ねる）──
+  const daily = c.daily || [];
+  const pubByDate = {};
+  (G.videos||[]).forEach(v=>{
+    const d = (v.published_at||'').slice(0,10);
+    if(d) (pubByDate[d] = pubByDate[d] || []).push(v.title||'');
+  });
+  const maxE = Math.max(1, ...daily.map(d=>d.entries));
+  document.getElementById('cpDaily').innerHTML = daily.length ? daily.map(d=>{
+    const pubs = pubByDate[d.date] || [];
+    const uRate = d.entries ? Math.round(d.used/d.entries*100) : 0;
+    return `<div style="margin-bottom:9px">
+      <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:3px">
+        <span>${esc(fmtDate(d.date))}${pubs.length?` <span style="color:var(--gold-soft)">▲ 動画${pubs.length}本公開</span>`:''}</span>
+        <span>入力 <strong style="color:var(--ink)">${fmtFull(d.entries)}</strong>人 ・ 使用 ${fmtFull(d.used)}人（${uRate}%）</span>
+      </div>
+      <div style="height:8px;background:var(--line-strong);border-radius:3px;overflow:hidden;display:flex">
+        <div style="background:#5BD68A;width:${Math.round(d.used/maxE*100)}%"></div>
+        <div style="background:rgba(91,214,138,.28);width:${Math.round((d.entries-d.used)/maxE*100)}%"></div>
+      </div>
+      ${pubs.length?`<div style="font-size:10.5px;color:var(--muted-2);margin-top:3px">${pubs.slice(0,2).map(t=>esc(t.slice(0,44))).join(' / ')}${pubs.length>2?` 他${pubs.length-2}本`:''}</div>`:''}
+    </div>`;
+  }).join('') + '<div style="font-size:10.5px;color:var(--muted-2);margin-top:6px">濃い部分が使用済み、薄い部分が未使用。日付は<b>コードを入力した日</b>です。</div>'
+    : '<div style="font-size:12px;color:var(--muted-2)">日別データがありません</div>';
+
+  // ── 横棒（使用までの時間 / トーナメント）──
+  const hbars = (rows, total, color) => {
+    if(!rows.length) return '<div style="font-size:12px;color:var(--muted-2)">データなし</div>';
+    const mx = Math.max(1, ...rows.map(r=>r.count));
+    return rows.map(r=>`
+      <div style="margin-bottom:7px">
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:2px">
+          <span>${esc(r.label)}</span>
+          <span><strong style="color:var(--ink)">${fmtFull(r.count)}</strong>人${total?` ・ ${(r.count/total*100).toFixed(0)}%`:''}</span>
+        </div>
+        <div style="height:5px;background:var(--line-strong);border-radius:2px">
+          <div style="height:5px;background:${color};border-radius:2px;width:${Math.max(2,Math.round(r.count/mx*100))}%"></div>
+        </div>
+      </div>`).join('');
+  };
+  document.getElementById('cpLag').innerHTML =
+    hbars((c.lag_buckets||[]).map(b=>({label:b.label,count:b.count})), c.total, '#5BA6D6')
+    + '<div style="font-size:10.5px;color:var(--muted-2);margin-top:6px">コードを入れてから最初にチケットを使うまでの時間。'
+    + '「即時」が多ければ動画から遊ぶまで繋がっており、「未使用」が多ければアプリ側の初回導線に詰まりがあります。</div>';
+  document.getElementById('cpTournaments').innerHTML =
+    hbars((c.tournaments||[]).map(t=>({label:t.name,count:t.count})), c.used, '#C9A227');
+
+  // ── 週ごとの成績（週次レポートの再生回数と突き合わせ）──
+  const reps = {};
+  (G.weekly_reports||[]).forEach(r=>{ reps[r.week_start] = r; });
+  const vidCount = ws => {
+    const start = ws, end = _addDaysISO(ws, 6);
+    return (G.videos||[]).filter(v=>{
+      const d=(v.published_at||'').slice(0,10); return d>=start && d<=end;
+    }).length;
+  };
+  const weeks = (c.weekly||[]).slice().reverse();
+  document.getElementById('cpWeeklyMeta').textContent = ` ${weeks.length}週分`;
+  document.getElementById('cpWeeklyTable').innerHTML = weeks.length ? `
+    <thead><tr>
+      <th>週（土〜金）</th>${c.has_code_column?'<th>コード</th>':''}
+      <th style="text-align:right">動画</th><th style="text-align:right">再生回数</th>
+      <th style="text-align:right">入力</th><th style="text-align:right">使用</th>
+      <th style="text-align:right">使用率</th><th style="text-align:right">再生あたり入力</th>
+    </tr></thead><tbody>` + weeks.map(w=>{
+      const rep = reps[w.week_start];
+      const views = rep && rep.channel ? rep.channel.views : null;
+      const per = (views && w.entries) ? (w.entries / views * 100) : null;
+      const fin = rep ? (rep.final ? '' : '<span style="color:var(--muted-2)">（速報）</span>') : '<span style="color:var(--muted-2)">（レポート未生成）</span>';
+      return `<tr>
+        <td>${esc(fmtDate(w.week_start))}〜${esc(fmtDate(_addDaysISO(w.week_start,6)))} ${fin}</td>
+        ${c.has_code_column?`<td>${esc((w.codes||[]).join(', ')||'—')}</td>`:''}
+        <td style="text-align:right">${vidCount(w.week_start)}本</td>
+        <td style="text-align:right">${views!=null?fmtFull(views):'—'}</td>
+        <td style="text-align:right"><strong>${fmtFull(w.entries)}</strong></td>
+        <td style="text-align:right">${fmtFull(w.used)}</td>
+        <td style="text-align:right">${w.entries?Math.round(w.used/w.entries*100)+'%':'—'}</td>
+        <td style="text-align:right">${per!=null?per.toFixed(4)+'%':'—'}</td>
+      </tr>`;
+    }).join('') + '</tbody>' : '';
+  document.getElementById('cpWeeklyNote').innerHTML = weeks.length
+    ? '※ 週の区切りは週次レポートと同じ土曜開始〜金曜終了。「再生あたり入力」はその週の再生回数に対する入力者の割合です。'
+      + (c.has_code_column ? '' : '<br>※ コード列が入るまで、週の割り当ては<b>コードを入力した日</b>で行っています。動画の公開週とはズレることがあります。')
+    : '';
 }
 
 // ════════════════════════════════
@@ -2578,6 +2739,7 @@ function renderAll(){
   renderAnalytics(); // 概要タブ内に常時表示
   // 開いているタブだけ描画
   if(activeTab==='ops')      renderOps();
+  if(activeTab==='coupon')   renderCoupon();
   if(activeTab==='schedule') renderSchedule();
   if(activeTab==='videos')   renderVideoList();
   if(activeTab==='report')   renderReport();

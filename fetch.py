@@ -76,6 +76,170 @@ def fetch_video_archive():
     return result
 
 # ──────────────────────────────────────────────────────────
+# Google スプレッドシート: JOPT Games クーポン（CSV エクスポート、認証不要）
+# ──────────────────────────────────────────────────────────
+# ⚠ 個人情報の扱い
+#   元シートには UID とニックネームがあるが、data.json は public リポジトリに置かれるため
+#   **行レベルの情報は一切取り込まない。** 集計値だけを返す。
+# ⚠ このシートは別の方（kanta.ishiga@huntersite.jp）の所有物で、
+#   「リンクを知っている全員が閲覧可」に依存している。読めなくなったら coupon を空にして返す。
+COUPON_SHEET_ID = "1TlhW5SZnsnnXeMpJ8eurM9edeMfkEEFmKdK-TCbvCpc"
+
+
+def _parse_dt(s):
+    """'2026-08-06 21:43:12' / '2026/08/06 9:24' などを datetime に。失敗したら None"""
+    s = (s or "").strip()
+    if not s:
+        return None
+    s = s.replace("/", "-")
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(s, fmt)
+        except ValueError:
+            continue
+    return None
+
+
+def _week_start_sat(d):
+    """その日を含む週（土曜開始）の土曜日。weekly_reports と同じ区切り"""
+    return d - timedelta(days=(d.weekday() - 5) % 7)
+
+
+def fetch_coupon():
+    """クーポンの使用状況を集計して返す。個人情報は含めない。
+    最新の取得日のスナップショット1つだけを使う。各行が自分の入力日時・使用日時を
+    持っているので、そこから全期間の推移を再構成できる（スナップショットの差分比較は不要）。"""
+    import csv, io
+    url = (f"https://docs.google.com/spreadsheets/d/{COUPON_SHEET_ID}/export?format=csv")
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    try:
+        with urlopen(req, timeout=30) as resp:
+            content = resp.read().decode("utf-8-sig")
+    except Exception as e:
+        print(f"  [WARN] クーポンシート取得失敗: {e}")
+        return {"error": "取得失敗", "detail": str(e)[:120]}
+
+    rows = [r for r in csv.reader(io.StringIO(content)) if any(c.strip() for c in r)]
+    if not rows:
+        return {"error": "シートが空です"}
+    header = [h.strip() for h in rows[0]]
+
+    def col(*names):
+        for n in names:
+            if n in header:
+                return header.index(n)
+        return -1
+
+    i_snap = col("取得日")
+    i_in   = col("コード入力日時")
+    i_used = col("Trialチケット使用")
+    i_use1 = col("初回使用日時")
+    i_trn  = col("初回使用トーナメント")
+    i_rest = col("未使用Trial枚数(現在)", "未使用Trial枚数（現在）", "未使用Trial枚数")
+    i_code = col("コード", "クーポンコード", "コード名")   # 将来追加される想定。無くても動く
+
+    if min(i_snap, i_in) < 0:
+        print(f"  [WARN] クーポンシートに必要な列がありません（列: {header}）")
+        return {"error": "列が想定と違います", "header": header}
+
+    def cell(r, i):
+        return r[i].strip() if 0 <= i < len(r) else ""
+
+    # 最新の取得日のスナップショットだけを使う
+    snaps = sorted({cell(r, i_snap) for r in rows[1:] if cell(r, i_snap)})
+    if not snaps:
+        return {"error": "取得日が読めません"}
+    latest = snaps[-1]
+    body = [r for r in rows[1:] if cell(r, i_snap) == latest]
+
+    daily = {}     # 入力日 → {entries, used}
+    weekly = {}    # 週(土曜開始) → {entries, used, codes:set}
+    lag = {"即時（10分未満）": 0, "1時間未満": 0, "当日（24時間未満）": 0, "翌日以降": 0, "未使用": 0}
+    trn = {}
+    by_code = {}
+    total = used = 0
+    rest_holders = rest_tickets = 0
+
+    for r in body:
+        total += 1
+        t_in  = _parse_dt(cell(r, i_in))
+        t_use = _parse_dt(cell(r, i_use1))
+        is_used = "使用済" in cell(r, i_used) or t_use is not None
+        if is_used:
+            used += 1
+
+        if t_in:
+            dkey = t_in.date().isoformat()
+            d = daily.setdefault(dkey, {"date": dkey, "entries": 0, "used": 0})
+            d["entries"] += 1
+            if is_used:
+                d["used"] += 1
+            wkey = _week_start_sat(t_in.date()).isoformat()
+            w = weekly.setdefault(wkey, {"week_start": wkey, "entries": 0, "used": 0, "codes": set()})
+            w["entries"] += 1
+            if is_used:
+                w["used"] += 1
+            c = cell(r, i_code)
+            if c:
+                w["codes"].add(c)
+
+        # 入力から使用までの時間
+        if not is_used or not t_use or not t_in:
+            lag["未使用" if not is_used else "翌日以降"] += 1
+        else:
+            mins = (t_use - t_in).total_seconds() / 60
+            if   mins < 10:        lag["即時（10分未満）"] += 1
+            elif mins < 60:        lag["1時間未満"] += 1
+            elif mins < 60 * 24:   lag["当日（24時間未満）"] += 1
+            else:                  lag["翌日以降"] += 1
+
+        name = cell(r, i_trn)
+        if name:
+            trn[name] = trn.get(name, 0) + 1
+
+        try:
+            n = int(float(cell(r, i_rest) or 0))
+        except ValueError:
+            n = 0
+        if n >= 1:
+            rest_holders += 1
+            rest_tickets += n
+
+        code = cell(r, i_code)
+        if code:
+            b = by_code.setdefault(code, {"code": code, "entries": 0, "used": 0})
+            b["entries"] += 1
+            if is_used:
+                b["used"] += 1
+
+    result = {
+        "snapshot_date":   latest,
+        "snapshot_count":  len(snaps),          # 何日分たまっているか
+        "has_code_column": i_code >= 0,         # コード列が入ったら True になる
+        "total":           total,
+        "used":            used,
+        "unused":          total - used,
+        "rest_holders":    rest_holders,        # 未使用チケットが1枚以上残っている人数
+        "rest_tickets":    rest_tickets,        # その合計枚数
+        "daily":           sorted(daily.values(), key=lambda x: x["date"]),
+        "weekly":          [],                  # 下で組み立てる（土曜開始・weekly_reports と同じ区切り）
+        "lag_buckets":     [{"label": k, "count": v} for k, v in lag.items() if v],
+        "tournaments":     sorted(({"name": k, "count": v} for k, v in trn.items()),
+                                 key=lambda x: -x["count"]),
+        "by_code":         sorted(by_code.values(), key=lambda x: x["code"]),
+    }
+    result["weekly"] = [
+        {"week_start": w["week_start"], "entries": w["entries"], "used": w["used"],
+         "codes": sorted(w["codes"])}
+        for w in sorted(weekly.values(), key=lambda x: x["week_start"])
+    ]
+    print(f"  クーポン: {latest} 時点 {total}人（使用 {used} / 未使用 {total-used}）"
+          f" 週 {len(result['weekly'])}件"
+          + ("" if result["has_code_column"] else " ※コード列なし（動画別の帰属は不可）"))
+    return result
+
+
+# ──────────────────────────────────────────────────────────
 # Google スプレッドシート: 投稿計画（CSV エクスポート、認証不要）
 # ──────────────────────────────────────────────────────────
 def fetch_post_plan():
@@ -1233,6 +1397,9 @@ def main():
     print("  動画アーカイブを取得中...")
     video_archive = fetch_video_archive()
 
+    print("クーポン使用状況を取得中...")
+    coupon = fetch_coupon()
+
     # ── 計画 × 実績の自動照合（シートのステータス更新に依存しない投稿済み判定）──
     try:
         post_plan = match_post_plan(post_plan, videos)
@@ -1274,6 +1441,7 @@ def main():
         "post_plan":             post_plan,             # 投稿計画（Google スプレッドシート）
         "video_archive":         video_archive,         # 動画アーカイブ（video_id→企画タイプ/ナレーター手入力）
         "weekly_reports":        weekly_reports,        # 週次レポート（土〜金、最大26週）
+        "coupon":                coupon,                # JOPT Games クーポンの集計（個人情報は含めない）
     }
 
     # 重量データ(動画別日次)は別ファイルに分離し、本体はコンパクト化(初期ロード削減)
