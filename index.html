@@ -362,6 +362,15 @@ body{
   background:rgba(255,255,255,.06);color:var(--muted);white-space:nowrap;
 }
 .ops-meta-note{font-size:11px;color:var(--muted-2);margin-top:12px;line-height:1.6}
+.ops-more{margin-top:10px}
+.ops-more>summary{
+  cursor:pointer;font-size:11.5px;color:var(--muted);
+  padding:5px 0;list-style:none;display:flex;align-items:center;gap:6px;
+}
+.ops-more>summary::-webkit-details-marker{display:none}
+.ops-more>summary::before{content:'▸';font-size:10px;color:var(--muted-2)}
+.ops-more[open]>summary::before{content:'▾'}
+.ops-more>summary:hover{color:var(--ink)}
 .sched-yt-link{
   color:var(--blue);text-decoration:none;font-size:11px;
   padding:2px 7px;border:1px solid rgba(91,166,214,.3);border-radius:5px;
@@ -563,6 +572,8 @@ body{
         <div class="sched-table-wrap">
           <table class="sched-table" id="opsActionTable"></table>
         </div>
+        <div id="opsActionEmpty" style="display:none;font-size:12.5px;color:var(--muted)">未完了の宿題はありません。</div>
+        <div id="opsActionDone"></div>
         <div id="opsMinutesExtra" style="margin-top:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:22px"></div>
         <div class="ops-meta-note" id="opsMinutesNote"></div>
       </div>
@@ -1716,42 +1727,68 @@ function renderOpsMinutes(){
   const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
   // ── 宿題テーブル ──
-  const open = items.filter(a => a.status!=='完了' && a.status!=='見送り').length;
+  // 会議ごとに際限なく積み上がるのを防ぐ: 未完了は常時表示、完了/見送りは折りたたむ。
+  // 決定事項・施策も直近 OPS_RECENT 件だけ出し、残りは折りたたむ（スプシ側は全件保持している）。
+  const DONE = new Set(['完了','見送り']);
+  const openItems = items.filter(a => !DONE.has(a.status));
+  const doneItems = items.filter(a =>  DONE.has(a.status)).reverse();
   document.getElementById('opsMinutesMeta').textContent =
-    ` 未完了 ${open} / 全 ${items.length} 件` + (ops.updated_at ? `・${fmtDate(ops.updated_at)} 時点` : '');
+    ` 未完了 ${openItems.length} 件` + (doneItems.length ? `・完了 ${doneItems.length} 件` : '')
+    + (ops.updated_at ? `・${fmtDate(ops.updated_at)} 時点` : '');
+
+  const actionRows = (rows, dim) => rows.map(a => {
+    const cls = OPS_STATUS_CLASS[a.status] || 'ops-hold';
+    return `<tr>
+      <td><span class="status-badge ${cls}">${esc(a.status)}</span></td>
+      <td style="${dim?'color:var(--muted)':''}">${esc(a.text)}</td>
+      <td class="ops-owner">${esc(a.owner)}</td>
+      <td class="ops-owner">${esc(a.due||'—')}</td>
+    </tr>`;
+  }).join('');
+  const ACTION_HEAD =
+    '<thead><tr><th style="width:1%">状態</th><th>内容</th><th style="width:1%">担当</th><th style="width:1%">期限</th></tr></thead>';
 
   const tbl = document.getElementById('opsActionTable');
-  if(!items.length){
-    tbl.innerHTML = '';
-  } else {
-    tbl.innerHTML =
-      '<thead><tr><th style="width:1%">状態</th><th>内容</th><th style="width:1%">担当</th><th style="width:1%">期限</th></tr></thead><tbody>' +
-      items.map(a => {
-        const cls = OPS_STATUS_CLASS[a.status] || 'ops-hold';
-        const done = a.status==='完了' || a.status==='見送り';
-        return `<tr>
-          <td><span class="status-badge ${cls}">${esc(a.status)}</span></td>
-          <td style="${done?'color:var(--muted)':''}">${esc(a.text)}</td>
-          <td class="ops-owner">${esc(a.owner)}</td>
-          <td class="ops-owner">${esc(a.due||'—')}</td>
-        </tr>`;
-      }).join('') + '</tbody>';
-  }
+  tbl.innerHTML = openItems.length
+    ? ACTION_HEAD + '<tbody>' + actionRows(openItems, false) + '</tbody>'
+    : '';
+  document.getElementById('opsActionEmpty').style.display = openItems.length ? 'none' : '';
+
+  const doneWrap = document.getElementById('opsActionDone');
+  doneWrap.innerHTML = doneItems.length ? `<details class="ops-more">
+      <summary>完了・見送りの宿題 ${doneItems.length} 件を見る</summary>
+      <div class="sched-table-wrap"><table class="sched-table">${ACTION_HEAD}<tbody>${actionRows(doneItems, true)}</tbody></table></div>
+    </details>` : '';
 
   // ── 決定事項 / 施策ログ ──
-  const block = (title, sub, rows) => rows.length ? `<div>
-      <div class="ops-sub-h">${title}</div>
-      <ul class="ops-list">${rows.join('')}</ul>
+  // 並びはスプレッドシートの行順（＝追加順）を新しい順に反転して使う。
+  // 日付は空欄のことがあるので、日付ではなく行順を根拠にしている。
+  const OPS_RECENT = 5;
+  const split = arr => {
+    const rev = arr.slice().reverse();
+    return [rev.slice(0, OPS_RECENT), rev.slice(OPS_RECENT)];
+  };
+  const block = (title, sub, recent, older, olderLabel) => (recent.length || older.length) ? `<div>
+      <div class="ops-sub-h">${title}${older.length ? `（直近${OPS_RECENT}件 / 全${recent.length + older.length}件）` : ''}</div>
+      <ul class="ops-list">${recent.join('')}</ul>
+      ${older.length ? `<details class="ops-more">
+        <summary>${olderLabel} ${older.length} 件を見る</summary>
+        <ul class="ops-list">${older.join('')}</ul>
+      </details>` : ''}
       ${sub ? `<div class="ops-meta-note">${sub}</div>` : ''}
     </div>` : '';
 
+  const decLi = d => `<li><span class="ops-tag">${esc(d.category||'—')}</span><span>${esc(d.text)}${d.date?` <span style="color:var(--muted-2)">（${esc(fmtDate(d.date))}）</span>`:''}</span></li>`;
+  const meaLi = m => `<li><span class="ops-tag">${esc(m.start ? fmtDate(m.start) : '開始日未設定')}</span><span>${esc(m.text)}<span style="color:var(--muted-2)"> / ${esc(m.target||'—')}・${esc(m.metric||'—')}</span></span></li>`;
+
+  const [decRecent, decOlder] = split(decisions.map(decLi));
+  const [meaRecent, meaOlder] = split(measures.map(meaLi));
+
   document.getElementById('opsMinutesExtra').innerHTML =
-    block('決定事項', '', decisions.map(d =>
-      `<li><span class="ops-tag">${esc(d.category||'—')}</span><span>${esc(d.text)}${d.date?` <span style="color:var(--muted-2)">（${esc(fmtDate(d.date))}）</span>`:''}</span></li>`)) +
+    block('決定事項', '', decRecent, decOlder, 'それ以前の決定事項') +
     block('施策ログ',
       measures.some(m=>!m.start) ? '開始日が空欄の施策は、数字の前後比較ができません。' : '',
-      measures.map(m =>
-        `<li><span class="ops-tag">${esc(m.start ? fmtDate(m.start) : '開始日未設定')}</span><span>${esc(m.text)}<span style="color:var(--muted-2)"> / ${esc(m.target||'—')}・${esc(m.metric||'—')}</span></span></li>`));
+      meaRecent, meaOlder, 'それ以前の施策');
 
   // ── 非公開件数の明示 ──
   const h = ops.hidden_counts || {};
