@@ -630,6 +630,7 @@ body{
         <h3><span class="dot"></span>日別のコード入力
           <span style="font-family:inherit;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted-2)">
             ／ 動画の公開日を重ねています</span>
+          <a class="card-link" href="https://docs.google.com/spreadsheets/d/1TlhW5SZnsnnXeMpJ8eurM9edeMfkEEFmKdK-TCbvCpc/edit" target="_blank" rel="noopener">クーポンシートを開く ↗</a>
         </h3>
         <div id="cpDaily"></div>
       </div>
@@ -1732,17 +1733,23 @@ function renderAnalytics(){
 // ════════════════════════════════
 // 個人情報は data.json に入っていない（fetch.py が集計してから書き出している）。
 // ここで扱えるのは人数・割合・日別の集計だけ。
+// クーポンシートのURL。fetch.py の COUPON_SHEET_ID と、
+// 上の cpDailyCard 内 card-link の href も同じシートを指している。差し替える時は3か所とも直すこと。
+const COUPON_SHEET_URL = 'https://docs.google.com/spreadsheets/d/1TlhW5SZnsnnXeMpJ8eurM9edeMfkEEFmKdK-TCbvCpc/edit';
+
 function renderCoupon(){
   const c = (G && G.coupon) || null;
   const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const sumEl = document.getElementById('cpSummary');
   const noteEl = document.getElementById('cpNote');
+  // データが無いとカードごと隠れて card-link も消えるので、ここでも必ずリンクを出す
+  const sheetLink = `<a class="card-link" href="${COUPON_SHEET_URL}" target="_blank" rel="noopener" style="margin-left:8px">クーポンシートを開く ↗</a>`;
 
   if(!c || c.error || !c.total){
     sumEl.innerHTML = '';
-    noteEl.innerHTML = c && c.error
+    noteEl.innerHTML = (c && c.error
       ? `⚠ クーポンシートを読み込めませんでした（${esc(c.error)}）。共有設定が変わった可能性があります。`
-      : 'クーポンのデータは次回の自動更新後に表示されます。';
+      : 'クーポンのデータは次回の自動更新後に表示されます。') + sheetLink;
     ['cpDailyCard','cpWeeklyCard'].forEach(id=>{const e=document.getElementById(id); if(e) e.style.display='none';});
     document.getElementById('cpLag').innerHTML = '';
     document.getElementById('cpTournaments').innerHTML = '';
