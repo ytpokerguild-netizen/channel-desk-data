@@ -61,6 +61,21 @@ jobs:
           LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
         run: python check_staleness.py
 
+      # 引き継ぎ書類（正本は Dropbox）への反映漏れを1日1回だけ思い出させる。
+      # 3時間おきに走るので、UTC 0時（JST 9時）の実行だけ通知する。
+      - name: 引き継ぎ書類の反映漏れを通知（JST 9時のみ）
+        if: success()
+        continue-on-error: true
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
+        run: |
+          if [ "$(date -u +%H)" != "00" ]; then
+            echo "対象時刻ではないのでスキップします（UTC $(date -u +%H)時）"
+            exit 0
+          fi
+          python docs_check.py pending
+
       - name: 失敗時 LINE 通知
         if: failure()
         env:

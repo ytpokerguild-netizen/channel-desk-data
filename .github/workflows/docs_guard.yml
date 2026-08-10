@@ -1,0 +1,31 @@
+name: 引き継ぎ書類の更新漏れチェック
+
+# 人の手でコードを変えた push で「変更履歴.md」が更新されていなければ、
+# このワークフローを失敗させて LINE に通知する。
+# データの自動コミット（github-actions[bot]）は対象外。
+on:
+  push:
+    branches: [main]
+
+jobs:
+  guard:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # push 前後を比較するため全履歴が必要
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 変更履歴.md が更新されているか確認
+        env:
+          BEFORE:             ${{ github.event.before }}
+          AFTER:              ${{ github.sha }}
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
+        run: python docs_check.py push
