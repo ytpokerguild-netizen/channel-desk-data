@@ -655,6 +655,15 @@ body{
         <div class="ops-meta-note" id="cpWeeklyNote"></div>
       </div>
 
+      <div class="card" id="cpCodeCard" style="display:none">
+        <h3><span class="dot"></span>クーポンコード別
+          <span style="font-family:inherit;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted-2)"
+                id="cpCodeMeta"></span>
+        </h3>
+        <div class="sched-table-wrap"><table class="sched-table" id="cpCodeTable"></table></div>
+        <div class="ops-meta-note" id="cpCodeNote"></div>
+      </div>
+
     </div>
 
     <!-- ════════════════════════ TAB: 週次レポート ════════════════════════ -->
@@ -1750,26 +1759,37 @@ function renderCoupon(){
     noteEl.innerHTML = (c && c.error
       ? `⚠ クーポンシートを読み込めませんでした（${esc(c.error)}）。共有設定が変わった可能性があります。`
       : 'クーポンのデータは次回の自動更新後に表示されます。') + sheetLink;
-    ['cpDailyCard','cpWeeklyCard'].forEach(id=>{const e=document.getElementById(id); if(e) e.style.display='none';});
+    ['cpDailyCard','cpWeeklyCard','cpCodeCard'].forEach(id=>{const e=document.getElementById(id); if(e) e.style.display='none';});
     document.getElementById('cpLag').innerHTML = '';
     document.getElementById('cpTournaments').innerHTML = '';
     return;
   }
   ['cpDailyCard','cpWeeklyCard'].forEach(id=>{const e=document.getElementById(id); if(e) e.style.display='';});
 
+  // ⚠ 同じ人が別のクーポンコードを使えるため、シートの1行＝1回の入力であって1人ではない。
+  //   total/used/unused/rest_holders はすべて「件数」。実人数は people（UID列が無ければ null）。
   const rate = c.total ? c.used / c.total * 100 : 0;
+  const ppl  = (c.people == null) ? null : c.people;
+  const dateSub = c.snapshot_date ? fmtDate(c.snapshot_date)+' 時点' : '';
   sumEl.innerHTML = [
-    {label:'コード入力',      val:fmtFull(c.total)+'人',  sub:c.snapshot_date ? fmtDate(c.snapshot_date)+' 時点' : ''},
-    {label:'チケット使用',    val:fmtFull(c.used)+'人',   sub:`使用率 ${rate.toFixed(1)}%`},
-    {label:'未使用',          val:fmtFull(c.unused)+'人', sub:'コードは入れたが未プレイ'},
-    {label:'残チケット保有',  val:fmtFull(c.rest_holders)+'人', sub:`合計 ${fmtFull(c.rest_tickets)}枚がまだ使える`},
+    {label:'コード入力',      val:fmtFull(c.total)+'件',
+      sub:(ppl!=null ? `実人数 ${fmtFull(ppl)}人` : '実人数は不明（UID列なし）') + (dateSub?` ・ ${dateSub}`:'')},
+    {label:'チケット使用',    val:fmtFull(c.used)+'件',   sub:`使用率 ${rate.toFixed(1)}%`},
+    {label:'未使用',          val:fmtFull(c.unused)+'件', sub:'コードは入れたが未プレイ'},
+    {label:'残チケットあり',  val:fmtFull(c.rest_holders)+'件', sub:`合計 ${fmtFull(c.rest_tickets)}枚がまだ使える`},
   ].map(it=>`<div class="ov-item"><div class="ov-label">${it.label}</div><div class="ov-val">${it.val}</div><div class="ov-sub">${it.sub}</div></div>`).join('');
 
-  noteEl.innerHTML = c.has_code_column
-    ? '※ 個人（UID・ニックネーム）は集計前に落としているため、ここには出ません。'
-    : '※ シートに「コード」列が無いため、<b>どの動画から来たかは特定できません</b>。'
-      + '週ごとにコードを分けて「コード」列を足してもらえれば、週ごとの帰属が確定します。'
-      + '<br>※ 個人（UID・ニックネーム）は集計前に落としているため、ここには出ません。';
+  noteEl.innerHTML =
+    '※ <b>数字は「件数」であって人数ではありません。</b>同じ方が別のクーポンコードを使えるため、1人が複数回入力することがあります。'
+    + (ppl!=null
+        ? `実人数は ${fmtFull(ppl)}人 です（重複を除いた数）。`
+        : 'シートに UID 列が無いため、<b>実人数は判定できません</b>。UID 列が入ると実人数を出せます（UID の値自体は取り込みません）。')
+    + '<br>※ 未使用チケットは<b>使用期限で消えることがあります</b>。「残チケット」が減っていても、使われたとは限りません。'
+    + (c.has_code_column
+        ? ''
+        : '<br>※ シートに「コード」列が無いため、<b>どのクーポンコードから来たかは特定できません</b>。'
+          + '週ごとにコードを分けて「コード」列を足してもらえれば、週ごとの帰属が確定します。')
+    + '<br>※ 個人（UID・ニックネーム）は集計前に落としているため、ここには出ません。';
 
   // ── 日別のコード入力（動画公開日を重ねる）──
   const daily = c.daily || [];
@@ -1785,7 +1805,7 @@ function renderCoupon(){
     return `<div style="margin-bottom:9px">
       <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:3px">
         <span>${esc(fmtDate(d.date))}${pubs.length?` <span style="color:var(--gold-soft)">▲ 動画${pubs.length}本公開</span>`:''}</span>
-        <span>入力 <strong style="color:var(--ink)">${fmtFull(d.entries)}</strong>人 ・ 使用 ${fmtFull(d.used)}人（${uRate}%）</span>
+        <span>入力 <strong style="color:var(--ink)">${fmtFull(d.entries)}</strong>件 ・ 使用 ${fmtFull(d.used)}件（${uRate}%）</span>
       </div>
       <div style="height:8px;background:var(--line-strong);border-radius:3px;overflow:hidden;display:flex">
         <div style="background:#5BD68A;width:${Math.round(d.used/maxE*100)}%"></div>
@@ -1804,7 +1824,7 @@ function renderCoupon(){
       <div style="margin-bottom:7px">
         <div style="display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:2px">
           <span>${esc(r.label)}</span>
-          <span><strong style="color:var(--ink)">${fmtFull(r.count)}</strong>人${total?` ・ ${(r.count/total*100).toFixed(0)}%`:''}</span>
+          <span><strong style="color:var(--ink)">${fmtFull(r.count)}</strong>件${total?` ・ ${(r.count/total*100).toFixed(0)}%`:''}</span>
         </div>
         <div style="height:5px;background:var(--line-strong);border-radius:2px">
           <div style="height:5px;background:${color};border-radius:2px;width:${Math.max(2,Math.round(r.count/mx*100))}%"></div>
@@ -1833,7 +1853,8 @@ function renderCoupon(){
     <thead><tr>
       <th>週（土〜金）</th>${c.has_code_column?'<th>コード</th>':''}
       <th style="text-align:right">動画</th><th style="text-align:right">再生回数</th>
-      <th style="text-align:right">入力</th><th style="text-align:right">使用</th>
+      <th style="text-align:right">入力（件）</th>${c.has_uid_column?'<th style="text-align:right">実人数</th>':''}
+      <th style="text-align:right">使用</th>
       <th style="text-align:right">使用率</th><th style="text-align:right">再生あたり入力</th>
     </tr></thead><tbody>` + weeks.map(w=>{
       const rep = reps[w.week_start];
@@ -1846,15 +1867,48 @@ function renderCoupon(){
         <td style="text-align:right">${vidCount(w.week_start)}本</td>
         <td style="text-align:right">${views!=null?fmtFull(views):'—'}</td>
         <td style="text-align:right"><strong>${fmtFull(w.entries)}</strong></td>
+        ${c.has_uid_column?`<td style="text-align:right">${w.people!=null?fmtFull(w.people):'—'}</td>`:''}
         <td style="text-align:right">${fmtFull(w.used)}</td>
         <td style="text-align:right">${w.entries?Math.round(w.used/w.entries*100)+'%':'—'}</td>
         <td style="text-align:right">${per!=null?per.toFixed(4)+'%':'—'}</td>
       </tr>`;
     }).join('') + '</tbody>' : '';
   document.getElementById('cpWeeklyNote').innerHTML = weeks.length
-    ? '※ 週の区切りは週次レポートと同じ土曜開始〜金曜終了。「再生あたり入力」はその週の再生回数に対する入力者の割合です。'
-      + (c.has_code_column ? '' : '<br>※ コード列が入るまで、週の割り当ては<b>コードを入力した日</b>で行っています。動画の公開週とはズレることがあります。')
+    ? '※ 週の区切りは週次レポートと同じ土曜開始〜金曜終了。「再生あたり入力」はその週の再生回数に対する<b>入力件数</b>の割合です（人数ではありません）。'
+      + '<br>※ 週の割り当ては<b>コードを入力した日</b>です。クーポンコードは動画に貼られたまま残るので、'
+      + '<b>古い週のコードが後の週に入力されることがあります</b>。「その週の動画の成績」とは読めません。'
+      + (c.has_code_column ? '' : '<br>※ コード列が入るまで、どのコード経由かは区別できません。')
     : '';
+
+  // ── クーポンコード別（コード列が入ってから表示）──
+  const codes = c.by_code || [];
+  const codeCard = document.getElementById('cpCodeCard');
+  if(codeCard){
+    codeCard.style.display = codes.length ? '' : 'none';
+    if(codes.length){
+      document.getElementById('cpCodeMeta').textContent = ` ${codes.length}コード`;
+      document.getElementById('cpCodeTable').innerHTML = `
+        <thead><tr>
+          <th>クーポンコード</th>
+          <th style="text-align:right">入力（件）</th>${c.has_uid_column?'<th style="text-align:right">実人数</th>':''}
+          <th style="text-align:right">使用</th><th style="text-align:right">使用率</th>
+        </tr></thead><tbody>` + codes.map(b=>`
+          <tr>
+            <td><strong>${esc(b.code)}</strong></td>
+            <td style="text-align:right"><strong>${fmtFull(b.entries)}</strong></td>
+            ${c.has_uid_column?`<td style="text-align:right">${b.people!=null?fmtFull(b.people):'—'}</td>`:''}
+            <td style="text-align:right">${fmtFull(b.used)}</td>
+            <td style="text-align:right">${b.entries?Math.round(b.used/b.entries*100)+'%':'—'}</td>
+          </tr>`).join('') + '</tbody>';
+      document.getElementById('cpCodeNote').innerHTML =
+        '※ コードの合計は「コード入力」の件数と一致します。'
+        + (c.has_uid_column
+            ? '<b>各コードの実人数を足しても全体の実人数にはなりません</b>（同じ方が複数のコードを使うため）。'
+            : '')
+        + '<br>※ コードは動画に貼られたまま残るため、<b>掲出をやめた後も入力され続けます</b>。'
+        + 'どの動画にいつ貼ったかは data.json に無いので、比較するときは掲出日の記録と突き合わせてください。';
+    }
+  }
 }
 
 // ════════════════════════════════

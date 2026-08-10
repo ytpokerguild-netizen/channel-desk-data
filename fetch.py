@@ -137,6 +137,9 @@ def fetch_coupon():
     i_trn  = col("初回使用トーナメント")
     i_rest = col("未使用Trial枚数(現在)", "未使用Trial枚数（現在）", "未使用Trial枚数")
     i_code = col("コード", "クーポンコード", "コード名")   # 将来追加される想定。無くても動く
+    # UID は「同じ人が別コードで2行に出る」ようになったため、重複を除いた実人数を数えるのに使う。
+    # ⚠ UID の値そのものは data.json に絶対に出さない。数えるだけ。列が無ければ人数は null で返す。
+    i_uid  = col("UID", "uid", "ユーザーID", "ユーザーUID", "ユーザーId", "user_id")
 
     if min(i_snap, i_in) < 0:
         print(f"  [WARN] クーポンシートに必要な列がありません（列: {header}）")
@@ -153,15 +156,19 @@ def fetch_coupon():
     body = [r for r in rows[1:] if cell(r, i_snap) == latest]
 
     daily = {}     # 入力日 → {entries, used}
-    weekly = {}    # 週(土曜開始) → {entries, used, codes:set}
+    weekly = {}    # 週(土曜開始) → {entries, used, codes:set, uids:set}
     lag = {"即時（10分未満）": 0, "1時間未満": 0, "当日（24時間未満）": 0, "翌日以降": 0, "未使用": 0}
     trn = {}
     by_code = {}
-    total = used = 0
+    total = used = 0          # total は「入力件数」。人数ではない（同じ人が複数コードを使える）
+    uids = set()              # 全体の実人数用。値は出力しない
     rest_holders = rest_tickets = 0
 
     for r in body:
         total += 1
+        uid = cell(r, i_uid)
+        if uid:
+            uids.add(uid)
         t_in  = _parse_dt(cell(r, i_in))
         t_use = _parse_dt(cell(r, i_use1))
         is_used = "使用済" in cell(r, i_used) or t_use is not None
@@ -175,10 +182,13 @@ def fetch_coupon():
             if is_used:
                 d["used"] += 1
             wkey = _week_start_sat(t_in.date()).isoformat()
-            w = weekly.setdefault(wkey, {"week_start": wkey, "entries": 0, "used": 0, "codes": set()})
+            w = weekly.setdefault(wkey, {"week_start": wkey, "entries": 0, "used": 0,
+                                         "codes": set(), "uids": set()})
             w["entries"] += 1
             if is_used:
                 w["used"] += 1
+            if uid:
+                w["uids"].add(uid)
             c = cell(r, i_code)
             if c:
                 w["codes"].add(c)
@@ -207,16 +217,25 @@ def fetch_coupon():
 
         code = cell(r, i_code)
         if code:
-            b = by_code.setdefault(code, {"code": code, "entries": 0, "used": 0})
+            b = by_code.setdefault(code, {"code": code, "entries": 0, "used": 0, "uids": set()})
             b["entries"] += 1
             if is_used:
                 b["used"] += 1
+            if uid:
+                b["uids"].add(uid)
+
+    has_uid = i_uid >= 0
+    # 人数は UID 列があるときだけ出す。無ければ null（「わからない」を 0 と書かない）
+    def people_of(s):
+        return len(s) if has_uid else None
 
     result = {
         "snapshot_date":   latest,
         "snapshot_count":  len(snaps),          # 何日分たまっているか
         "has_code_column": i_code >= 0,         # コード列が入ったら True になる
-        "total":           total,
+        "has_uid_column":  has_uid,             # UID 列が無いと人数を出せない
+        "total":           total,               # ★入力「件数」。人数ではない
+        "people":          people_of(uids),     # ★重複を除いた実人数（UID列が無ければ null）
         "used":            used,
         "unused":          total - used,
         "rest_holders":    rest_holders,        # 未使用チケットが1枚以上残っている人数
@@ -226,15 +245,19 @@ def fetch_coupon():
         "lag_buckets":     [{"label": k, "count": v} for k, v in lag.items() if v],
         "tournaments":     sorted(({"name": k, "count": v} for k, v in trn.items()),
                                  key=lambda x: -x["count"]),
-        "by_code":         sorted(by_code.values(), key=lambda x: x["code"]),
+        "by_code":         sorted(({"code": b["code"], "entries": b["entries"],
+                                    "used": b["used"], "people": people_of(b["uids"])}
+                                   for b in by_code.values()), key=lambda x: x["code"]),
     }
     result["weekly"] = [
         {"week_start": w["week_start"], "entries": w["entries"], "used": w["used"],
-         "codes": sorted(w["codes"])}
+         "people": people_of(w["uids"]), "codes": sorted(w["codes"])}
         for w in sorted(weekly.values(), key=lambda x: x["week_start"])
     ]
-    print(f"  クーポン: {latest} 時点 {total}人（使用 {used} / 未使用 {total-used}）"
-          f" 週 {len(result['weekly'])}件"
+    ppl = result["people"]
+    print(f"  クーポン: {latest} 時点 {total}件"
+          + (f"／実人数 {ppl}人" if ppl is not None else "／実人数は不明（UID列なし）")
+          + f"（使用 {used} / 未使用 {total-used}） 週 {len(result['weekly'])}件"
           + ("" if result["has_code_column"] else " ※コード列なし（動画別の帰属は不可）"))
     return result
 
