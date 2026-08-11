@@ -42,13 +42,21 @@ RANGES = [
 
 
 def get_access_token():
+    """スプレッドシート読み取り用のアクセストークンを取る。
+
+    ⚠ `fetch.py` の OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET は **別アカウントの GCP プロジェクト**
+    にあり、スプレッドシートの権限を持たない（引き継ぎ書 §10 の調査結果）。
+    そのため **SHEETS_CLIENT_ID / SHEETS_CLIENT_SECRET を優先**し、
+    無いときだけ従来の OAUTH_* にフォールバックする。
+    """
     rt = os.environ.get("SHEETS_REFRESH_TOKEN")
-    cid = os.environ.get("OAUTH_CLIENT_ID")
-    cs = os.environ.get("OAUTH_CLIENT_SECRET")
+    cid = os.environ.get("SHEETS_CLIENT_ID")    or os.environ.get("OAUTH_CLIENT_ID")
+    cs  = os.environ.get("SHEETS_CLIENT_SECRET") or os.environ.get("OAUTH_CLIENT_SECRET")
     if not rt:
         return None  # 未設定 → 呼び出し側でスキップ
     if not (cid and cs):
-        raise OpsError("OAUTH_CLIENT_ID / OAUTH_CLIENT_SECRET が設定されていません")
+        raise OpsError("SHEETS_CLIENT_ID / SHEETS_CLIENT_SECRET が設定されていません"
+                       "（OAUTH_* でも代用できますが、スプレッドシートの権限が無い想定です）")
     data = urlencode({
         "client_id": cid, "client_secret": cs,
         "refresh_token": rt, "grant_type": "refresh_token",
