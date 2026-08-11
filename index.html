@@ -765,6 +765,9 @@ const DATA_URL = window.location.protocol === 'file:'
 const OPS_URL = window.location.protocol === 'file:'
   ? "https://raw.githubusercontent.com/ytpokerguild-netizen/channel-desk-data/main/ops.json"
   : "ops.json";
+const VIDEO_DAILY_URL = window.location.protocol === 'file:'
+  ? "https://raw.githubusercontent.com/ytpokerguild-netizen/channel-desk-data/main/video_daily.json"
+  : "video_daily.json";
 
 let G = null;
 let mainChart = null, trafficChart = null, countryChart = null, vmodalChart = null;
@@ -789,12 +792,19 @@ function fmtDur(s){ if(!s) return '—'; const m=Math.floor(s/60), sec=s%60; ret
 // ════════════════════════════════
 // データ読み込み
 // ════════════════════════════════
+// データを読むときのキャッシュ指定。
+// 'no-cache' … 毎回サーバーに確認しに行く。変わっていなければ 304 が返るだけなので通信量は増えない
+// 'reload'   … キャッシュを完全に無視して取り直す（「↻ 更新」ボタン用）
+// ⚠ ここを既定（省略）に戻さないこと。GitHub Pages は Cache-Control: max-age=600 を返すため、
+//   省略すると「data.json / ops.json を更新したのに画面が古いまま」が起きます（2026-08-10 に実際に発生）。
+const cacheOpt = bust => ({ cache: bust ? 'reload' : 'no-cache' });
+
 async function loadData(bust){
   document.getElementById('loadingState').style.display = 'block';
   document.getElementById('mainContent').style.display = 'none';
   document.getElementById('errorState').style.display = 'none';
   try {
-    const r = await fetch(DATA_URL + (bust ? '?t=' + Date.now() : ''));
+    const r = await fetch(DATA_URL, cacheOpt(bust));
     if(!r.ok) throw new Error('HTTP ' + r.status);
     G = await r.json();
     document.getElementById('loadingState').style.display = 'none';
@@ -820,7 +830,7 @@ async function loadData(bust){
     // data.json に入れない理由: fetch.py の load_existing_data が拾うキーを決め打ちしているため、
     // data.json に手で足したキーは翌日の自動更新で消える。
     try{
-      const ro = await fetch(OPS_URL + (bust ? '?t=' + Date.now() : ''));
+      const ro = await fetch(OPS_URL, cacheOpt(bust));
       if(ro.ok) G.ops = await ro.json();
     }catch(e){ /* ops.json 未生成時は運営タブに出さないだけ */ }
     initPeriod();
@@ -828,7 +838,7 @@ async function loadData(bust){
     // 重量データ(動画別日次)は分割ファイルから遅延ロード(P-D)
     if(!G.video_daily || !Object.keys(G.video_daily).length){
       try{
-        const r2 = await fetch('video_daily.json' + (bust ? '?t=' + Date.now() : ''));
+        const r2 = await fetch(VIDEO_DAILY_URL, cacheOpt(bust));
         if(r2.ok){
           G.video_daily = await r2.json();
           renderDailyBrief();

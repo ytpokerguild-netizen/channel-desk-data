@@ -152,7 +152,9 @@ function onWeekChange(){
 async function loadReport(){
   document.getElementById('loadMsg').style.display = 'block';
   try{
-    const r = await fetch(DATA_URL + '?t=' + Date.now());
+    // 毎回サーバーに確認しに行く。変わっていなければ 304 が返るだけなので通信量は増えない。
+    // ⚠ 既定（省略）に戻さないこと。GitHub Pages のキャッシュで画面が古いままになります。
+    const r = await fetch(DATA_URL, { cache: 'no-cache' });
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
     REPORTS = (data.weekly_reports||[]).slice().sort((a,b)=>b.week_start.localeCompare(a.week_start));
