@@ -2001,8 +2001,8 @@ function renderOpsMinutes(){
   const h = ops.hidden_counts || {};
   const hidden = (h.action_items||0) + (h.decisions||0) + (h.measures||0);
   document.getElementById('opsMinutesNote').textContent = hidden
-    ? `※ ops.json は public リポジトリに置かれており URL を知れば誰でも読めるため、非公開扱いの ${hidden} 件（宿題${h.action_items||0}・決定事項${h.decisions||0}・施策${h.measures||0}）はここに含めていません。担当者名も役割表記に置き換えています。全件は運営ログ（非公開）を参照してください。`
-    : '※ 担当者名は役割表記に置き換えています。';
+    ? `※ ops.json は public リポジトリに置かれており URL を知れば誰でも読めるため、非公開扱いの ${hidden} 件（宿題${h.action_items||0}・決定事項${h.decisions||0}・施策${h.measures||0}）はここに含めていません。全件は運営ログ（非公開）を参照してください。<br>※ <b>担当者名はスプレッドシートのまま表示しています。この画面のパスワードはデータを守りません</b>（ops.json は raw URL で誰でも読めます）。本文中の人名は役割表記に置き換えています。`
+    : '※ 担当者名はスプレッドシートのまま表示しています。本文中の人名は役割表記に置き換えています。';
 }
 
 function renderOps(){

@@ -110,12 +110,18 @@ def build_ops(sheets):
         return HONORIFIC.sub(_sub, text)
 
     def pub_owner(name):
+        """宿題の担当は**スプレッドシートの内部名のまま**出す（2026-08-10 運営者の判断）。
+
+        ⚠ この値は公開されます。`ops.json` は public リポジトリにあり、raw URL で誰でも読めます。
+        サイトのパスワードゲートはデータを守りません。それを承知のうえで、
+        「誰の宿題か画面で分かること」を優先する判断です。戻したくなったら owner_map で置換します。
+        本文（内容）は従来どおり公開表記に置き換えます（mask）。
+        """
         if not name:
             return "未定"
-        if name in owner_map:
-            return owner_map[name]
-        warnings.append(f"担当マスタに '{name}' がありません → '担当者' として出力しました")
-        return "担当者"
+        if name not in owner_map:
+            warnings.append(f"担当マスタに '{name}' がありません（担当列はそのまま出力します）")
+        return name
 
     def is_public(row):
         return row.get("公開", "").strip().lower() in {t.lower() for t in PUBLIC_TOKENS}
@@ -159,7 +165,7 @@ def build_ops(sheets):
     ops = {
         "updated_at": datetime.now(JST).strftime("%Y-%m-%d"),
         "source": "PG運営ログ（非公開・Google スプレッドシート）",
-        "note": "公開列が○の項目のみ。担当は役割表記に置き換え済み。",
+        "note": "公開列が○の項目のみ。担当はスプレッドシートの表記のまま（本文中の人名は役割表記に置換済み）。",
         "hidden_counts": hidden,
         "action_items": action_items,
         "decisions": decisions,
