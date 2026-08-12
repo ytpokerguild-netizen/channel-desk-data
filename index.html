@@ -920,6 +920,18 @@ function allViewData(){
   return [...map.values()].sort((a,b)=>a.date.localeCompare(b.date));
 }
 
+// 期間の終わりに使う「最後の完了日」。集計途中の当日は含めない（2026-08-12 運営者の判断）。
+// ここを1つにしておくことで、グラフ・上のタイル合計・期間A/B比較の3か所が同じ日で揃う。
+// ⚠ 混ぜると「直近7日」が実質6.5日分になり、期間Aだけが不利に出ます。
+function lastCompleteDate(){
+  const all = allViewData();
+  const partial = inProgressDateJST();
+  for(let i=all.length-1; i>=0; i--){
+    if(all[i].date !== partial) return all[i].date;
+  }
+  return null;
+}
+
 // analytics_daily の増減を積算して登録者推移を再構築（363日分）
 function buildSubscriberTimeline(){
   const ad = (G.analytics_daily||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
@@ -978,13 +990,14 @@ function filteredData(from,to){
 function setQuick(days, btn){
   document.querySelectorAll('#quickSeg button').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  const all = allViewData();
-  if(!all.length) return;
-  const to = all[all.length-1].date;
+  // 期間の終わりは常に「最後の完了日」。集計途中の当日は合計にも比較にも入れない
+  const to = lastCompleteDate();
+  if(!to) return;
   if(days === 0){
-    filterFrom = null; filterTo = null;
+    // 全期間でも終わりは固定する（開始日だけ空欄）
+    filterFrom = null; filterTo = to;
     document.getElementById('dateFrom').value = '';
-    document.getElementById('dateTo').value   = '';
+    document.getElementById('dateTo').value   = to;
   } else {
     const d = new Date(to+'T00:00:00'); d.setDate(d.getDate()-days+1);
     filterFrom = localISO(d); filterTo = to;
@@ -1024,6 +1037,12 @@ function toggleCompare(){
   renderOverview();
 }
 function initPeriod(){
+  // 日付欄でも集計途中の当日を選べないようにする。
+  // 手で入れられると、グラフだけが除外してタイルの合計とズレる（2026-08-12）
+  const lastC = lastCompleteDate();
+  if(lastC) ['dateFrom','dateTo','dateFromB','dateToB'].forEach(id=>{
+    const el = document.getElementById(id); if(el) el.max = lastC;
+  });
   // 既定は「28日」（2026-08-07 変更）。全期間だと直近の変化が均されて見えないため。
   // ボタンの並びは 7日/28日/90日/365日/全期間 なので nth-child(2)。
   const btn = document.querySelector('#quickSeg button:nth-child(2)');
@@ -1345,7 +1364,7 @@ function renderOverviewBar(){
 function updateRangeInfo(){
   const all=allViewData();
   const from=filterFrom||(all.length?all[0].date:'');
-  const to=filterTo||(all.length?all[all.length-1].date:'');
+  const to=filterTo||lastCompleteDate()||'';
   const el=document.getElementById('rangeInfo');
   if(from&&to){ const days=Math.round((new Date(to)-new Date(from))/86400000)+1; el.textContent=fmtDate(from)+'〜'+fmtDate(to)+'（'+days+'日）'; } else el.textContent='';
   const elB=document.getElementById('rangeInfoB');
@@ -1431,8 +1450,7 @@ function toggleAdvFilter(){
 
 // 比較プリセット(前週比/前月比)
 function setComparePreset(days){
-  const all = allViewData(); if(!all.length) return;
-  const end = all[all.length-1].date;
+  const end = lastCompleteDate(); if(!end) return;   // 当日を含めるとA期間だけ不利になる
   filterFrom  = _addDaysISO(end, -(days-1)); filterTo  = end;
   filterToB   = _addDaysISO(end, -days);     filterFromB = _addDaysISO(end, -(2*days-1));
   compareMode = true;
