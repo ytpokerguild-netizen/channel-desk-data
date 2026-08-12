@@ -39,12 +39,21 @@ jobs:
       - name: 運営ログを反映（ops.json）
         continue-on-error: true
         env:
+          # ① サービスアカウント方式（推奨）。これがあれば下の3つは使われない
+          SHEETS_SA_KEY:         ${{ secrets.SHEETS_SA_KEY }}
+          # ② 旧・リフレッシュトークン方式（フォールバック）
           SHEETS_REFRESH_TOKEN:  ${{ secrets.SHEETS_REFRESH_TOKEN }}
           SHEETS_CLIENT_ID:      ${{ secrets.SHEETS_CLIENT_ID }}
           SHEETS_CLIENT_SECRET:  ${{ secrets.SHEETS_CLIENT_SECRET }}
           OAUTH_CLIENT_ID:       ${{ secrets.OAUTH_CLIENT_ID }}
           OAUTH_CLIENT_SECRET:   ${{ secrets.OAUTH_CLIENT_SECRET }}
-        run: python fetch_ops.py
+        run: |
+          # google-auth は JWT の RS256 署名にだけ使う。SA 方式のときだけ入れる。
+          # （fetch.py は従来どおり標準ライブラリのみ。依存はこのステップに閉じている）
+          if [ -n "$SHEETS_SA_KEY" ]; then
+            pip install --quiet --disable-pip-version-check google-auth
+          fi
+          python fetch_ops.py
 
       - name: Commit and push data.json
         run: |
