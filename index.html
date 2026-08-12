@@ -1091,6 +1091,16 @@ function renderTiles(){
 // ════════════════════════════════
 // 概要タブ: メインチャート
 // ════════════════════════════════
+
+// 「まだ終わっていない日」（JST）を返す。
+// スナップショットは JST のその日の途中で撮られるので、その日の視聴回数は1日分に満たない。
+// 例: 2026-08-12 13:41 に取得 → 08-12 は約半日分。他の日と並べると必ず急落に見える。
+// ⚠ この除外を外すと、毎回グラフの右端が崖のように落ちて見えます（2026-08-12 修正）
+function inProgressDateJST(){
+  const t = Date.parse((G.meta||{}).fetched_at||'');
+  return isNaN(t) ? null : new Date(t + 9*3600*1000).toISOString().slice(0,10);
+}
+
 const CHART_BASE = {
   responsive:true, maintainAspectRatio:false,
   plugins:{
@@ -1114,9 +1124,13 @@ function renderMainChart(){
 
   const analyticsDaily = G.analytics_daily || [];
   const adMap = new Map(analyticsDaily.map(d=>[d.date,d]));
-  const adA = vA.map(d=>({...d, watch_min:(adMap.get(d.date)||{}).watch_min||0}));
+  // Analytics が未確定の日は 0 ではなく null にする。
+  // 0 を入れると「その日は0分見られた」という別の意味になってしまう（2026-08-12 修正）
+  const adA = vA.map(d=>({...d, watch_min: adMap.has(d.date) ? (adMap.get(d.date).watch_min ?? null) : null}));
 
   let labels, datasets, ttFmt;
+  let subNote = '';   // タイトル横の補足（「〇日分」の後ろに付く）
+  let legendNote = '';  // 凡例の右に出す注記
 
   if(activeMetric === 'views'){
     if(!vA.length){
@@ -1126,18 +1140,29 @@ function renderMainChart(){
       return;
     }
     if(!compareMode){
-      labels   = vA.map(d=>d.date.slice(5));
-      const estFlags = vA.map(d=>!!d.estimated);
+      // 集計途中の当日は線から外す（上の inProgressDateJST を参照）。
+      // 7日移動平均にも入れない。半日分を混ぜると平均まで下向きに引っ張られる。
+      const partialDate = inProgressDateJST();
+      const hasPartial  = vA.length > 1 && vA[vA.length-1].date === partialDate;
+      const vL          = hasPartial ? vA.slice(0,-1) : vA;
+      if(hasPartial) subNote = `　（${fmtDate(partialDate)} は集計途中のため除外）`;
+
+      labels   = vL.map(d=>d.date.slice(5));
+      const estFlags = vL.map(d=>!!d.estimated);
       window._estFlags = estFlags;
-      datasets = [{label:'視聴回数',type:'line',data:vA.map(d=>d.views),borderColor:'rgba(91,214,138,1)',borderWidth:2,backgroundColor:'rgba(91,214,138,.10)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4,
+      // tension は 0.15。日次は実測の点なので、曲線で点と点の間に無い値を作らない
+      const showPts = vL.length <= 45;
+      datasets = [{label:'視聴回数',type:'line',data:vL.map(d=>d.views),borderColor:'rgba(91,214,138,1)',borderWidth:2,backgroundColor:'rgba(91,214,138,.10)',fill:true,tension:.15,
+        pointRadius:showPts?2.5:0,pointBackgroundColor:'rgba(91,214,138,1)',pointBorderWidth:0,pointHoverRadius:5,
         segment:{borderDash: c => estFlags[c.p1DataIndex] ? [5,4] : undefined}}];
-      if(vA.length >= 10){
-        const ma = vA.map((_,i)=> i>=6 ? Math.round(vA.slice(i-6,i+1).reduce((sum,d)=>sum+d.views,0)/7) : null);
-        datasets.push({label:'7日移動平均',type:'line',data:ma,borderColor:'rgba(201,162,39,.85)',borderWidth:1.5,pointRadius:0,fill:false,tension:.3,borderDash:[6,4]});
+      if(vL.length >= 10){
+        const ma = vL.map((_,i)=> i>=6 ? Math.round(vL.slice(i-6,i+1).reduce((sum,d)=>sum+d.views,0)/7) : null);
+        // 実線にする。破線は「確定前」だけの意味に統一した（以前は両方が破線で紛らわしかった）
+        datasets.push({label:'7日移動平均',type:'line',data:ma,borderColor:'rgba(201,162,39,.9)',borderWidth:2,pointRadius:0,fill:false,tension:.3});
       }
       ttFmt = ctx => ctx.datasetIndex===1
         ? `7日移動平均: ${fmtFull(ctx.raw)}回`
-        : `${fmtFull(ctx.raw)}回 (${fmtDate(vA[ctx.dataIndex]?.date||'')})${estFlags[ctx.dataIndex]?' ※推定':''}`;
+        : `${fmtFull(ctx.raw)}回 (${fmtDate(vL[ctx.dataIndex]?.date||'')})${estFlags[ctx.dataIndex]?' ※確定前の推定':''}`;
     } else {
       const len=Math.max(vA.length,(vB||[]).length);
       labels=Array.from({length:len},(_,i)=>`Day ${i+1}`);
@@ -1182,19 +1207,32 @@ function renderMainChart(){
       return;
     }
     labels=tFiltA.map(d=>d.date.slice(5));
-    datasets=[{label:'登録者数',type:'line',data:tFiltA.map(d=>d.subscribers),borderColor:'rgba(201,162,39,1)',borderWidth:2,backgroundColor:'rgba(201,162,39,.10)',fill:true,tension:.4,pointRadius:0,pointHoverRadius:4}];
-    ttFmt=ctx=>`${fmtDate(tFiltA[ctx.dataIndex]?.date||'')}: ${fmtFull(ctx.raw)}人${tFiltA[ctx.dataIndex]?.estimated?' (推計)':''}`;
-    // 推計注記をサブラベルに表示
+    // ⚠ fill しないこと。累計なので Y軸が 0 から始まらず（例: 9,500〜10,100）、
+    //   塗ってしまうと「面積 = 登録者数」に見えて実際の 5% 増が 9割の高さに化ける。
+    //   線だけなら面積を主張しないので、目盛りを切り詰めても嘘にならない（2026-08-12 修正）
+    datasets=[{label:'登録者数',type:'line',data:tFiltA.map(d=>d.subscribers),borderColor:'rgba(201,162,39,1)',borderWidth:2,fill:false,tension:.15,
+      pointRadius:tFiltA.length<=45?2.5:0,pointBackgroundColor:'rgba(201,162,39,1)',pointBorderWidth:0,pointHoverRadius:5}];
+    ttFmt=ctx=>`${fmtDate(tFiltA[ctx.dataIndex]?.date||'')}: 約${fmtFull(ctx.raw)}人${tFiltA[ctx.dataIndex]?.estimated?' (推計)':''}`;
     const estCount = tFiltA.filter(d=>d.estimated).length;
-    if(estCount>0) document.getElementById('chartSubLabel').textContent = `${tFiltA.length}日分（うち${estCount}日は増減積算推計）`;
+    if(estCount>0) subNote = `　（うち${estCount}日は増減積算推計）`;
+    // YouTube API が返す登録者数は概数（1万人未満は10人単位・1万人以上は100人単位）。
+    // 横ばいや段差は丸めの影響を含むので、日々の動きは「登録者増減」タブで見ること。
+    legendNote = 'この線は YouTube の概数（1万人以上は100人単位）。横ばい・段差は丸めを含みます → 日々の動きは「登録者増減」で';
   }
 
   document.getElementById('mainChart').style.display='block';
   document.getElementById('chartNoData').style.display='none';
-  document.getElementById('chartSubLabel').textContent = datasets[0]?.data?.filter(v=>v!=null).length + '日分';
+  document.getElementById('chartSubLabel').textContent =
+    datasets[0]?.data?.filter(v=>v!=null).length + '日分' + subNote;
 
   if(mainChart) mainChart.destroy();
   const opt = JSON.parse(JSON.stringify(CHART_BASE));
+  // ⚠ 面を塗る系列があるときは必ず Y軸を 0 から始める。
+  //   目盛りを切り詰めた面グラフは「面積＝量」に見えるのに面積が嘘になるため。
+  //   Chart.js は既定で 0 起点にしないので、明示しないと日によって勝手に途中から始まる。
+  //   棒グラフも同じ（棒の長さが量に見えるので、途中から始めたら読み違える）。
+  //   登録者数（累計）だけは 0 起点だと変化が潰れて読めないので、代わりに fill を外してある。
+  opt.scales.y.beginAtZero = datasets.some(ds => ds.fill === true || ds.type === 'bar');
   opt.plugins.tooltip.callbacks = {title:i=>i[0]?.label||'', label:ttFmt};
   // 確定前(推定)区間をグレー帯で示すプラグイン
   const estBandPlugin = {
@@ -1221,10 +1259,13 @@ function renderMainChart(){
   mainChart = new Chart(document.getElementById('mainChart'),{type:'line',data:{labels,datasets},options:opt,plugins:[estBandPlugin]});
 
   const lg = document.getElementById('chartLegend');
-  lg.innerHTML = datasets.length>1
+  const items = datasets.length>1
     ? datasets.map(ds=>`<div class="legend-item"><div class="legend-dot" style="background:${ds.borderColor||ds.backgroundColor[0]}"></div>${ds.label}</div>`).join('')
-      + ((activeMetric==='views' && !compareMode && (window._estFlags||[]).some(Boolean)) ? `<div class="legend-item" style="color:var(--muted-2)">グレー帯/破線 = 確定前の推定値（約2日後に確定）</div>` : '')
     : '';
+  const estNote = (activeMetric==='views' && !compareMode && (window._estFlags||[]).some(Boolean))
+    ? `<div class="legend-item" style="color:var(--muted-2)">グレー帯と破線 = Analytics 確定前の推定値（約2日後に確定）</div>` : '';
+  lg.innerHTML = items + estNote
+    + (legendNote ? `<div class="legend-item" style="color:var(--muted-2)">${legendNote}</div>` : '');
 
   // ギャップ検出
   const gapEl = document.getElementById('dataGapNote');
@@ -1530,6 +1571,9 @@ function renderOverview(){
   renderMainChart();
   renderCompareStrip();
   renderOverviewBar();
+  // ⚠ 2026-08-12 まで呼び忘れていて、曜日別・尺別の2つが空欄のままだった。
+  //   関数は 5e96069（3タブ再編）で追加されたが、呼び出しを繋いでいなかった。外さないこと。
+  renderDowDuration();
 }
 
 // ════════════════════════════════
