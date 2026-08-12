@@ -84,11 +84,29 @@ def _token_from_service_account():
     raw = (os.environ.get("SHEETS_SA_KEY") or "").strip()
     if not raw:
         return None
+
+    # 貼り付けのときによく起きる事故を吸収する（値そのものはログに出さない）
+    raw = raw.lstrip("﻿")                      # メモ帳などが付ける BOM
+    if len(raw) > 1 and raw[0] == raw[-1] and raw[0] in "'\"":
+        raw = raw[1:-1]                              # 前後を引用符で囲ってしまった
+    if not raw.lstrip().startswith("{"):
+        try:                                         # base64 で貼られた場合
+            import base64
+            decoded = base64.b64decode(raw, validate=True).decode("utf-8")
+            if decoded.lstrip().startswith("{"):
+                raw = decoded
+        except Exception:
+            pass
+
     try:
         info = json.loads(raw)
     except json.JSONDecodeError:
-        raise OpsError("SHEETS_SA_KEY が JSON として読めません。"
-                       "鍵ファイルの中身を丸ごと（{ から } まで）貼ってください")
+        # 診断のため長さと先頭・末尾1文字だけ出す。鍵の中身は出さない。
+        raise OpsError(
+            "SHEETS_SA_KEY が JSON として読めません。鍵ファイルの中身を丸ごと"
+            "（{ から } まで）貼ってください。"
+            f"［診断］長さ {len(raw)} 文字 / 先頭 {raw[:1]!r} / 末尾 {raw[-1:]!r}"
+            "（正しく貼れていれば 先頭 '{' 末尾 '}' で 2300文字前後になります）")
     for k in ("client_email", "private_key", "token_uri"):
         if not info.get(k):
             raise OpsError(f"SHEETS_SA_KEY に {k} がありません。鍵ファイルの JSON をそのまま貼ってください")
