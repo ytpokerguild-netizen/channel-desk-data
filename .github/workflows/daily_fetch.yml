@@ -30,7 +30,16 @@ jobs:
           REFRESH_TOKEN:       ${{ secrets.REFRESH_TOKEN }}
           OAUTH_CLIENT_ID:     ${{ secrets.OAUTH_CLIENT_ID }}
           OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
-        run: python fetch.py
+          # 投稿計画表の共有が「制限付き」になり、認証なしの CSV エクスポートが
+          # 401 になったため、運営ログと同じサービスアカウントで読む（2026-08-12〜）
+          SHEETS_SA_KEY:       ${{ secrets.SHEETS_SA_KEY }}
+        run: |
+          # google-auth は JWT の RS256 署名にだけ使う。SA 方式のときだけ入れる。
+          # （fetch.py 自体は標準ライブラリのみ。依存は SA 経路に入ったときだけ）
+          if [ -n "$SHEETS_SA_KEY" ]; then
+            pip install --quiet --disable-pip-version-check google-auth
+          fi
+          python fetch.py
 
       # 運営ログ（非公開スプレッドシート）→ ops.json
       # 既存の REFRESH_TOKEN とは別のトークンを使う。ここが失敗しても
@@ -54,6 +63,26 @@ jobs:
             pip install --quiet --disable-pip-version-check google-auth
           fi
           python fetch_ops.py
+
+      # ★ 投稿計画表が読めなくなると video_archive が空になり、企画タイプ・ナレーター別の
+      #   集計が「Actions は緑のまま」黙って消える（2026-08-12 に実際に起きかけた）。
+      #   0件に変わった最初の1回だけ通知する。毎回出すと LINE の月200通を食うため。
+      #   ⚠ コミット前に置くこと（HEAD:data.json を前回値として読んでいます）
+      - name: 投稿計画表を読めたか確認（0件に変わったら LINE 通知）
+        if: success()
+        continue-on-error: true
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
+        run: |
+          now=$(python -c "import json;print(len(json.load(open('data.json')).get('video_archive',{})))")
+          prev=$(git show HEAD:data.json | python -c "import json,sys;print(len(json.load(sys.stdin).get('video_archive',{})))")
+          echo "動画アーカイブ: 前回 ${prev} 件 → 今回 ${now} 件"
+          if [ "$now" -eq 0 ] && [ "$prev" -gt 0 ]; then
+            python line_notify.py "⚠️ CHANNEL DESK: 投稿計画表を読めませんでした（動画アーカイブが 0 件）。
+          企画タイプ・ナレーター別の集計が空になっています。
+          シートの共有設定と、Secrets の SHEETS_SA_KEY を確認してください。"
+          fi
 
       - name: Commit and push data.json
         run: |

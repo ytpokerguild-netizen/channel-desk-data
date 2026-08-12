@@ -19,7 +19,7 @@ GitHub Actions での認証:
 import json, os, sys
 from datetime import date, datetime, timezone, timedelta
 from urllib.request import urlopen, Request
-from urllib.parse   import urlencode
+from urllib.parse   import urlencode, quote
 from urllib.error   import HTTPError
 
 CHANNEL_ID         = "UCnGhxFzP6V4TczZCs63rXgQ"
@@ -29,10 +29,92 @@ CLIENT_SECRET_FILE = "client_secret.json"
 SNAPSHOT_KEEP_DAYS = 90   # video_snapshots 保持日数
 MAX_VIDEOS         = 500  # 動画取得上限
 
-# 投稿計画スプレッドシート（公開 CSV エクスポート）
+# 投稿計画スプレッドシート
 SPREADSHEET_ID = "1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI"
 SHEET_GID      = "574456276"    # 投稿管理タブ
 ARCHIVE_GID    = "1927840516"   # 動画アーカイブタブ（video_id → 企画タイプ/ナレーターの手入力）
+
+# ──────────────────────────────────────────────────────────
+# 投稿計画表の読み取り（サービスアカウント優先・CSV エクスポートにフォールバック）
+# ──────────────────────────────────────────────────────────
+# ⚠ 2026-08-12: このシートの「一般的なアクセス」が「制限付き」になり、
+#   **認証なしの CSV エクスポートが 401 を返すようになりました**（実際に起きました）。
+#   シートを公開に戻さずに読むため、運営ログと同じサービスアカウントで読みます。
+#
+#   * タブは gid で指定します。gid → タブ名は API で引くので、**タブ名を変えられても壊れません**
+#   * `SHEETS_SA_KEY` が未設定のときだけ、従来の CSV エクスポートに落ちます（旧環境との互換）
+#   * google-auth への依存は `fetch_ops.py` 側に閉じており、SA 経路に入ったときだけ読み込みます。
+#     **fetch.py 自体は従来どおり標準ライブラリのみで動きます**
+#
+#   ⚠ シートの共有を緩めて解決しないこと。URL は公開リポジトリに載っています。
+_SA_CACHE = {}
+
+
+def _sa_sheet_titles():
+    """gid → タブ名 の対応を Sheets API から引く（プロセス内で1回だけ）。
+    SHEETS_SA_KEY が無い / 取得に失敗した場合は None を返す。"""
+    if "titles" in _SA_CACHE:
+        return _SA_CACHE["titles"]
+    _SA_CACHE["titles"] = None          # 失敗しても再試行しない
+    if not os.environ.get("SHEETS_SA_KEY"):
+        return None
+    try:
+        from fetch_ops import get_access_token   # google-auth はこの中でだけ使う
+        token = get_access_token()
+        if not token:
+            return None
+        url = (f"https://sheets.googleapis.com/v4/spreadsheets/{SPREADSHEET_ID}"
+               "?fields=sheets(properties(sheetId,title))")
+        req = Request(url, headers={"Authorization": f"Bearer {token}"})
+        with urlopen(req, timeout=60) as resp:
+            body = json.loads(resp.read())
+        titles = {str(s["properties"]["sheetId"]): s["properties"]["title"]
+                  for s in body.get("sheets", [])}
+        _SA_CACHE["token"]  = token
+        _SA_CACHE["titles"] = titles
+        return titles
+    except Exception as e:
+        print(f"  [WARN] サービスアカウントでの読み取り準備に失敗: {e}")
+        return None
+
+
+def _sheet_rows(gid, label):
+    """投稿計画表の1タブを行のリスト（list[list[str]]）で返す。
+
+    ① SHEETS_SA_KEY があればサービスアカウント経由（Sheets API）
+    ② 無ければ認証なしの CSV エクスポート
+    どちらも駄目なら None（呼び出し側が「取得失敗」として扱う）。
+    """
+    titles = _sa_sheet_titles()
+    if titles is not None:
+        title = titles.get(str(gid))
+        if not title:
+            print(f"  [WARN] gid={gid} のタブが見つかりません（{label}）")
+        else:
+            try:
+                url = (f"https://sheets.googleapis.com/v4/spreadsheets/{SPREADSHEET_ID}"
+                       f"/values/{quote(title, safe='')}?valueRenderOption=FORMATTED_VALUE")
+                req = Request(url, headers={"Authorization": f"Bearer {_SA_CACHE['token']}"})
+                with urlopen(req, timeout=60) as resp:
+                    rows = json.loads(resp.read()).get("values", [])
+                print(f"  {label}: サービスアカウント経由で {len(rows)} 行")
+                return rows
+            except Exception as e:
+                print(f"  [WARN] サービスアカウント経由の取得に失敗（{label}）: {e}")
+
+    import csv, io
+    url = (f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}"
+           f"/export?format=csv&gid={gid}")
+    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
+    try:
+        with urlopen(req, timeout=30) as resp:
+            content = resp.read().decode("utf-8-sig")
+    except Exception as e:
+        print(f"  [WARN] {label}の取得に失敗しました（CSV エクスポート）: {e}")
+        print("        シートの共有が「制限付き」なら、Secrets の SHEETS_SA_KEY を確認してください")
+        return None
+    return list(csv.reader(io.StringIO(content)))
+
 
 # ──────────────────────────────────────────────────────────
 # Google スプレッドシート: 動画アーカイブ（video_id → 企画タイプ/ナレーター）
@@ -40,18 +122,7 @@ ARCHIVE_GID    = "1927840516"   # 動画アーカイブタブ（video_id → 企
 def fetch_video_archive():
     """動画アーカイブタブから video_id ごとの手入力(企画タイプ/ナレーター)を取得。
     Returns: {video_id: {"type": ..., "narrator": ...}}（値が入っている行のみ）"""
-    import csv, io
-    url = (f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}"
-           f"/export?format=csv&gid={ARCHIVE_GID}")
-    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    try:
-        with urlopen(req, timeout=30) as resp:
-            content = resp.read().decode("utf-8-sig")
-    except Exception as e:
-        print(f"  [WARN] 動画アーカイブ取得失敗: {e}")
-        return {}
-
-    rows = list(csv.reader(io.StringIO(content)))
+    rows = _sheet_rows(ARCHIVE_GID, "動画アーカイブ")
     if not rows:
         return {}
     header = [h.strip() for h in rows[0]]
@@ -263,23 +334,13 @@ def fetch_coupon():
 
 
 # ──────────────────────────────────────────────────────────
-# Google スプレッドシート: 投稿計画（CSV エクスポート、認証不要）
+# Google スプレッドシート: 投稿計画（投稿管理タブ）
 # ──────────────────────────────────────────────────────────
 def fetch_post_plan():
-    """Google スプレッドシートから投稿計画を取得（公開 CSV、OAuth 不要）"""
-    import csv, io
-    url = (f"https://docs.google.com/spreadsheets/d/{SPREADSHEET_ID}"
-           f"/export?format=csv&gid={SHEET_GID}")
-    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    try:
-        with urlopen(req, timeout=30) as resp:
-            content = resp.read().decode("utf-8-sig")
-    except Exception as e:
-        print(f"  [WARN] スプレッドシート取得失敗: {e}")
+    """投稿管理タブから投稿計画を取得（読み方は _sheet_rows を参照）"""
+    rows = _sheet_rows(SHEET_GID, "投稿管理")
+    if not rows:
         return []
-
-    reader    = csv.reader(io.StringIO(content))
-    rows      = list(reader)
 
     # ヘッダー行を探す（"投稿予定日" を含む行）
     header_idx = None
