@@ -50,12 +50,17 @@ ARCHIVE_GID    = "1927840516"   # 動画アーカイブタブ（video_id → 企
 _SA_CACHE = {}
 
 
-def _sa_sheet_titles():
-    """gid → タブ名 の対応を Sheets API から引く（プロセス内で1回だけ）。
-    SHEETS_SA_KEY が無い / 取得に失敗した場合は None を返す。"""
-    if "titles" in _SA_CACHE:
-        return _SA_CACHE["titles"]
-    _SA_CACHE["titles"] = None          # 失敗しても再試行しない
+def _sa_sheet_titles(spreadsheet_id=None):
+    """gid → タブ名 の対応を Sheets API から引く（スプレッドシートごとに1回だけ）。
+    SHEETS_SA_KEY が無い / 取得に失敗した場合は None を返す。
+
+    ※ 「リンクを知っている全員が閲覧者」のシートなら、サービスアカウントを
+      明示的に共有してもらわなくてもこれで読めます（2026-08-14 クーポンシートで確認）。"""
+    sid = spreadsheet_id or SPREADSHEET_ID
+    key = "titles:" + sid
+    if key in _SA_CACHE:
+        return _SA_CACHE[key]
+    _SA_CACHE[key] = None               # 失敗しても再試行しない
     if not os.environ.get("SHEETS_SA_KEY"):
         return None
     try:
@@ -63,18 +68,18 @@ def _sa_sheet_titles():
         token = get_access_token()
         if not token:
             return None
-        url = (f"https://sheets.googleapis.com/v4/spreadsheets/{SPREADSHEET_ID}"
+        url = (f"https://sheets.googleapis.com/v4/spreadsheets/{sid}"
                "?fields=sheets(properties(sheetId,title))")
         req = Request(url, headers={"Authorization": f"Bearer {token}"})
         with urlopen(req, timeout=60) as resp:
             body = json.loads(resp.read())
         titles = {str(s["properties"]["sheetId"]): s["properties"]["title"]
                   for s in body.get("sheets", [])}
-        _SA_CACHE["token"]  = token
-        _SA_CACHE["titles"] = titles
+        _SA_CACHE["token"] = token
+        _SA_CACHE[key]     = titles
         return titles
     except Exception as e:
-        print(f"  [WARN] サービスアカウントでの読み取り準備に失敗: {e}")
+        print(f"  [WARN] サービスアカウントでの読み取り準備に失敗（{sid[:8]}…）: {e}")
         return None
 
 
@@ -161,20 +166,37 @@ COUPON_SHEET_ID = "1TlhW5SZnsnnXeMpJ8eurM9edeMfkEEFmKdK-TCbvCpc"
 #   先頭タブ（REPOKER01）しか読めず、REPOKER03 が丸ごと欠けていました**（実際に起きました）。
 #   タブごとに読んで、**タブ名をそのままクーポンコードとして扱います。**
 #
-#   ★ 新しいコード（REPOKER04 …）のタブが増えたら、ここに1行足してください。
-#     gid はシートを開いてそのタブをクリックし、URL の `#gid=` を見れば分かります。
-#     足し忘れると、そのコードのぶんが**黙って数字から抜けます。**
+#   2026-08-14 追記: **タブは自動で列挙するようになりました**（下の `_coupon_tabs()`）。
+#   このシートは「リンクを知っている全員が閲覧者」なので、発行元にサービスアカウントを
+#   共有してもらわなくても Sheets API でタブ一覧が引けます。
+#   下の表は **自動列挙が失敗したときの予備**です。自動列挙が効いていれば触る必要はありません。
+#   （効いているかは `data.json` の `coupon.tabs_auto` が true かどうかで分かります）
 #
-#   ★ これは暫定対応です。発行元にサービスアカウント（`channel-desk-ops-reader@…`）を
-#     閲覧者で共有してもらえれば、タブを自動で列挙できるのでこの表の保守が要らなくなります。
-#     詳細は引き継ぎ書 §10。
-#
-#   ※ 集計タブ（日次推移）は発行元が作った要約で、REPOKER01 しか含んでいないように見えます。
-#     こちらでは使いません。
+#   ※ 集計タブ（日次推移）は発行元が作った要約です。列構成が違うので自動で捨てられます。
 COUPON_TABS = [
     ("REPOKER01", "0"),
     ("REPOKER03", "1737849257"),
 ]
+
+# クーポンの行として扱うために最低限必要な列。これが無いタブは「コードのタブではない」
+# と判断して黙って飛ばす（発行元の集計タブなどを誤って混ぜないため）
+COUPON_REQUIRED_COLS = ("取得日", "コード入力日時")
+
+
+def _coupon_tabs():
+    """クーポンシートのタブを [(タブ名, gid), ...] で返す。戻り値の2つ目は自動列挙できたか。
+
+    ① SHEETS_SA_KEY があれば Sheets API でタブを自動列挙する（新しいコードのタブが
+       増えても、こちらの表を直さなくても拾える）
+    ② 失敗したら上の COUPON_TABS（手書きの予備表）に落ちる
+    """
+    titles = _sa_sheet_titles(COUPON_SHEET_ID)
+    if not titles:
+        print("  クーポン: タブの自動列挙ができないので COUPON_TABS を使います")
+        return list(COUPON_TABS), False
+    tabs = sorted(((t, g) for g, t in titles.items()), key=lambda x: int(x[1]))
+    print(f"  クーポン: タブを自動列挙しました（{len(tabs)}件）")
+    return tabs, True
 
 
 def _parse_dt(s):
@@ -210,9 +232,11 @@ def fetch_coupon():
             content = resp.read().decode("utf-8-sig")
         return [r for r in csv.reader(io.StringIO(content)) if any(c.strip() for c in r)]
 
-    # ── タブごとに読む。タブ名がそのままコードになる（上の COUPON_TABS を参照）──
-    header, sheets, errors = None, [], []
-    for tab_code, gid in COUPON_TABS:
+    # ── タブごとに読む。タブ名がそのままコードになる ──
+    tabs, tabs_auto = _coupon_tabs()
+    listed = {c for c, _ in COUPON_TABS}      # 予備表に載っているタブ＝必ず読めるはずのもの
+    header, sheets, errors, skipped = None, [], [], []
+    for tab_code, gid in tabs:
         try:
             rows = _read_tab(gid)
         except Exception as e:
@@ -220,15 +244,21 @@ def fetch_coupon():
             errors.append(f"{tab_code}:取得失敗")
             continue
         if not rows:
-            print(f"  [WARN] {tab_code} タブが空です")
-            errors.append(f"{tab_code}:空")
+            # 自動列挙だと空のタブも混ざる。予備表に載っているタブのときだけ異常として扱う
+            print(f"  {tab_code} タブは空です")
+            (errors if tab_code in listed else skipped).append(f"{tab_code}:空")
             continue
         h = [x.strip() for x in rows[0]]
+        if any(c not in h for c in COUPON_REQUIRED_COLS):
+            # 発行元の集計タブなど。クーポンの行ではないので黙って飛ばす
+            print(f"  {tab_code} はクーポンの列を持たないため飛ばします")
+            skipped.append(f"{tab_code}:対象外")
+            continue
         if header is None:
             header = h
         elif h != header:
             # 列番号で読むので、タブごとに列構成が違うと混ぜられない
-            print(f"  [WARN] {tab_code} の列構成が {COUPON_TABS[0][0]} と違うため読みません")
+            print(f"  [WARN] {tab_code} の列構成が他のタブと違うため読みません")
             errors.append(f"{tab_code}:列構成不一致")
             continue
         sheets.append((tab_code, rows[1:]))
@@ -252,6 +282,9 @@ def fetch_coupon():
     # UID は「同じ人が別コードで2行に出る」ようになったため、重複を除いた実人数を数えるのに使う。
     # ⚠ UID の値そのものは data.json に絶対に出さない。数えるだけ。列が無ければ人数は null で返す。
     i_uid  = col("UID", "uid", "ユーザーID", "ユーザーUID", "ユーザーId", "user_id")
+    # 2026-08-14 に発行元が足した2列。無くても動く（古いシートとの互換）
+    i_made  = col("アカウント作成日時", "アカウント作成日")
+    i_relog = col("コード入力14日後以降の再ログイン", "コード入力14日後以降の再ﾛｸﾞｲﾝ")
 
     if min(i_snap, i_in) < 0:
         print(f"  [WARN] クーポンシートに必要な列がありません（列: {header}）")
@@ -283,6 +316,14 @@ def fetch_coupon():
     total = used = 0          # total は「入力件数」。人数ではない（同じ人が複数コードを使える）
     uids = set()              # 全体の実人数用。値は出力しない
     rest_holders = rest_tickets = 0
+    # アカウント作成 → コード入力 までの時間。**「新規／既存」の線引きはここでは決めない。**
+    # 分布だけ出して、どこで切るかは運営の判断に委ねる（引き継ぎ書 §10）
+    signup_lag = {"同時（1時間未満）": 0, "当日（24時間未満）": 0, "1〜7日": 0,
+                  "7〜30日": 0, "30日以上": 0, "不明": 0}
+    # 再ログイン列は「あり／なし／判定期間前」のような値がそのまま入る。
+    # ⚠ 「判定期間前」を「なし」に丸めない。丸めると再訪率が実際より低く見える
+    relogin = {}
+    made_dates = []           # アカウント作成日（いちばん古い日を出すためだけに使う）
 
     for tab_code, r in body:
         # コードはタブ名を使う。将来コード列が入ったら、そちらを優先する
@@ -324,6 +365,24 @@ def fetch_coupon():
             elif mins < 60 * 24:   lag["当日（24時間未満）"] += 1
             else:                  lag["翌日以降"] += 1
 
+        # アカウント作成 → コード入力
+        t_made = _parse_dt(cell(r, i_made))
+        if i_made >= 0:
+            if not t_made or not t_in:
+                signup_lag["不明"] += 1
+            else:
+                made_dates.append(t_made.date().isoformat())
+                hrs = (t_in - t_made).total_seconds() / 3600
+                if   hrs < 1:        signup_lag["同時（1時間未満）"] += 1
+                elif hrs < 24:       signup_lag["当日（24時間未満）"] += 1
+                elif hrs < 24 * 7:   signup_lag["1〜7日"] += 1
+                elif hrs < 24 * 30:  signup_lag["7〜30日"] += 1
+                else:                signup_lag["30日以上"] += 1
+
+        if i_relog >= 0:
+            v = cell(r, i_relog) or "空欄"
+            relogin[v] = relogin.get(v, 0) + 1
+
         name = cell(r, i_trn)
         if name:
             trn[name] = trn.get(name, 0) + 1
@@ -353,8 +412,10 @@ def fetch_coupon():
         "snapshot_date":   latest,
         "snapshot_count":  len(all_snaps),      # 何日分たまっているか
         "has_code_column": True,                # コードはタブ名から取れている（2026-08-14〜）
+        "tabs_auto":       tabs_auto,           # タブを自動列挙できたか。false なら COUPON_TABS 頼み
         "codes_read":      [c for c, _ in sheets],   # 実際に読めたタブ＝コード。欠けに気づくため
         "read_errors":     errors,              # 読めなかったタブ（空なら全部読めている）
+        "skipped_tabs":    skipped,             # 対象外として飛ばしたタブ（集計タブなど）
         "has_uid_column":  has_uid,             # UID 列が無いと人数を出せない
         "total":           total,               # ★入力「件数」。人数ではない
         "people":          people_of(uids),     # ★重複を除いた実人数（UID列が無ければ null）
@@ -365,6 +426,15 @@ def fetch_coupon():
         "daily":           sorted(daily.values(), key=lambda x: x["date"]),
         "weekly":          [],                  # 下で組み立てる（土曜開始・weekly_reports と同じ区切り）
         "lag_buckets":     [{"label": k, "count": v} for k, v in lag.items() if v],
+        # ↓ 2026-08-14 に増えた2列。列が無いシートでは null（0 と書かない）
+        "signup_lag_buckets": ([{"label": k, "count": v} for k, v in signup_lag.items()]
+                               if i_made >= 0 else None),
+        # ⚠ いちばん古いアカウント作成日。ここに固まっていたら「サービス開始日」であって
+        #   「その日に新規登録した」とは限らない。長い側の差は上限として読むこと
+        "account_oldest":  (min(made_dates) if made_dates else None),
+        "relogin":         ([{"label": k, "count": v} for k, v in
+                             sorted(relogin.items(), key=lambda x: -x[1])]
+                            if i_relog >= 0 else None),
         "tournaments":     sorted(({"name": k, "count": v} for k, v in trn.items()),
                                  key=lambda x: -x["count"]),
         "by_code":         sorted(({"code": b["code"], "entries": b["entries"],
