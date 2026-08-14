@@ -646,6 +646,27 @@ body{
         </div>
       </div>
 
+      <!-- 新規／既存。定義（24時間以内＝新規）は renderCoupon() の NEW_LABELS。
+           ⚠ 定義を変えるときは、下の cpNewNote の文言も必ず一緒に直すこと -->
+      <div class="card" id="cpNewCard" style="display:none">
+        <h3><span class="dot"></span>新規／既存の内訳
+          <span style="font-family:inherit;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted-2)"
+                id="cpNewMeta"></span>
+        </h3>
+        <div class="overview-bar" id="cpNewSummary"></div>
+        <div class="analytics-grid" style="margin-top:14px">
+          <div class="chart-card standalone">
+            <div class="chart-title"><span class="ct-label">アカウント作成からコード入力までの時間</span></div>
+            <div id="cpSignupLag" style="margin-top:8px"></div>
+          </div>
+          <div class="chart-card standalone">
+            <div class="chart-title"><span class="ct-label">コード入力14日後以降の再ログイン</span></div>
+            <div id="cpRelogin" style="margin-top:8px"></div>
+          </div>
+        </div>
+        <div class="ops-meta-note" id="cpNewNote"></div>
+      </div>
+
       <div class="card" id="cpWeeklyCard">
         <h3><span class="dot"></span>週ごとの成績
           <span style="font-family:inherit;text-transform:none;letter-spacing:0;font-size:11px;color:var(--muted-2)"
@@ -1836,7 +1857,7 @@ function renderCoupon(){
     noteEl.innerHTML = (c && c.error
       ? `⚠ クーポンシートを読み込めませんでした（${esc(c.error)}）。共有設定が変わった可能性があります。`
       : 'クーポンのデータは次回の自動更新後に表示されます。') + sheetLink;
-    ['cpDailyCard','cpWeeklyCard','cpCodeCard'].forEach(id=>{const e=document.getElementById(id); if(e) e.style.display='none';});
+    ['cpDailyCard','cpWeeklyCard','cpCodeCard','cpNewCard'].forEach(id=>{const e=document.getElementById(id); if(e) e.style.display='none';});
     document.getElementById('cpLag').innerHTML = '';
     document.getElementById('cpTournaments').innerHTML = '';
     return;
@@ -1904,7 +1925,7 @@ function renderCoupon(){
           <span><strong style="color:var(--ink)">${fmtFull(r.count)}</strong>件${total?` ・ ${(r.count/total*100).toFixed(0)}%`:''}</span>
         </div>
         <div style="height:5px;background:var(--line-strong);border-radius:2px">
-          <div style="height:5px;background:${color};border-radius:2px;width:${Math.max(2,Math.round(r.count/mx*100))}%"></div>
+          <div style="height:5px;background:${r.color||color};border-radius:2px;width:${Math.max(2,Math.round(r.count/mx*100))}%"></div>
         </div>
       </div>`).join('');
   };
@@ -1914,6 +1935,76 @@ function renderCoupon(){
     + '「即時」が多ければ動画から遊ぶまで繋がっており、「未使用」が多ければアプリ側の初回導線に詰まりがあります。</div>';
   document.getElementById('cpTournaments').innerHTML =
     hbars((c.tournaments||[]).map(t=>({label:t.name,count:t.count})), c.used, '#C9A227');
+
+  // ── 新規／既存（アカウント作成 → コード入力 の差で判定）──
+  // ★ 線引きはここにしかありません。data.json 側（fetch.py）は分布を出すだけで、
+  //   「何時間以内を新規とみなすか」は持っていません。
+  //   **しきい値を変えるときは NEW_LABELS と、下の cpNewNote の「24時間」の文言を両方直すこと。**
+  //   片方だけ直すと、画面の数字と説明が食い違ったまま誰も気づけません。
+  const NEW_LABELS = ['同時（1時間未満）','当日（24時間未満）'];   // = 24時間以内（2026-08-14 運営者の判断）
+  const sl      = c.signup_lag_buckets || null;
+  const newCard = document.getElementById('cpNewCard');
+  if(newCard) newCard.style.display = (sl && sl.length) ? '' : 'none';
+  if(newCard && sl && sl.length){
+    const val      = L => ((sl.find(b=>b.label===L)||{}).count) || 0;
+    const unknown  = val('不明');
+    const judged   = sl.reduce((s,b)=> s + (b.label==='不明' ? 0 : b.count), 0);
+    const fresh    = NEW_LABELS.reduce((s,L)=> s + val(L), 0);
+    const existing = judged - fresh;
+    const pct      = n => judged ? (n/judged*100).toFixed(1)+'%' : '—';
+
+    document.getElementById('cpNewMeta').textContent = ` ${fmtFull(judged)}件を判定`;
+    document.getElementById('cpNewSummary').innerHTML = [
+      {label:'新規（24時間以内）', val:fmtFull(fresh)+'件',    sub:`判定できた ${fmtFull(judged)}件の ${pct(fresh)}`},
+      {label:'既存',              val:fmtFull(existing)+'件', sub:`同 ${pct(existing)} ・ 24時間より前から登録済み`},
+      {label:'うち即時',          val:fmtFull(val('同時（1時間未満）'))+'件', sub:'登録から1時間未満でコード入力'},
+      {label:'最古の登録日',      val:(c.account_oldest ? fmtDate(c.account_oldest) : '—'),
+        sub:'ここに集中していたら「サービスの起点」です'},
+    ].map(it=>`<div class="ov-item"><div class="ov-label">${it.label}</div><div class="ov-val">${it.val}</div><div class="ov-sub">${it.sub}</div></div>`).join('');
+
+    document.getElementById('cpSignupLag').innerHTML =
+      // 「不明」は 0 件なら出さない（0 件の行が並ぶと読みにくいだけ。1件でもあれば必ず出す）
+      hbars(sl.filter(b=> b.label!=='不明' || b.count>0)
+              .map(b=>({label:b.label, count:b.count,
+                        color: NEW_LABELS.includes(b.label) ? '#5BD68A'
+                             : (b.label==='不明' ? '#7A8798' : '#5BA6D6')})),
+            c.total, '#5BA6D6')
+      + '<div style="font-size:10.5px;color:var(--muted-2);margin-top:6px">'
+      + '<span style="color:#5BD68A">緑</span>の2つが「新規」（24時間以内）です。'
+      + '長い側ほど、もともといた人がコードを使ったことを意味します。</div>';
+
+    // 再ログイン。⚠「判定期間前」は「なし」ではないので分母から外す
+    const rl       = c.relogin || [];
+    const PENDING  = ['判定期間前','空欄',''];
+    const rlJudged = rl.reduce((s,r)=> s + (PENDING.includes(r.label) ? 0 : r.count), 0);
+    const yesRows  = rl.filter(r=> !PENDING.includes(r.label) && /あり|有|再ログイン|はい|yes|true|○/i.test(r.label));
+    const rlYes    = yesRows.reduce((s,r)=> s + r.count, 0);
+    document.getElementById('cpRelogin').innerHTML =
+      hbars(rl.map(r=>({label:r.label, count:r.count,
+                        color: PENDING.includes(r.label) ? '#7A8798' : '#C9A227'})),
+            c.total, '#C9A227')
+      + '<div style="font-size:10.5px;color:var(--muted-2);margin-top:6px">'
+      + (rlJudged
+          ? `判定が出ているのは <strong style="color:var(--ink)">${fmtFull(rlJudged)}</strong>件。`
+            + (yesRows.length ? `うち再ログインあり ${fmtFull(rlYes)}件（${(rlYes/rlJudged*100).toFixed(1)}%）。` : '')
+          : '<b>まだ判定が出ている行はありません。</b>コード入力の14日後にならないと決まらないためで、'
+            + '<b>「再ログインが無かった」ではありません。</b>')
+      + '</div>';
+
+    document.getElementById('cpNewNote').innerHTML =
+      '※ <b>「新規」の定義</b>：アカウント作成日時 → コード入力日時 の差が <b>24時間以内</b> の行を「新規」として数えています'
+      + '（2026-08-14 運営者の判断）。動画を見て、その流れで登録してコードを入れた人、という想定です。'
+      + '<br>※ 先にアカウントだけ作って後日コードを入れた人は<b>「既存」に入ります</b>。この定義では新規は<b>少なめに出ます</b>。'
+      + (c.account_oldest
+          ? `<br>※ ⚠ アカウント作成日のいちばん古い日は <b>${esc(fmtDate(c.account_oldest))}</b> です。`
+            + 'ここに件数が集中している場合、それは<b>この表で見える範囲の起点</b>（サービス側の起点）であって、'
+            + '「その日に新規登録した」とは限りません。したがって<b>「ずっと前から登録済み＝既存」は上限としてしか読めません</b>。'
+          : '')
+      + '<br>※ この表には<b>クーポンコードを入れた人しか載りません</b>。動画を見て登録したがコードを入れなかった人は見えないので、'
+      + '<b>動画そのものの新規獲得力を測ったものではありません</b>。'
+      + '<br>※ 再ログインは「コード入力の14日後以降にログインしたか」です。<b>「判定期間前」は「なし」ではない</b>ので、割合の分母から外しています。'
+      + (unknown ? `<br>※ 日時が読めず判定できなかった行が ${fmtFull(unknown)}件あります（上の割合の分母から外しています）。` : '');
+  }
 
   // ── 週ごとの成績（週次レポートの再生回数と突き合わせ）──
   const reps = {};
