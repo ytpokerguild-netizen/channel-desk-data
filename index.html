@@ -815,8 +815,13 @@ async function loadData(bust){
     const _fa2 = G.meta.fetched_at ? new Date(G.meta.fetched_at) : null;
     const _hrs = _fa2 ? (Date.now() - _fa2.getTime()) / 36e5 : null;
     if(_hrs != null && _hrs > 12){
+      // ★ 文言に注意（2026-08-14 変更）。このページは**開いたときに1回しかデータを取りません**。
+      //   タブを開きっぱなしにすると、中身は開いた時刻のまま経過時間だけが伸びるので、
+      //   翌日には必ずこの警告が出ます。旧文言は「自動更新が停止している可能性があります」で、
+      //   実際にサーバー側を疑いに行かせてしまいました（自動更新は正常でした）。
+      //   いちばんありそうな原因（画面が古い）を先に案内すること。
       _staleEl.style.display = 'block';
-      _staleEl.textContent = `⚠ データが更新されていません（最終取得: ${_fa2.getMonth()+1}/${_fa2.getDate()} ${String(_fa2.getHours()).padStart(2,'0')}:${String(_fa2.getMinutes()).padStart(2,'0')}・約${Math.floor(_hrs)}時間前）。自動更新が停止している可能性があります。`;
+      _staleEl.textContent = `⚠ この画面のデータが古いままです（最終取得: ${_fa2.getMonth()+1}/${_fa2.getDate()} ${String(_fa2.getHours()).padStart(2,'0')}:${String(_fa2.getMinutes()).padStart(2,'0')}・約${Math.floor(_hrs)}時間前）。まず右上の「↻ 更新」を押してください。タブを開いたままだと画面は自動では新しくなりません。押しても変わらない場合は、自動更新そのものが止まっています。`;
     } else {
       _staleEl.style.display = 'none';
     }

@@ -156,6 +156,26 @@ def fetch_video_archive():
 #   「リンクを知っている全員が閲覧可」に依存している。読めなくなったら coupon を空にして返す。
 COUPON_SHEET_ID = "1TlhW5SZnsnnXeMpJ8eurM9edeMfkEEFmKdK-TCbvCpc"
 
+# ⚠ 2026-08-14: 発行元がシートを「コードごとのタブ」に分けました。
+#   依頼していた「コード列」ではなくタブ分割で来たため、**gid を指定しない CSV エクスポートでは
+#   先頭タブ（REPOKER01）しか読めず、REPOKER03 が丸ごと欠けていました**（実際に起きました）。
+#   タブごとに読んで、**タブ名をそのままクーポンコードとして扱います。**
+#
+#   ★ 新しいコード（REPOKER04 …）のタブが増えたら、ここに1行足してください。
+#     gid はシートを開いてそのタブをクリックし、URL の `#gid=` を見れば分かります。
+#     足し忘れると、そのコードのぶんが**黙って数字から抜けます。**
+#
+#   ★ これは暫定対応です。発行元にサービスアカウント（`channel-desk-ops-reader@…`）を
+#     閲覧者で共有してもらえれば、タブを自動で列挙できるのでこの表の保守が要らなくなります。
+#     詳細は引き継ぎ書 §10。
+#
+#   ※ 集計タブ（日次推移）は発行元が作った要約で、REPOKER01 しか含んでいないように見えます。
+#     こちらでは使いません。
+COUPON_TABS = [
+    ("REPOKER01", "0"),
+    ("REPOKER03", "1737849257"),
+]
+
 
 def _parse_dt(s):
     """'2026-08-06 21:43:12' / '2026/08/06 9:24' などを datetime に。失敗したら None"""
@@ -181,19 +201,40 @@ def fetch_coupon():
     最新の取得日のスナップショット1つだけを使う。各行が自分の入力日時・使用日時を
     持っているので、そこから全期間の推移を再構成できる（スナップショットの差分比較は不要）。"""
     import csv, io
-    url = (f"https://docs.google.com/spreadsheets/d/{COUPON_SHEET_ID}/export?format=csv")
-    req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    try:
+
+    def _read_tab(gid):
+        url = (f"https://docs.google.com/spreadsheets/d/{COUPON_SHEET_ID}"
+               f"/export?format=csv&gid={gid}")
+        req = Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urlopen(req, timeout=30) as resp:
             content = resp.read().decode("utf-8-sig")
-    except Exception as e:
-        print(f"  [WARN] クーポンシート取得失敗: {e}")
-        return {"error": "取得失敗", "detail": str(e)[:120]}
+        return [r for r in csv.reader(io.StringIO(content)) if any(c.strip() for c in r)]
 
-    rows = [r for r in csv.reader(io.StringIO(content)) if any(c.strip() for c in r)]
-    if not rows:
-        return {"error": "シートが空です"}
-    header = [h.strip() for h in rows[0]]
+    # ── タブごとに読む。タブ名がそのままコードになる（上の COUPON_TABS を参照）──
+    header, sheets, errors = None, [], []
+    for tab_code, gid in COUPON_TABS:
+        try:
+            rows = _read_tab(gid)
+        except Exception as e:
+            print(f"  [WARN] クーポンシート取得失敗（{tab_code}）: {e}")
+            errors.append(f"{tab_code}:取得失敗")
+            continue
+        if not rows:
+            print(f"  [WARN] {tab_code} タブが空です")
+            errors.append(f"{tab_code}:空")
+            continue
+        h = [x.strip() for x in rows[0]]
+        if header is None:
+            header = h
+        elif h != header:
+            # 列番号で読むので、タブごとに列構成が違うと混ぜられない
+            print(f"  [WARN] {tab_code} の列構成が {COUPON_TABS[0][0]} と違うため読みません")
+            errors.append(f"{tab_code}:列構成不一致")
+            continue
+        sheets.append((tab_code, rows[1:]))
+
+    if header is None or not sheets:
+        return {"error": "取得失敗", "detail": ("; ".join(errors) or "全タブが空です")[:200]}
 
     def col(*names):
         for n in names:
@@ -219,12 +260,20 @@ def fetch_coupon():
     def cell(r, i):
         return r[i].strip() if 0 <= i < len(r) else ""
 
-    # 最新の取得日のスナップショットだけを使う
-    snaps = sorted({cell(r, i_snap) for r in rows[1:] if cell(r, i_snap)})
-    if not snaps:
+    # 最新の取得日のスナップショットだけを使う。
+    # ⚠ 取得日は**タブごとに**見る。片方のタブだけ更新が遅れていても、そのタブの最新は拾う。
+    #   （全タブ共通の最新日で切ると、遅れたタブのぶんが丸ごと落ちます）
+    body, all_snaps = [], set()          # body は (コード, 行) の組
+    for tab_code, tab_rows in sheets:
+        snaps = sorted({cell(r, i_snap) for r in tab_rows if cell(r, i_snap)})
+        if not snaps:
+            print(f"  [WARN] {tab_code} の取得日が読めません")
+            continue
+        all_snaps.update(snaps)
+        body += [(tab_code, r) for r in tab_rows if cell(r, i_snap) == snaps[-1]]
+    if not body:
         return {"error": "取得日が読めません"}
-    latest = snaps[-1]
-    body = [r for r in rows[1:] if cell(r, i_snap) == latest]
+    latest = max(all_snaps)
 
     daily = {}     # 入力日 → {entries, used}
     weekly = {}    # 週(土曜開始) → {entries, used, codes:set, uids:set}
@@ -235,7 +284,9 @@ def fetch_coupon():
     uids = set()              # 全体の実人数用。値は出力しない
     rest_holders = rest_tickets = 0
 
-    for r in body:
+    for tab_code, r in body:
+        # コードはタブ名を使う。将来コード列が入ったら、そちらを優先する
+        rcode = cell(r, i_code) or tab_code
         total += 1
         uid = cell(r, i_uid)
         if uid:
@@ -260,9 +311,8 @@ def fetch_coupon():
                 w["used"] += 1
             if uid:
                 w["uids"].add(uid)
-            c = cell(r, i_code)
-            if c:
-                w["codes"].add(c)
+            if rcode:
+                w["codes"].add(rcode)
 
         # 入力から使用までの時間
         if not is_used or not t_use or not t_in:
@@ -286,9 +336,8 @@ def fetch_coupon():
             rest_holders += 1
             rest_tickets += n
 
-        code = cell(r, i_code)
-        if code:
-            b = by_code.setdefault(code, {"code": code, "entries": 0, "used": 0, "uids": set()})
+        if rcode:
+            b = by_code.setdefault(rcode, {"code": rcode, "entries": 0, "used": 0, "uids": set()})
             b["entries"] += 1
             if is_used:
                 b["used"] += 1
@@ -302,8 +351,10 @@ def fetch_coupon():
 
     result = {
         "snapshot_date":   latest,
-        "snapshot_count":  len(snaps),          # 何日分たまっているか
-        "has_code_column": i_code >= 0,         # コード列が入ったら True になる
+        "snapshot_count":  len(all_snaps),      # 何日分たまっているか
+        "has_code_column": True,                # コードはタブ名から取れている（2026-08-14〜）
+        "codes_read":      [c for c, _ in sheets],   # 実際に読めたタブ＝コード。欠けに気づくため
+        "read_errors":     errors,              # 読めなかったタブ（空なら全部読めている）
         "has_uid_column":  has_uid,             # UID 列が無いと人数を出せない
         "total":           total,               # ★入力「件数」。人数ではない
         "people":          people_of(uids),     # ★重複を除いた実人数（UID列が無ければ null）
@@ -329,7 +380,8 @@ def fetch_coupon():
     print(f"  クーポン: {latest} 時点 {total}件"
           + (f"／実人数 {ppl}人" if ppl is not None else "／実人数は不明（UID列なし）")
           + f"（使用 {used} / 未使用 {total-used}） 週 {len(result['weekly'])}件"
-          + ("" if result["has_code_column"] else " ※コード列なし（動画別の帰属は不可）"))
+          + f"／コード {'+'.join(result['codes_read'])}"
+          + (f" ⚠読めなかったタブ: {', '.join(errors)}" if errors else ""))
     return result
 
 
