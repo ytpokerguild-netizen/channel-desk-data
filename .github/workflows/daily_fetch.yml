@@ -84,6 +84,17 @@ jobs:
           シートの共有設定と、Secrets の SHEETS_SA_KEY を確認してください。"
           fi
 
+      # 新しい動画が増えたら、企画タイプ／ナレーターの入力を LINE で頼む（2026-08-14 運営者の依頼）。
+      # 入れ忘れると企画タイプ別・ナレーター別の集計から黙って抜けるので、増えた日に頼む。
+      # ⚠ コミット前に置くこと（前回の動画一覧を HEAD:data.json から読んでいます）
+      - name: 新作の入力依頼を通知
+        if: success()
+        continue-on-error: true
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
+        run: python notify_archive_input.py
+
       - name: Commit and push data.json
         run: |
           git config user.name  "github-actions[bot]"

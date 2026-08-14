@@ -97,6 +97,23 @@ def build_message():
     pn = (net - basenet) / abs(basenet) * 100 if basenet else 0
     lines.append(f"{verdict(pn)} 登録者純増 {net:+d}人（内訳 +{g}/-{l}）")
 
+    # 3) 動画アーカイブの未入力（企画タイプ・ナレーター）
+    # 入れ忘れると企画タイプ別・ナレーター別の集計から黙って抜けるので、残っている間は毎朝出す。
+    # ⚠ 直近180日ぶんだけ数える（全期間だと 2022 年のテスト動画1本がずっと残る）。
+    #   数え方は notify_archive_input.py と同じにしてあります。片方だけ変えると本数が食い違います。
+    arc = d.get("video_archive") or {}
+    limit = (date.today() - timedelta(days=180)).isoformat()
+    miss = 0
+    for v in d.get("videos", []):
+        pub = (v.get("published_at") or "")[:10]
+        if pub and pub < limit:
+            continue
+        a = arc.get(v.get("video_id")) or {}
+        if not (a.get("type") or "").strip() or not (a.get("narrator") or "").strip():
+            miss += 1
+    if miss:
+        lines.append(f"📝 企画タイプ／ナレーターの未入力 {miss}本（投稿計画表の動画アーカイブ）")
+
     # 「新作初速」は 2026-08-07 に廃止。
     # 理由: 最新1本だけを対象にする設計と「ほぼ毎日投稿 + 確定値2〜4日ラグ」が噛み合わず、
     # 直近60日で一度も算出できていなかった（毎朝「⚪ 新作初速 集計待ち」を送り続けていた）。
