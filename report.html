@@ -51,6 +51,7 @@
 <script>
 const DATA_URL = 'data.json';
 let REPORTS = [];
+let COUPON  = null;   // data.json の coupon（週ごとの節を出すのに使う）
 
 const fmtFull = n => (n??0).toLocaleString('ja-JP');
 const fmtDate = s => s ? s.replace(/-/g,'/') : '';
@@ -72,6 +73,59 @@ const TRAFFIC_LABEL = {
   '5':'外部サイト','7':'Google検索','19':'通知','18':'エンドスクリーン',
   '11':'再生リスト','0':'直接/不明','1':'広告','17':'プロモーション','8':'その他'
 };
+
+// ════════════════════════════════
+// クーポン施策の節
+// ⚠ 「その週に何日ぶんのデータがあるか」を coupon.daily から数えています。
+//   クーポンの入力データは 2026-08-04 が最初で、それ以前の週は0日です。
+//   件数をそのまま週どうしで比べると 7日 対 4日 の比較になるため、必ず1日あたりを併記すること
+//   （2026-08-17 に実際にその比較を出してしまいました）。
+// ════════════════════════════════
+function couponBlock(rep){
+  if(!COUPON || COUPON.error) return '';
+  const wk = (COUPON.weekly||[]).find(w=>w.week_start===rep.week_start);
+  if(!wk) return '';                      // クーポンがまだ無い週は節ごと出さない
+  const prevStart = new Date(rep.week_start+'T00:00:00Z');
+  prevStart.setUTCDate(prevStart.getUTCDate()-7);
+  const pKey = prevStart.toISOString().slice(0,10);
+  const pw = (COUPON.weekly||[]).find(w=>w.week_start===pKey) || null;
+
+  // その週のうち、実際に入力のあった日数（分母がずれるのを防ぐ）
+  const daysIn = (start)=>{
+    const s = new Date(start+'T00:00:00Z'), e = new Date(start+'T00:00:00Z');
+    e.setUTCDate(e.getUTCDate()+6);
+    return (COUPON.daily||[]).filter(r=>{
+      const t = new Date(r.date+'T00:00:00Z'); return t>=s && t<=e && r.entries>0;
+    }).length;
+  };
+  const dC = daysIn(rep.week_start), dP = pw ? daysIn(pKey) : 0;
+  const perDay = (n,d)=> d ? (n/d).toFixed(2) : '—';
+  const rate   = (u,e)=> e ? (u/e*100).toFixed(1)+'%' : '—';
+  const cell   = (n,d)=> d ? `${fmtFull(n)}件（${d}日・1日${perDay(n,d)}件）` : '—';
+
+  const codeRows = (COUPON.by_code||[]).map(b=>
+    `<tr><td>${esc(b.code)}</td><td class="num">${fmtFull(b.entries)}</td><td class="num">${fmtFull(b.used)}</td><td class="num">${rate(b.used,b.entries)}</td><td class="num">${fmtFull(b.people)}</td></tr>`).join('');
+  const lag = (COUPON.lag_buckets||[]).map(b=>`${esc(b.label)} ${b.count}`).join(' ／ ');
+
+  return `
+<h2>クーポン施策</h2>
+<div class="note" style="margin:0 0 7px">この週に入力のあったコード: <b>${(wk.codes||[]).map(esc).join('、')||'—'}</b>　／　シート取得日: ${fmtDate(COUPON.snapshot_date||'')}</div>
+<table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th></tr>
+<tr><td>コード入力</td><td class="num">${cell(wk.entries,dC)}</td><td class="num">${pw?cell(pw.entries,dP):'—'}</td></tr>
+<tr><td>うち使用済み</td><td class="num">${fmtFull(wk.used)}件（${rate(wk.used,wk.entries)}）</td><td class="num">${pw?`${fmtFull(pw.used)}件（${rate(pw.used,pw.entries)}）`:'—'}</td></tr>
+<tr><td>実人数</td><td class="num">${fmtFull(wk.people)}人</td><td class="num">${pw?fmtFull(pw.people)+'人':'—'}</td></tr></table>
+${(dP && dC && dP!==dC)?`<div class="note">⚠ 今週は${dC}日ぶん、前週は${dP}日ぶんです。<b>件数をそのまま比べず、1日あたりで見てください。</b></div>`:''}
+
+${codeRows?`<div style="margin-top:11px"><b style="font-size:12.5px">コード別（通算）</b></div>
+<table style="margin-top:4px"><tr><th>コード</th><th class="num">入力</th><th class="num">使用</th><th class="num">使用率</th><th class="num">実人数</th></tr>${codeRows}</table>`:''}
+${lag?`<div class="note" style="margin-top:7px">入力から使用までの時間（通算${fmtFull(COUPON.total||0)}件）: ${lag}</div>`:''}
+
+<div class="note" style="margin-top:7px">
+⚠ 1件＝1回の入力であって1人ではありません（同じ人が別のコードを使えます）。<br>
+⚠ 直近に入力されたぶんは使用判定の時間が足りていないため、<b>使用率は実際より低めに出ます</b>（シート取得日 ${fmtDate(COUPON.snapshot_date||'')}）。<br>
+⚠ <b>どの動画から来たかは分かりません。</b>掲出日の記録が無いため、この表は動画ごとの効果測定ではありません。
+</div>`;
+}
 
 function renderReportPage(rep){
   const c = rep.channel || {};
@@ -133,6 +187,8 @@ ${ssC?`<table><tr><th>週</th><th class="num">登録者による視聴</th><th c
 <tr><td>今週</td><td class="num">${ssC.p}%</td><td class="num">${100-ssC.p}%</td><td class="num">${fmtFull(ssC.tot)}</td></tr>
 ${ssP?`<tr><td>前週</td><td class="num">${ssP.p}%</td><td class="num">${100-ssP.p}%</td><td class="num">${fmtFull(ssP.tot)}</td></tr>`:''}</table>`:'<div class="note">この週の視聴者層データはまだ取得されていません（次回の自動更新で追加されます）</div>'}
 
+${couponBlock(rep)}
+
 <h2>投稿計画の進捗</h2>
 <div style="margin-bottom:7px">計画 <b>${pp.planned}</b> 本 ／ シート上「投稿済み」 <b>${pp.posted}</b> 本 ／ 実際に公開 <b>${(rep.new_videos||[]).length}</b> 本</div>
 ${(pp.items||[]).length?`<table><tr><th style="width:78px">予定日</th><th>タイトル</th><th>企画・ナレーター・広告</th><th style="width:90px">ステータス</th></tr>
@@ -161,6 +217,7 @@ async function loadReport(){
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
     REPORTS = (data.weekly_reports||[]).slice().sort((a,b)=>b.week_start.localeCompare(a.week_start));
+    COUPON  = data.coupon || null;
     document.getElementById('loadMsg').style.display = 'none';
     if(!REPORTS.length){
       document.getElementById('loadMsg').style.display = 'block';
