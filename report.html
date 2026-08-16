@@ -30,7 +30,10 @@
   @media print{
     body{background:#fff}
     .sheet{box-shadow:none;padding:0;max-width:none;min-height:auto}
-    .toolbar{display:none}
+    /* ⚠ !important は消さないこと。JS が toolbar に style.display='flex' を
+       インラインで当てるため、!important が無いと印刷・PDF にツールバーが写り込みます
+       （2026-08-17 に実際に混入した PDF を出しかけました）。 */
+    .toolbar{display:none!important}
   }
 </style>
 </head>
