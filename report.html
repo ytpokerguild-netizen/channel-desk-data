@@ -23,6 +23,14 @@
   .note{color:#888;font-size:11px;margin-top:5px}
   .foot{margin-top:26px;color:#999;font-size:10px;border-top:1px solid #ddd;padding-top:7px}
   .suggest{border:1px solid #e4cf8e;background:#fdf8ea;border-radius:7px;padding:10px 14px;margin-top:8px}
+  /* ★ 結論の1行（2026-08-17 追加）。数字を読む前に結論が分かるよう、いちばん上に置く */
+  .verdict{border:1px solid #cfe3d6;background:#f2f9f4;border-radius:8px;padding:11px 15px;margin:0 0 16px;font-size:14px;line-height:1.6}
+  .verdict b{font-size:16px}
+  .verdict .why{display:block;color:#4a6553;font-size:12px;margin-top:3px}
+  /* ★ 表の中の横棒（2026-08-17 追加）。数字を読まなくても大小が分かるように。
+     数字が右揃えなので、棒も右から伸ばして右端を揃える */
+  .minibar{display:flex;justify-content:flex-end;height:3px;background:#efece3;border-radius:2px;margin-top:3px}
+  .minibar>i{display:block;height:3px;background:#b3ada0;border-radius:2px}
   .toolbar{max-width:860px;margin:0 auto;padding:14px 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .toolbar select,.toolbar button,.toolbar a{font-family:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid #cbc5b4;background:#fff;color:#333;cursor:pointer;text-decoration:none}
   .toolbar button:hover,.toolbar a:hover{background:#f5f1e6}
@@ -55,6 +63,16 @@ let COUPON  = null;   // data.json の coupon（週ごとの節を出すのに�
 let TREND   = null;   // data.json の weekly_trend（直近26週のグラフ用）
 
 const fmtFull = n => (n??0).toLocaleString('ja-JP');
+// ★ 万表記（2026-08-17 追加・オーナーの指摘「数字が理解しにくい」）。
+//   日本語では 587,400回 より 58.7万回 のほうが一瞬で入ります。
+//   ⚠ **ツールチップと表の小さい数字には生の値を残すこと。**万に丸めると精密な比較ができなくなります。
+//   ⚠ ダッシュボード（index.html）の fmt() と同じ規則にしてあります。片方だけ変えないこと。
+const fmtMan  = n => (n==null) ? '—' : (Math.abs(n)>=10000
+                    ? (n/10000).toFixed(1).replace(/\.0$/,'')+'万'
+                    : n.toLocaleString('ja-JP'));
+// 棒（表の中）。max に対する割合で幅を出す
+const miniBar = (v,max) => (!max||v==null) ? '' :
+  `<div class="minibar"><i style="width:${Math.max(1,Math.round(v/max*100))}%"></i></div>`;
 const fmtDate = s => s ? s.replace(/-/g,'/') : '';
 const fmtMin  = m => m >= 60 ? Math.round(m/60).toLocaleString()+'時間' : (m||0).toLocaleString()+'分';
 const esc     = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -116,7 +134,7 @@ function trendBlock(rep){
   // 目盛り（0・半分・上限）。丸い数字だけにする
   const ticks = [0, max/2, max].map(v=>
     `<line x1="${PL}" y1="${yOf(v).toFixed(1)}" x2="${W-PR}" y2="${yOf(v).toFixed(1)}" stroke="#e8e5dc" stroke-width="1"/>
-     <text x="${PL-7}" y="${(yOf(v)+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#888">${fmtFull(Math.round(v))}</text>`).join('');
+     <text x="${PL-7}" y="${(yOf(v)+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#888">${fmtMan(Math.round(v))}</text>`).join('');
 
   const bars = T.map((d,i)=>{
     const x = PL + band*i + (band-bw)/2, y = yOf(d.views);
@@ -137,7 +155,7 @@ function trendBlock(rep){
     const d = T[curIx], x = PL + band*curIx + band/2, y = yOf(d.views);
     const anchor = curIx > T.length-4 ? 'end' : (curIx < 3 ? 'start' : 'middle');
     const dx = anchor==='end' ? bw/2 : (anchor==='start' ? -bw/2 : 0);
-    curLab = `<text x="${(x+dx).toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="${anchor}" font-size="11" font-weight="700" fill="#1a1a1a">${fmtFull(d.views)}</text>`;
+    curLab = `<text x="${(x+dx).toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="${anchor}" font-size="11" font-weight="700" fill="#1a1a1a">${fmtMan(d.views)}</text>`;
   }
 
   const ya = yOf(avg);
@@ -147,17 +165,17 @@ function trendBlock(rep){
   return `
 <h2>直近${T.length}週の中での位置（約6か月）</h2>
 <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img"
-     aria-label="直近${T.length}週の週間視聴回数。この週は${cur?fmtFull(cur.views):''}回で、${T.length}週平均の${ratio}%。">
+     aria-label="直近${T.length}週の週間視聴回数。この週は${cur?fmtMan(cur.views):''}回で、${T.length}週平均の${ratio}%。">
   ${ticks}
   ${bars}
   <line x1="${PL}" y1="${ya.toFixed(1)}" x2="${W-PR}" y2="${ya.toFixed(1)}" stroke="#666" stroke-width="1" stroke-dasharray="5 4"/>
   <rect x="${PL+2}" y="${(ya-15).toFixed(1)}" width="112" height="13" fill="#fff"/>
-  <text x="${PL+5}" y="${(ya-5).toFixed(1)}" font-size="10" fill="#666">${T.length}週平均 ${fmtFull(Math.round(avg))}</text>
+  <text x="${PL+5}" y="${(ya-5).toFixed(1)}" font-size="10" fill="#666">${T.length}週平均 ${fmtMan(Math.round(avg))}</text>
   ${curLab}
   <line x1="${PL}" y1="${BASE}" x2="${W-PR}" y2="${BASE}" stroke="#ddd" stroke-width="1"/>
   ${xlab}
 </svg>
-${cur?`<div style="margin-top:2px"><b>この週は ${fmtFull(cur.views)} 回で、${T.length}週平均 ${fmtFull(Math.round(avg))} 回の ${ratio}%。</b></div>`:''}
+${cur?``:''}
 <div class="note">濃い色がこの週、薄い色がそれ以外の週です。前週比だけでは「前週がどんな週だったか」で見え方が変わるため、6か月の中での位置を併記しています。${T.length}週ぶんは <b>7日そろった週だけ</b>を並べています。</div>`;
 }
 
@@ -206,6 +224,59 @@ ${codeRows?`<div style="margin-top:11px"><b style="font-size:12.5px">コード�
 ${lag?`<div class="note" style="margin-top:7px">入力から使用までの時間（通算${fmtFull(COUPON.total||0)}件）: ${lag}</div>`:''}`;
 }
 
+// ════════════════════════════════
+// 結論の1行（2026-08-17 追加・オーナーの指摘「直感的にわかりにくい」）
+// ⚠ 数字を読む前に結論が分かるように、レポートのいちばん上に置きます。
+//   判定は 26週平均に対する比だけで決めています（前週比では決めません。
+//   前週が突出していると「半減」に見えてしまうため。2026-08-08 週が実際にそうでした）。
+// ════════════════════════════════
+function verdictBlock(rep, views, viewsPrev){
+  const T = TREND;
+  if(!T || T.length < 4) return '';
+  const i = T.findIndex(d=>d.week_start===rep.week_start);
+  if(i < 0) return '';
+  const cur = T[i].views;
+  const avg = T.reduce((s,d)=>s+d.views,0) / T.length;
+  const r   = Math.round(cur/avg*100);
+  const v   = r >= 130 ? '好調' : r >= 110 ? 'やや好調' : r >= 90 ? '平年並み' : r >= 70 ? 'やや低調' : '低調';
+  const sorted = T.map(d=>d.views).slice().sort((a,b)=>b-a);
+  const rank   = sorted.indexOf(cur) + 1;
+
+  // 前週比が大きく動いたときだけ、その理由を1行そえる
+  let why = '';
+  const dp = (viewsPrev ? (views-viewsPrev)/viewsPrev*100 : 0);
+  if(Math.abs(dp) >= 20 && i > 0){
+    const pr = sorted.indexOf(T[i-1].views) + 1;
+    if(pr <= 3)      why = `前週比は ${dp>0?'+':''}${dp.toFixed(0)}% ですが、前週は${T.length}週で${pr}番目に高い週でした。`;
+    else if(pr >= T.length-2) why = `前週比は ${dp>0?'+':''}${dp.toFixed(0)}% ですが、前週は${T.length}週で下から${T.length-pr+1}番目の週でした。`;
+    else             why = `前週比は ${dp>0?'+':''}${dp.toFixed(0)}%。`;
+  }
+  return `<div class="verdict">今週は <b>${v}</b>。週間視聴回数 <b>${fmtMan(cur)}回</b>で、${T.length}週平均 ${fmtMan(Math.round(avg))}回の <b>${r}%</b>（${T.length}週中 ${rank}位）。
+<span class="why">${why}詳しくは下の「直近${T.length}週の中での位置」を見てください。</span></div>`;
+}
+
+// ════════════════════════════════
+// 投稿計画（2026-08-17 変更）
+// ⚠ **問題が無い週は1行だけにします。**全部「投稿済み・遅延0日」の表は読む価値がないためです。
+//   遅れているもの・未投稿があるときだけ、その行だけを表で出します。
+// ════════════════════════════════
+function planBlock(rep, pp){
+  const items = pp.items || [];
+  const pub   = (rep.new_videos||[]).length;
+  if(!items.length) return `<h2>投稿計画の進捗</h2><div class="note">この週の計画データなし</div>`;
+  const bad = items.filter(p=>{
+    const done = p.matched || (p.status||'').includes('済');
+    return !done || (p.delay_days||0) > 0;
+  });
+  // 問題が無ければ節にしない（基本指標の下に1行で出す）
+  if(!bad.length) return `<div class="note">投稿計画: 計画 ${pp.planned} 本 ／ 投稿済み ${pp.posted} 本 ／ 実際に公開 ${pub} 本 ／ 遅延なし</div>`;
+  const head = `<h2>投稿計画の進捗</h2>
+<div>計画 <b>${pp.planned}</b> 本 ／ 投稿済み <b>${pp.posted}</b> 本 ／ 実際に公開 <b>${pub}</b> 本</div>`;
+  return head + `<div class="note" style="margin-bottom:5px">遅れ・未投稿のものだけ出しています（${bad.length}件）。</div>
+<table><tr><th style="width:78px">予定日</th><th>タイトル</th><th style="width:90px">ステータス</th><th class="num" style="width:60px">遅延</th></tr>
+${bad.map(p=>`<tr><td>${fmtDate(p.date)}</td><td>${esc(p.title)}</td><td>${esc(p.status||'—')}</td><td class="num">${p.delay_days!=null?p.delay_days+'日':'—'}</td></tr>`).join('')}</table>`;
+}
+
 function renderReportPage(rep){
   const c = rep.channel || {};
   const views     = rep.final ? c.views      : (c.views_snap      ?? c.views);
@@ -213,31 +284,38 @@ function renderReportPage(rep){
   const subsNet   = c.subs_net ?? ((c.subs_gained||0)-(c.subs_lost||0));
   const partial   = !rep.final && c.views_snap==null && (rep.confirmed_days||0) < 7;
 
+  // 視聴者層は2行の表を独立の節にしていたが、1行に畳んで基本指標へ入れた（2026-08-17）
+  const ssPct = (ss)=>{
+    if(!ss||!Object.keys(ss).length) return null;
+    const sub=ss['SUBSCRIBED']||0, unsub=ss['UNSUBSCRIBED']||0, tot=sub+unsub;
+    return tot ? Math.round(sub/tot*100) : null;
+  };
+  const ssC2 = ssPct(rep.subscribed_status), ssP2 = ssPct(rep.subscribed_status_prev);
+
   const sumRows = [
-    ['週間視聴回数', fmtFull(views)+' 回'+(partial?`（確定${rep.confirmed_days}日分のみ）`:''), fmtFull(viewsPrev)+' 回', partial?'—':pct(views,viewsPrev)],
+    ['週間視聴回数', fmtMan(views)+' 回'+(partial?`（確定${rep.confirmed_days}日分のみ）`:''), fmtMan(viewsPrev)+' 回', partial?'—':pct(views,viewsPrev)],
     ['総再生時間',   fmtMin(c.watch_min||0), fmtMin(c.watch_min_prev||0), partial?'—':pct(c.watch_min,c.watch_min_prev)],
     ['登録者純増', (subsNet>=0?'+':'')+fmtFull(subsNet||0)+' 人', c.subs_net_prev!=null?(c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+' 人':'—', pct(subsNet,c.subs_net_prev)],
     ['週内の投稿', (rep.new_videos||[]).length+' 本', '', ''],
+    ...(ssC2!=null ? [['登録者による視聴', ssC2+' %', ssP2!=null? ssP2+' %':'—', '']] : []),
   ];
 
   const trP = new Map((rep.traffic_sources_prev||[]).map(t=>[String(t.source_type), t.views]));
-  const trafficRows = (rep.traffic_sources||[]).slice(0,8).map(t=>{
+  const trList = (rep.traffic_sources||[]).slice(0,8);
+  const trMax  = Math.max(1, ...trList.map(t=>t.views));
+  const trafficRows = trList.map(t=>{
     const prev = trP.get(String(t.source_type));
-    return `<tr><td>${esc(TRAFFIC_LABEL[String(t.source_type)]||t.source_type)}</td><td class="num">${fmtFull(t.views)}</td><td class="num">${prev!=null?fmtFull(prev):'—'}</td><td class="num">${prev!=null?pct(t.views,prev):'—'}</td></tr>`;
+    return `<tr><td>${esc(TRAFFIC_LABEL[String(t.source_type)]||t.source_type)}</td><td class="num" title="${fmtFull(t.views)}">${fmtMan(t.views)}${miniBar(t.views,trMax)}</td><td class="num">${prev!=null?fmtMan(prev):'—'}</td><td class="num">${prev!=null?pct(t.views,prev):'—'}</td></tr>`;
   }).join('');
 
-  const ssRow = (ss)=>{
-    if(!ss||!Object.keys(ss).length) return null;
-    const sub=ss['SUBSCRIBED']||0, unsub=ss['UNSUBSCRIBED']||0, tot=sub+unsub||1;
-    return {p:Math.round(sub/tot*100), tot:sub+unsub};
-  };
-  const ssC = ssRow(rep.subscribed_status), ssP = ssRow(rep.subscribed_status_prev);
   const pp = rep.post_plan || {planned:0,posted:0,items:[]};
   const ai = rep.ai_analysis;
 
   document.getElementById('sheet').innerHTML = `
 <h1>りいポーカーチャンネル 週次レポート<span class="badge ${rep.final?'final':'flash'}">${rep.final?'確定':'速報'}</span></h1>
 <div class="sub">対象期間: ${fmtDate(rep.week_start)}（土）〜 ${fmtDate(rep.week_end)}（金）　${rep.final?`Analytics確定値 ${rep.confirmed_days}/7日`:`※速報値（確定 ${rep.confirmed_days}/7日）。確定データが揃い次第自動更新されます`}</div>
+
+${verdictBlock(rep, views, viewsPrev)}
 
 <h2>基本指標（前週比）</h2>
 <table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減率</th></tr>
@@ -258,26 +336,16 @@ ${ai.generated_at?`<div class="note">分析生成日: ${fmtDate(String(ai.genera
 
 <h2>週間トップ動画</h2>
 <table><tr><th style="width:26px">#</th><th>タイトル</th><th class="num">今週視聴回数</th><th class="num">前週視聴回数</th></tr>
-${(rep.top_videos||[]).map((v,i)=>`<tr><td>${i+1}</td><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:#1a1a1a">${esc(v.title)}</a></td><td class="num">${fmtFull(v.views_week)}</td><td class="num">${fmtFull(v.views_prev_week)}</td></tr>`).join('')||'<tr><td colspan="4">データなし</td></tr>'}</table>
+${(()=>{const L=rep.top_videos||[]; const mx=Math.max(1,...L.map(v=>v.views_week));
+  return L.map((v,i)=>`<tr><td>${i+1}</td><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:#1a1a1a">${esc(v.title)}</a></td><td class="num" title="${fmtFull(v.views_week)}">${fmtMan(v.views_week)}${miniBar(v.views_week,mx)}</td><td class="num">${fmtMan(v.views_prev_week)}</td></tr>`).join('')||'<tr><td colspan="4">データなし</td></tr>';})()}</table>
 
 <h2>流入経路</h2>
 ${trafficRows?`<table><tr><th>経路</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減率</th></tr>${trafficRows}</table>`:'<div class="note">この週の流入経路データはまだ取得されていません（次回の自動更新で追加されます）</div>'}
 
-<h2>視聴者層（新規 vs リピーター）</h2>
-${ssC?`<table><tr><th>週</th><th class="num">登録者による視聴</th><th class="num">非登録者による視聴</th><th class="num">総視聴</th></tr>
-<tr><td>今週</td><td class="num">${ssC.p}%</td><td class="num">${100-ssC.p}%</td><td class="num">${fmtFull(ssC.tot)}</td></tr>
-${ssP?`<tr><td>前週</td><td class="num">${ssP.p}%</td><td class="num">${100-ssP.p}%</td><td class="num">${fmtFull(ssP.tot)}</td></tr>`:''}</table>`:'<div class="note">この週の視聴者層データはまだ取得されていません（次回の自動更新で追加されます）</div>'}
 
 ${couponBlock(rep)}
 
-<h2>投稿計画の進捗</h2>
-<div style="margin-bottom:7px">計画 <b>${pp.planned}</b> 本 ／ シート上「投稿済み」 <b>${pp.posted}</b> 本 ／ 実際に公開 <b>${(rep.new_videos||[]).length}</b> 本</div>
-${(pp.items||[]).length?`<table><tr><th style="width:78px">予定日</th><th>タイトル</th><th>企画・ナレーター・広告</th><th style="width:90px">ステータス</th></tr>
-${pp.items.map(p=>{
-  const meta = [p.type,p.narrator,p.ads].filter(Boolean).join('・');
-  const done = p.matched || (p.status||'').includes('済');
-  return `<tr><td>${fmtDate(p.date)}</td><td>${esc(p.title)}</td><td>${esc(meta)}</td><td>${done?'投稿済み':esc(p.status||'—')}</td></tr>`;
-}).join('')}</table>`:'<div class="note">この週の計画データなし</div>'}
+${planBlock(rep, pp)}
 
 <div class="foot">CHANNEL DESK 自動生成 ／ 表示日時: ${new Date().toLocaleString('ja-JP')} ／ りいポーカーチャンネル【PokerGuild】</div>`;
 }
