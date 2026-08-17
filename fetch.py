@@ -125,8 +125,17 @@ def _sheet_rows(gid, label):
 # Google スプレッドシート: 動画アーカイブ（video_id → 企画タイプ/ナレーター）
 # ──────────────────────────────────────────────────────────
 def fetch_video_archive():
-    """動画アーカイブタブから video_id ごとの手入力(企画タイプ/ナレーター)を取得。
-    Returns: {video_id: {"type": ..., "narrator": ...}}（値が入っている行のみ）"""
+    """動画アーカイブタブから video_id ごとの手入力を取得。
+    Returns: {video_id: {"type", "narrator", "coupon", "coupon_date"}}（値が入っている行のみ）
+
+    ⚠ **列は名前で探しています。**列を足したり並べ替えても壊れません。逆に、
+      列名を変えると黙って空になります（エラーにはなりません）。
+
+    `coupon` / `coupon_date` は 2026-08-17 に追加（運営者の依頼「クーポンの掲出日を記録したい」）。
+    **シートにこの2列がまだ無くても動きます**（空文字になるだけ）。列名は
+    「クーポンコード」「掲出日」です。掲出日は**旧作に後から貼ったときだけ**入れます
+    （新作は公開日と同じなので空でよい）。
+    """
     rows = _sheet_rows(ARCHIVE_GID, "動画アーカイブ")
     if not rows:
         return {}
@@ -136,19 +145,44 @@ def fetch_video_archive():
     except ValueError:
         print("  [WARN] アーカイブに video_id 列がありません")
         return {}
-    i_type = header.index("企画タイプ") if "企画タイプ" in header else -1
-    i_nar  = header.index("ナレーター") if "ナレーター" in header else -1
 
-    result = {}
+    def col(*names):
+        for n in names:
+            if n in header:
+                return header.index(n)
+        return -1
+
+    i_type = col("企画タイプ")
+    i_nar  = col("ナレーター")
+    i_cp   = col("クーポンコード", "クーポン", "コード")
+    i_cpd  = col("掲出日", "クーポン掲出日")
+
+    def cell(r, i):
+        return r[i].strip() if 0 <= i < len(r) else ""
+
+    result, n_cp = {}, 0
     for r in rows[1:]:
         if len(r) <= i_id or not r[i_id].strip():
             continue
         vid = r[i_id].strip()
-        typ = r[i_type].strip() if i_type >= 0 and len(r) > i_type else ""
-        nar = r[i_nar].strip()  if i_nar  >= 0 and len(r) > i_nar  else ""
-        if typ or nar:
-            result[vid] = {"type": typ, "narrator": nar}
-    print(f"  動画アーカイブ: {len(result)} 本に手入力あり")
+        typ = cell(r, i_type)
+        nar = cell(r, i_nar)
+        cp  = cell(r, i_cp)
+        cpd = cell(r, i_cpd)
+        if typ or nar or cp:
+            e = {"type": typ, "narrator": nar}
+            if cp:
+                e["coupon"] = cp
+                n_cp += 1
+            if cpd:
+                e["coupon_date"] = cpd
+            result[vid] = e
+    msg = f"  動画アーカイブ: {len(result)} 本に手入力あり"
+    if i_cp >= 0:
+        msg += f"（クーポンコードあり {n_cp} 本）"
+    else:
+        msg += "（クーポンコード列はまだありません）"
+    print(msg)
     return result
 
 # ──────────────────────────────────────────────────────────
@@ -1134,6 +1168,16 @@ def fetch_video_extra_analytics(access_token, top_video_ids, days=365):
 WEEKLY_REPORT_BACKFILL_WEEKS = 8    # 遡って生成する週数
 WEEKLY_REPORT_KEEP           = 26   # 保持する週数
 
+# ★ 週ごとに「動画別の流入経路」を取る本数（2026-08-17 追加・運営者の依頼）。
+#   なぜ要るか: これまでチャンネル全体の流入経路しか無く、「ショートフィードが減った」を
+#   **経路の入れ替わり** と **ショート面の露出減** に分けられませんでした（2026-08-08 週の分析で実際に詰まった）。
+#   動画単位で見れば「特定の動画で落ちた」のか「全体で落ちた」のかを切り分けられます。
+#   回遊構成（関連動画・終了画面）を変えた動画で回遊が増えたかも、同じデータで見られます。
+#   ⚠ 1本につき1リクエストです。増やすとその分だけ実行が遅くなります。
+#   ⚠ 確定した週は作り直さないので、1週につき実質1回しか取りません（`update_weekly_reports`）。
+#   ⚠ **すでに確定している過去の週には入りません。**2026-08-17 以降に確定する週から溜まります。
+WEEKLY_VIDEO_TRAFFIC_TOP_N   = 5
+
 def _jst_today():
     """JST の今日（Actions は UTC で動くため明示変換）"""
     return (datetime.now(timezone.utc) + timedelta(hours=9)).date()
@@ -1189,6 +1233,39 @@ def fetch_week_traffic(access_token, start, end):
         out["subscribed_status"] = {row[0]: int(float(row[1])) for row in data["rows"]}
     time.sleep(0.1)
     return out
+
+def fetch_video_week_traffic(access_token, video_ids, start, end):
+    """その週・その動画の流入経路を取る（`fetch_week_traffic` のチャンネル版に対する動画版）。
+
+    `fetch_video_extra_analytics` とは別物です。あちらは **通算365日** の動画別で、
+    「この動画は生涯どこから来たか」しか分かりません。週ごとの増減を見るにはこちらが要ります。
+
+    Returns: {video_id: [{source_type, views}, ...]}  取れなかった動画はキーごと入りません。
+    ⚠ 1本1リクエスト。失敗しても None を返さず、取れたぶんだけ返します（週次レポート生成を止めない）。
+    """
+    import time
+    out = {}
+    for vid in video_ids:
+        if not vid:
+            continue
+        data = analytics_get(access_token, {
+            "ids":        f"channel=={CHANNEL_ID}",
+            "dimensions": "insightTrafficSourceType",
+            "filters":    f"video=={vid}",
+            "metrics":    "views",
+            "startDate":  start,
+            "endDate":    end,
+            "sort":       "-views",
+            "maxResults": 8,
+        })
+        if data and data.get("rows"):
+            out[vid] = [
+                {"source_type": row[0], "views": int(float(row[1]))}
+                for row in data["rows"]
+            ]
+        time.sleep(0.1)
+    return out
+
 
 def _parse_plan_date(s):
     """'2026/6/1' 形式 → date。失敗は None"""
@@ -1427,6 +1504,18 @@ def update_weekly_reports(weekly_reports, access_token, *, daily, analytics_dail
         # AI分析(別プロセスが書き込む)は再生成時も引き継ぐ
         if old and old.get("ai_analysis"):
             rep["ai_analysis"] = old["ai_analysis"]
+
+        # 動画別の流入経路（その週の上位 N 本）。2026-08-17 追加。
+        # ⚠ ここは確定していない週でしか動きません（確定済みは上の continue で抜けています）。
+        #   そのため1週につき実質1回しか取らず、確定した時点の値で固定されます。
+        if access_token:
+            vids = [v.get("video_id") for v in rep.get("top_videos", [])[:WEEKLY_VIDEO_TRAFFIC_TOP_N]]
+            vt = fetch_video_week_traffic(access_token, vids, ws.isoformat(), we.isoformat())
+            if vt:
+                rep["video_traffic"] = vt
+            elif old and old.get("video_traffic"):
+                # 今回取れなかっただけなら、前回取れていた値を落とさない
+                rep["video_traffic"] = old["video_traffic"]
         # 確定条件: 日付経過 + Analytics が7日分揃っている + (トークンありなら流入経路も取得済み)
         rep["final"] = (
             today_j >= we + timedelta(days=3)
