@@ -127,6 +127,25 @@ jobs:
           fi
           python docs_check.py pending
 
+      # ★ 週次AI分析の「形」を見張る（2026-08-17 追加）。
+      #   このプロジェクトで唯一、自動チェックが無かった場所です。
+      #   §7 の「本文 400〜700字程度」を誰も数えておらず、気づいたときには
+      #   9週すべてが §7 のどこかに違反していました（6週は headline 欠落・2週は字数超過）。
+      #   7月まで7週連続で守れていた実績があっても、外れたことに人は気づけません。
+      #   docs_check と同じく JST 9時だけ通知する（LINE の通数を増やさないため）。
+      - name: 週次AI分析の形をチェック（JST 9時のみ）
+        if: success()
+        continue-on-error: true
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
+        run: |
+          if [ "$(date -u +%H)" != "00" ]; then
+            echo "対象時刻ではないのでスキップします（UTC $(date -u +%H)時）"
+            exit 0
+          fi
+          python check_report_format.py notify
+
       - name: 失敗時 LINE 通知
         if: failure()
         env:
