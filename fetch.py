@@ -1267,6 +1267,46 @@ def fetch_video_week_traffic(access_token, video_ids, start, end):
     return out
 
 
+# ★ 週次レポートに「直近26週（約6か月）の中でこの週はどのへんか」を出すための系列。
+#   2026-08-17 追加（オーナーの依頼「週間しかないので直近3〜6月とも比較したい」）。
+#   なぜ要るか: 前週比だけだと読み違えます。2026-08-08 週は前週比 -51.9% ですが、
+#   26週平均の 106% で**平年並みかやや上**でした。前週が26週で突出していただけです。
+#   ⚠ `analytics_daily` は 2022-09-16 から1,400日以上あるので、期間の制約はありません。
+#   ⚠ 7日そろっていない週は入れません（日数の違う週を並べると高さの比較が壊れるため）。
+WEEKLY_TREND_WEEKS = 26
+
+
+def build_weekly_trend(analytics_daily, weeks=WEEKLY_TREND_WEEKS):
+    """直近 weeks 週（土〜金）の視聴回数と登録者純増を返す。古い順。
+
+    Returns: [{"week_start","week_end","views","subs_net"}, ...]
+    ⚠ 確定値が7日そろった週だけを返します。今週や、確定待ちの週は入りません。
+    """
+    ad = {r["date"]: r for r in analytics_daily if r.get("views", 0) > 0}
+    if not ad:
+        return []
+    last = max(ad)                                   # 確定している最後の日
+    d = date.fromisoformat(last)
+    # 直近の「金曜」を探す（土=5 開始なので週末は金=4）
+    end = d - timedelta(days=(d.weekday() - 4) % 7)
+    out = []
+    for i in range(weeks - 1, -1, -1):
+        we = end - timedelta(days=7 * i)
+        ws = we - timedelta(days=6)
+        days = [(ws + timedelta(days=j)).isoformat() for j in range(7)]
+        got = [ad[x] for x in days if x in ad]
+        if len(got) < 7:                             # 7日そろっていない週は出さない
+            continue
+        out.append({
+            "week_start": ws.isoformat(),
+            "week_end":   we.isoformat(),
+            "views":      sum(x.get("views", 0) for x in got),
+            "subs_net":   sum(x.get("subs_gained", 0) - x.get("subs_lost", 0) for x in got),
+        })
+    print(f"  週次トレンド: {len(out)} 週（{out[0]['week_start']}〜{out[-1]['week_end']}）" if out else "  週次トレンド: 0 週")
+    return out
+
+
 def _parse_plan_date(s):
     """'2026/6/1' 形式 → date。失敗は None"""
     try:
@@ -1736,6 +1776,7 @@ def main():
         "post_plan":             post_plan,             # 投稿計画（Google スプレッドシート）
         "video_archive":         video_archive,         # 動画アーカイブ（video_id→企画タイプ/ナレーター手入力）
         "weekly_reports":        weekly_reports,        # 週次レポート（土〜金、最大26週）
+        "weekly_trend":          build_weekly_trend(analytics_daily),  # 直近26週の視聴回数・登録純増（グラフ用）
         "coupon":                coupon,                # JOPT Games クーポンの集計（個人情報は含めない）
     }
 

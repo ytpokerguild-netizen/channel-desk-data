@@ -52,6 +52,7 @@
 const DATA_URL = 'data.json';
 let REPORTS = [];
 let COUPON  = null;   // data.json の coupon（週ごとの節を出すのに使う）
+let TREND   = null;   // data.json の weekly_trend（直近26週のグラフ用）
 
 const fmtFull = n => (n??0).toLocaleString('ja-JP');
 const fmtDate = s => s ? s.replace(/-/g,'/') : '';
@@ -73,6 +74,92 @@ const TRAFFIC_LABEL = {
   '5':'外部サイト','7':'Google検索','19':'通知','18':'エンドスクリーン',
   '11':'再生リスト','0':'直接/不明','1':'広告','17':'プロモーション','8':'その他'
 };
+
+// ════════════════════════════════
+// 直近26週（約6か月）の位置づけ
+// 2026-08-17 追加（オーナーの依頼「週間しかないので直近3〜6月とも比較したい」）。
+// ⚠ 前週比だけだと読み違えます。2026-08-08 週は前週比 -51.9% でしたが、
+//   26週平均の 106% で「平年並みかやや上」でした。前週が突出していただけです。
+// ⚠ **外部ライブラリを使わず SVG を直接書いています。**印刷/PDF で確実に出すためです。
+//   Chart.js に置き換えないでください（CDN が落ちると白紙になります）。
+// ⚠ 色は「強調」の形です。見ている週だけ濃い金、他は薄いグレー。1系列なので凡例は出しません。
+//   薄いグレーは白地に対して 3:1 未満なので、**目盛りと当週の直接ラベルが必須**です（外さないこと）。
+// ════════════════════════════════
+const TREND_CUR = '#8a6d1a';   // 見ている週
+const TREND_CTX = '#b3ada0';   // それ以外の週（文脈）
+
+// 上だけ角丸・底は直角のカラム（データの端だけ丸める）
+function colPath(x, y, w, h, r){
+  if(h <= 0) return '';
+  const rr = Math.min(r, h, w/2);
+  return `M${x} ${y+h} L${x} ${y+rr} Q${x} ${y} ${x+rr} ${y} L${x+w-rr} ${y} Q${x+w} ${y} ${x+w} ${y+rr} L${x+w} ${y+h} Z`;
+}
+function niceMax(v){
+  if(v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  for(const m of [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]){ if(v <= m*p) return m*p; }
+  return 10*p;
+}
+
+function trendBlock(rep){
+  const T = TREND;
+  if(!T || T.length < 4) return '';                 // 週が少なすぎるうちは出さない
+  const W = 780, H = 208, PL = 58, PR = 8, TOP = 16, BASE = 150;
+  const plotW = W - PL - PR;
+  const band  = plotW / T.length;
+  const bw    = Math.min(24, Math.max(3, band - 2));   // ≤24px・隣と2pxあける
+  const max   = niceMax(Math.max(...T.map(d=>d.views)));
+  const avg   = T.reduce((s,d)=>s+d.views,0) / T.length;
+  const yOf   = v => BASE - (v/max) * (BASE - TOP);
+  const curIx = T.findIndex(d=>d.week_start===rep.week_start);
+
+  // 目盛り（0・半分・上限）。丸い数字だけにする
+  const ticks = [0, max/2, max].map(v=>
+    `<line x1="${PL}" y1="${yOf(v).toFixed(1)}" x2="${W-PR}" y2="${yOf(v).toFixed(1)}" stroke="#e8e5dc" stroke-width="1"/>
+     <text x="${PL-7}" y="${(yOf(v)+3.5).toFixed(1)}" text-anchor="end" font-size="10" fill="#888">${fmtFull(Math.round(v))}</text>`).join('');
+
+  const bars = T.map((d,i)=>{
+    const x = PL + band*i + (band-bw)/2, y = yOf(d.views);
+    const on = i === curIx;
+    return `<path d="${colPath(x, y, bw, BASE-y, 4)}" fill="${on?TREND_CUR:TREND_CTX}"><title>${fmtDate(d.week_start)}〜${fmtDate(d.week_end)}　${fmtFull(d.views)}回　登録純増 ${d.subs_net>=0?'+':''}${d.subs_net}</title></path>`;
+  }).join('');
+
+  // 月が変わる週だけ x ラベルを出す（全部出すと重なる）
+  const xlab = T.map((d,i)=>{
+    const m = d.week_start.slice(5,7);
+    if(i>0 && T[i-1].week_start.slice(5,7)===m) return '';
+    return `<text x="${(PL+band*i+band/2).toFixed(1)}" y="${BASE+15}" text-anchor="middle" font-size="10" fill="#888">${parseInt(m,10)}月</text>`;
+  }).join('');
+
+  // 見ている週の値を直接ラベル（薄いグレーの説明責任 = 目盛り＋この数字）
+  let curLab = '';
+  if(curIx >= 0){
+    const d = T[curIx], x = PL + band*curIx + band/2, y = yOf(d.views);
+    const anchor = curIx > T.length-4 ? 'end' : (curIx < 3 ? 'start' : 'middle');
+    const dx = anchor==='end' ? bw/2 : (anchor==='start' ? -bw/2 : 0);
+    curLab = `<text x="${(x+dx).toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="${anchor}" font-size="11" font-weight="700" fill="#1a1a1a">${fmtFull(d.views)}</text>`;
+  }
+
+  const ya = yOf(avg);
+  const cur = curIx>=0 ? T[curIx] : null;
+  const ratio = cur ? Math.round(cur.views/avg*100) : null;
+
+  return `
+<h2>直近${T.length}週の中での位置（約6か月）</h2>
+<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img"
+     aria-label="直近${T.length}週の週間視聴回数。この週は${cur?fmtFull(cur.views):''}回で、${T.length}週平均の${ratio}%。">
+  ${ticks}
+  ${bars}
+  <line x1="${PL}" y1="${ya.toFixed(1)}" x2="${W-PR}" y2="${ya.toFixed(1)}" stroke="#666" stroke-width="1" stroke-dasharray="5 4"/>
+  <rect x="${PL+2}" y="${(ya-15).toFixed(1)}" width="112" height="13" fill="#fff"/>
+  <text x="${PL+5}" y="${(ya-5).toFixed(1)}" font-size="10" fill="#666">${T.length}週平均 ${fmtFull(Math.round(avg))}</text>
+  ${curLab}
+  <line x1="${PL}" y1="${BASE}" x2="${W-PR}" y2="${BASE}" stroke="#ddd" stroke-width="1"/>
+  ${xlab}
+</svg>
+${cur?`<div style="margin-top:2px"><b>この週は ${fmtFull(cur.views)} 回で、${T.length}週平均 ${fmtFull(Math.round(avg))} 回の ${ratio}%。</b></div>`:''}
+<div class="note">濃い色がこの週、薄い色がそれ以外の週です。前週比だけでは「前週がどんな週だったか」で見え方が変わるため、6か月の中での位置を併記しています。${T.length}週ぶんは <b>7日そろった週だけ</b>を並べています。</div>`;
+}
 
 // ════════════════════════════════
 // クーポン施策の節
@@ -157,6 +244,8 @@ function renderReportPage(rep){
 ${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td></tr>`).join('')}</table>
 ${c.subscribers_end!=null?`<div class="note">週末時点の登録者数: ${fmtFull(Math.round(c.subscribers_end))} 人</div>`:''}
 
+${trendBlock(rep)}
+
 ${ai?`<h2>AI分析と提案</h2>
 ${ai.headline?`<div style="font-weight:700;font-size:13.5px;padding:9px 13px;background:#eef7f0;border-left:4px solid #4caf7d;border-radius:0 6px 6px 0;margin-bottom:9px">${esc(ai.headline)}</div>`:''}
 ${String(ai.analysis||'').split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 7px">${esc(p)}</p>`).join('')}
@@ -210,6 +299,7 @@ async function loadReport(){
     const data = await r.json();
     REPORTS = (data.weekly_reports||[]).slice().sort((a,b)=>b.week_start.localeCompare(a.week_start));
     COUPON  = data.coupon || null;
+    TREND   = data.weekly_trend || null;
     document.getElementById('loadMsg').style.display = 'none';
     if(!REPORTS.length){
       document.getElementById('loadMsg').style.display = 'block';

@@ -702,6 +702,17 @@ body{
         </div>
       </div>
 
+      <!-- ★ 2026-08-17 追加（オーナーの依頼「週間しかないので直近3〜6月とも比較したい」）。
+           前週比だけだと読み違えます。2026-08-08 週は前週比 -51.9% でしたが、26週平均の 106% でした。
+           ⚠ 「強調」の形です。見ている週だけ --gold、他は --muted-2。1系列なので凡例は出しません。
+           ⚠ 同じグラフが report.html にもあります（あちらは印刷用に SVG 直書き）。数字の元は
+              どちらも data.json の weekly_trend なので、直すときは描き方だけを両方直してください。 -->
+      <div class="card" id="wrTrendCard" style="display:none">
+        <h3><span class="dot"></span>直近26週の中での位置<span id="wrTrendPos" style="margin-left:auto;font-size:11px;color:var(--muted);text-transform:none;font-family:'Noto Sans JP',sans-serif"></span></h3>
+        <div style="height:190px"><canvas id="wrTrendChart"></canvas></div>
+        <div id="wrTrendNote" style="font-size:11px;color:var(--muted-2);margin-top:8px"></div>
+      </div>
+
       <div class="card" id="wrAiCard" style="display:none">
         <h3><span class="dot"></span>🤖 AI分析と提案<span id="wrAiDate" style="margin-left:auto;font-size:11px;color:var(--muted-2);text-transform:none;font-family:'Noto Sans JP',sans-serif"></span></h3>
         <div id="wrAi" style="font-size:12.5px;line-height:1.8"></div>
@@ -793,6 +804,7 @@ const VIDEO_DAILY_URL = window.location.protocol === 'file:'
 let G = null;
 let mainChart = null, trafficChart = null, countryChart = null, vmodalChart = null;
 let postPaceChart = null, subsDetailChart = null, dowChart = null, durationChart = null;
+let wrTrendChart = null;
 let filterFrom = null, filterTo = null;
 let compareMode = false;
 let filterFromB = null, filterToB = null;
@@ -2817,18 +2829,23 @@ function renderReport(){
   const hasData = reports.length > 0;
   document.getElementById('wrEmpty').style.display = hasData ? 'none' : 'block';
   document.getElementById('wrBody').style.display  = hasData ? '' : 'none';
-  ['wrTopCard','wrTrafficCard','wrPlanCard'].forEach(id=>{
+  ['wrTopCard','wrTrafficCard','wrPlanCard','wrTrendCard'].forEach(id=>{
     document.getElementById(id).style.display = hasData ? '' : 'none';
   });
   sel.style.display = hasData ? '' : 'none';
   document.getElementById('wrPdfBtn').style.display = hasData ? '' : 'none';
   if(!hasData) return;
 
+  // ⚠ 選ばれた週を **innerHTML を作り直す前に** 読むこと（2026-08-17 修正）。
+  //   作り直すと select の値が先頭に戻るので、後から読むと「いま選んだ週」が消えます。
+  //   このせいで週セレクタが最初から効いておらず、週を変えてもサマリーが変わりませんでした。
+  const want = sel.value || wrSelected;
   sel.innerHTML = reports.map(r=>
     `<option value="${r.week_start}">${fmtDate(r.week_start)} 〜 ${fmtDate(r.week_end)}${r.final?'':'［速報］'}</option>`).join('');
-  if(wrSelected && reports.some(r=>r.week_start===wrSelected)) sel.value = wrSelected;
+  if(want && reports.some(r=>r.week_start===want)) sel.value = want;
   const rep = reports.find(r=>r.week_start===sel.value) || reports[0];
   wrSelected = rep.week_start;
+  renderWeeklyTrend(rep);
   const c = rep.channel || {};
 
   // 速報週は実測(スナップショット差分)を優先、確定週は Analytics 確定値
@@ -2949,6 +2966,73 @@ function renderReport(){
         ${meta?`<span style="flex-shrink:0;color:var(--muted-2);font-size:11px">${meta}</span>`:''}
         <span style="flex-shrink:0;color:${done?'var(--gold)':'var(--muted)'}">${done?'投稿済み':(p.status||'—')}</span>
       </div>`;}).join('') || '<div style="font-size:12px;color:var(--muted-2)">この週の計画データなし</div>'}`;
+}
+
+// ════════════════════════════════
+// 週次レポート: 直近26週の中での位置（2026-08-17 追加）
+// ⚠ 「強調」の形です。見ている週だけ --gold、他は --muted-2。1系列なので凡例は出しません。
+// ⚠ 数字の元は data.json の weekly_trend。report.html にも同じグラフがあります（あちらは SVG 直書き）。
+// ════════════════════════════════
+function renderWeeklyTrend(rep){
+  const T = G.weekly_trend || [];
+  const card = document.getElementById('wrTrendCard');
+  if(!card) return;
+  if(T.length < 4){ card.style.display='none'; return; }
+  card.style.display = '';
+
+  const avg   = T.reduce((s,d)=>s+d.views,0) / T.length;
+  const curIx = T.findIndex(d=>d.week_start===rep.week_start);
+  const cur   = curIx>=0 ? T[curIx] : null;
+  const GOLD='#C9A227', CTX='#5E726A';
+
+  document.getElementById('wrTrendPos').textContent =
+    cur ? `この週は ${T.length}週平均の ${Math.round(cur.views/avg*100)}%` : '';
+  document.getElementById('wrTrendNote').innerHTML =
+    `濃い色がこの週、薄い色がそれ以外の週。破線は${T.length}週平均（${fmtFull(Math.round(avg))}回）。`
+    + `<b>前週比だけでは「前週がどんな週だったか」で見え方が変わる</b>ので、6か月の中での位置を併せて見てください。`
+    + `7日そろった週だけを並べています。`;
+
+  if(wrTrendChart) wrTrendChart.destroy();
+  wrTrendChart = new Chart(document.getElementById('wrTrendChart'),{
+    type:'bar',
+    data:{
+      labels: T.map(d=>d.week_start.slice(5).replace('-','/')),
+      datasets:[{
+        data: T.map(d=>d.views),
+        backgroundColor: T.map((d,i)=> i===curIx ? GOLD : CTX),
+        borderRadius:{topLeft:4,topRight:4,bottomLeft:0,bottomRight:0},
+        borderSkipped:false, maxBarThickness:24, categoryPercentage:.92, barPercentage:.92,
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        tooltip:{callbacks:{
+          title: it => `${T[it[0].dataIndex].week_start.replace(/-/g,'/')}〜${T[it[0].dataIndex].week_end.replace(/-/g,'/')}`,
+          label: it => `視聴回数 ${fmtFull(it.parsed.y)}回 ／ 登録純増 ${T[it.dataIndex].subs_net>=0?'+':''}${T[it.dataIndex].subs_net}人`
+        }}
+      },
+      scales:{
+        x:{grid:{display:false}, ticks:{color:'#5E726A', font:{size:10}, maxRotation:0, autoSkip:true, maxTicksLimit:9}},
+        y:{beginAtZero:true, grid:{color:'rgba(255,255,255,.07)'},
+           ticks:{color:'#5E726A', font:{size:10}, callback:v=>fmt(v)}}
+      }
+    },
+    plugins:[{
+      id:'wrAvgLine',
+      afterDatasetsDraw(c){
+        const y=c.scales.y.getPixelForValue(avg), a=c.chartArea, x=c.ctx;
+        x.save();
+        x.setLineDash([5,4]); x.strokeStyle='#8FA396'; x.lineWidth=1;
+        x.beginPath(); x.moveTo(a.left,y); x.lineTo(a.right,y); x.stroke();
+        x.setLineDash([]);
+        x.font='10px "Noto Sans JP",sans-serif'; x.fillStyle='#8FA396'; x.textBaseline='bottom';
+        x.fillText(`${T.length}週平均 ${fmtFull(Math.round(avg))}`, a.left+4, y-3);
+        x.restore();
+      }
+    }]
+  });
 }
 
 // ════════════════════════════════
