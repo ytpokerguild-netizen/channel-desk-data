@@ -180,6 +180,95 @@ ${cur?``:''}
 }
 
 // ════════════════════════════════
+// 横棒グラフの部品（2026-08-17 追加）
+// オーナーの方針:「まとめ以外のデータの文章を減らし、その分をチャートで直感的に見せる。
+//                 まとめと考察には文章を使う」
+// ⚠ 表と同じ数字を文章でも書かないこと。**数字は表かグラフ、文章は考察**です。
+// 色（すべて検証済み・白地に対して 3:1 以上、色覚多様性でも区別できる）:
+//   増 #1f6f9c / 減 #c0553f（発散・protan でも ΔE 14.3）
+//   今週 #8a6d1a / 前週 #6f8f9e（2系列・ΔE 15.5）
+//   1系列 #b3ada0
+// ════════════════════════════════
+const C_UP='#1f6f9c', C_DOWN='#c0553f', C_NOW='#8a6d1a', C_PREV='#6f8f9e', C_ONE='#b3ada0';
+
+// rows: [{label, bars:[{v,color}], right}]  ゼロから右に伸びる横棒
+function hbarSVG(rows, {W=780, labelW=250, rightW=70, rowH=26, max=null}={}){
+  if(!rows.length) return '';
+  const H = rows.length*rowH + 6;
+  const x0 = labelW, plotW = W - labelW - rightW;
+  const mx = max || Math.max(1, ...rows.flatMap(r=>r.bars.map(b=>b.v||0)));
+  const body = rows.map((r,i)=>{
+    const y0 = i*rowH + 3;
+    const n  = r.bars.length;
+    const bh = Math.min(14, (rowH-8-2*(n-1))/n);       // 2px の隙間で区切る
+    const bars = r.bars.map((b,j)=>{
+      const w = Math.max(1, (b.v||0)/mx*plotW), y = y0 + (rowH-8-(bh*n+2*(n-1)))/2 + j*(bh+2);
+      return `<rect x="${x0}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${b.color}"/>`;
+    }).join('');
+    return `${bars}
+<text x="${labelW-8}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="#1a1a1a">${r.label}</text>
+<text x="${W-4}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="#444" font-weight="600">${r.right}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${body}</svg>`;
+}
+
+// 増減（ゼロ線の左右に伸びる）。rows: [{label, v, right}]
+function divSVG(rows, {W=780, labelW=250, rightW=76, rowH=26}={}){
+  if(!rows.length) return '';
+  const H = rows.length*rowH + 16;
+  const x0 = labelW, plotW = W - labelW - rightW;
+  const mx = Math.max(1, ...rows.map(r=>Math.abs(r.v||0)));
+  const zero = x0 + plotW/2;
+  const body = rows.map((r,i)=>{
+    const y0=i*rowH+3, bh=13, y=y0+(rowH-8-bh)/2;
+    const w = Math.abs(r.v||0)/mx*(plotW/2);
+    const up = (r.v||0) >= 0;
+    return `<rect x="${(up?zero:zero-w).toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1,w).toFixed(1)}" height="${bh}" rx="3" fill="${up?C_UP:C_DOWN}"/>
+<text x="${labelW-8}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="#1a1a1a">${r.label}</text>
+<text x="${W-4}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="${up?C_UP:C_DOWN}" font-weight="600">${r.right}</text>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${body}
+<line x1="${zero}" y1="0" x2="${zero}" y2="${H-13}" stroke="#ccc" stroke-width="1"/>
+<text x="${zero-5}" y="${H-2}" text-anchor="end" font-size="10" fill="#888">← 減</text>
+<text x="${zero+5}" y="${H-2}" font-size="10" fill="#888">増 →</text></svg>`;
+}
+// ラベル欄に入る文字数は幅から計算する（11px フォントで日本語は約12px/字）。
+// ⚠ 直に文字数を決め打ちすると、長いタイトルで左にはみ出して切れます（2026-08-17 に実際に起きた）。
+const fitChars = labelW => Math.max(6, Math.floor((labelW-14)/12));
+const cut = (t,n)=> (t||'').length>n ? esc(t.slice(0,n-1))+'…' : esc(t||'');
+
+// ── 要因分解: 今週の増減はどの動画で起きたか ──────────────────
+function causeBlock(rep, views, viewsPrev){
+  const L = (rep.top_videos||[]).map(v=>({t:v.title, d:(v.views_week||0)-(v.views_prev_week||0)}));
+  if(!L.length || viewsPrev==null) return '';
+  L.sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
+  const head = L.slice(0,5), rest = (views-viewsPrev) - head.reduce((s,x)=>s+x.d,0);
+  const LW=310, N=fitChars(LW);
+  const rows = head.map(x=>({label:cut(x.t,N), v:x.d, right:(x.d>=0?'+':'−')+fmtMan(Math.abs(x.d))}));
+  if(Math.abs(rest) > 0) rows.push({label:'その他の動画（合計）', v:rest, right:(rest>=0?'+':'−')+fmtMan(Math.abs(rest))});
+  const tot = views-viewsPrev;
+  const top = head[0];
+  const share = tot ? Math.round(top.d/tot*100) : 0;
+  return `<h2>今週の増減はどこで起きたか</h2>
+<div style="margin-bottom:5px">前週から <b style="color:${tot>=0?C_UP:C_DOWN}">${tot>=0?'+':'−'}${fmtMan(Math.abs(tot))}回</b>${(share>=40&&share<=160)?`。うち <b>${cut(top.t,18)}</b> だけで <b>${share}%</b>を占めます。`:'。'}</div>
+${divSVG(rows,{labelW:LW})}`;
+}
+
+// ── 新作の初速（公開2日間） ──────────────────────────────
+function firstBlock(rep){
+  const L = (rep.new_videos||[]).filter(v=>v.first2d!=null);
+  const wait = (rep.new_videos||[]).length - L.length;
+  if(!L.length) return '';
+  L.sort((a,b)=>b.first2d-a.first2d);
+  const LW=310, N=fitChars(LW)-6;   // 先頭に「08/12 」が付くぶん短く
+  const rows = L.map(v=>({label:`${fmtDate(v.published_at).slice(5)} ${cut(v.title,N)}`, bars:[{v:v.first2d,color:C_ONE}], right:fmtMan(v.first2d)}));
+  const ratio = L.length>1 ? (L[0].first2d/Math.max(1,L[L.length-1].first2d)) : null;
+  return `<h2>新作の初速（公開2日間）</h2>
+${hbarSVG(rows,{labelW:LW})}
+<div class="note">${ratio&&ratio>=3?`いちばん強い回と弱い回で <b>${ratio.toFixed(0)}倍</b>の開きがあります。`:''}${wait?`ほか ${wait}本 は公開2日を過ぎていないので出していません。`:''}</div>`;
+}
+
+// ════════════════════════════════
 // クーポン施策の節
 // ⚠ 「その週に何日ぶんのデータがあるか」を coupon.daily から数えています。
 //   クーポンの入力データは 2026-08-04 が最初で、それ以前の週は0日です。
@@ -324,6 +413,8 @@ ${c.subscribers_end!=null?`<div class="note">週末時点の登録者数: ${fmtF
 
 ${trendBlock(rep)}
 
+${causeBlock(rep, views, viewsPrev)}
+
 ${ai?`<h2>AI分析と提案</h2>
 ${ai.headline?`<div style="font-weight:700;font-size:13.5px;padding:9px 13px;background:#eef7f0;border-left:4px solid #4caf7d;border-radius:0 6px 6px 0;margin-bottom:9px">${esc(ai.headline)}</div>`:''}
 ${String(ai.analysis||'').split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 7px">${esc(p)}</p>`).join('')}
@@ -339,8 +430,16 @@ ${ai.generated_at?`<div class="note">分析生成日: ${fmtDate(String(ai.genera
 ${(()=>{const L=rep.top_videos||[]; const mx=Math.max(1,...L.map(v=>v.views_week));
   return L.map((v,i)=>`<tr><td>${i+1}</td><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:#1a1a1a">${esc(v.title)}</a></td><td class="num" title="${fmtFull(v.views_week)}">${fmtMan(v.views_week)}${miniBar(v.views_week,mx)}</td><td class="num">${fmtMan(v.views_prev_week)}</td></tr>`).join('')||'<tr><td colspan="4">データなし</td></tr>';})()}</table>
 
+${firstBlock(rep)}
+
 <h2>流入経路</h2>
-${trafficRows?`<table><tr><th>経路</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減率</th></tr>${trafficRows}</table>`:'<div class="note">この週の流入経路データはまだ取得されていません（次回の自動更新で追加されます）</div>'}
+${trList.length?`${hbarSVG(trList.slice(0,6).map(t=>{
+  const pv = trP.get(String(t.source_type));
+  return {label: esc(TRAFFIC_LABEL[String(t.source_type)]||t.source_type),
+          bars: [{v:t.views,color:C_NOW}, ...(pv!=null?[{v:pv,color:C_PREV}]:[])],
+          right: fmtMan(t.views) + (pv!=null?` <tspan fill="#888" font-weight="400">(${pct(t.views,pv)})</tspan>`:'')};
+}),{labelW:150,rightW:120,rowH:30})}
+<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週　／ 上位6経路。かっこ内は前週比。</div>`:'<div class="note">この週の流入経路データはまだ取得されていません（次回の自動更新で追加されます）</div>'}
 
 
 ${couponBlock(rep)}

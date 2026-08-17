@@ -1441,11 +1441,20 @@ def build_weekly_report(week_start, week_end, *, daily, analytics_daily,
     } for vid in sorted(vw, key=vw.get, reverse=True)[:10]]
 
     # 週内に公開された動画
+    # 公開2日間の視聴回数（初速）。2026-08-17 追加。
+    # ⚠ 週次レポートのグラフで使います。**2日そろっていない動画は None** にして「まだ出ない」と描き分けます
+    #   （1日ぶんの数字を2日ぶんと並べると、初速が低いように見えてしまうため）。
+    def _first2d(vid, pub):
+        rows = sorted([r for r in video_daily.get(vid, []) if (r.get("date") or "") >= pub],
+                      key=lambda r: r.get("date", ""))[:2]
+        return sum(r.get("views", 0) for r in rows) if len(rows) >= 2 else None
+
     new_videos = sorted([{
         "video_id":     v["video_id"],
         "title":        v["title"],
         "published_at": v["published_at"],
         "views_total":  v.get("views", 0),
+        "first2d":      _first2d(v["video_id"], (v.get("published_at") or "")[:10]),
     } for v in videos
         if ws.isoformat() <= (v.get("published_at") or "")[:10] <= we.isoformat()],
         key=lambda v: v["published_at"])
