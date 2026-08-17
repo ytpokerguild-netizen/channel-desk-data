@@ -6,31 +6,74 @@
 <meta name="robots" content="noindex,nofollow">
 <title>週次レポート — りいポーカーチャンネル</title>
 <style>
+/* ══════════════════════════════════════════════════════════════
+   2026-08-17 全面改訂。「見にくい」という指摘を受け、出典のある原則に沿って直しました。
+   根拠（要点だけ・詳細は 引き継ぎ書 §3 の★）:
+     ・表に縦罫線を引かない／データ行ごとの横罫も引かない（APA・Science Editor）
+     ・罫線は「役割を果たすのにちょうど足りるだけ」薄く（Stephen Few）
+     ・地色・背景を敷かない（A List Apart）
+     ・文字サイズは3段階まで、強調も3段階まで（NN/g）
+     ・数値は右揃え・等幅数字。中央揃えは使わない（Ström）
+     ・罫線の代わりに行の高さと列間の余白で読ませる（列間は左右16pxずつ）
+     ・和文の行間はフォントの約1.7倍（Typotheque・デジタル庁）
+     ・印刷の本文は10〜12pt
+   ⚠ ここを「見た目の好み」で戻さないでください。1つずつ出典があります。
+   ══════════════════════════════════════════════════════════════ */
   @page{size:A4;margin:16mm}
   *{box-sizing:border-box}
-  body{font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;color:#1a1a1a;font-size:13px;line-height:1.7;margin:0;background:#f2f0ea}
-  .sheet{max-width:860px;margin:0 auto;background:#fff;padding:34px 40px 40px;min-height:100vh;box-shadow:0 0 24px rgba(0,0,0,.08)}
-  h1{font-size:20px;margin:0 0 2px;border-bottom:3px solid #C9A227;padding-bottom:9px}
-  .sub{color:#666;font-size:12px;margin-bottom:18px}
-  h2{font-size:14.5px;margin:22px 0 8px;color:#8a6d1a;border-left:4px solid #C9A227;padding-left:9px}
-  table{width:100%;border-collapse:collapse;font-size:12px}
-  th,td{border:1px solid #ddd;padding:6px 9px;text-align:left}
-  th{background:#f5f1e6;font-weight:600}
-  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
-  .badge{display:inline-block;font-size:11px;padding:1px 9px;border-radius:10px;margin-left:9px;vertical-align:3px}
-  .badge.final{background:#e5f2e9;color:#1c7c40;border:1px solid #a9d6b8}
-  .badge.flash{background:#fdf3d7;color:#8a6d1a;border:1px solid #e4cf8e}
-  .note{color:#888;font-size:11px;margin-top:5px}
-  .foot{margin-top:26px;color:#999;font-size:10px;border-top:1px solid #ddd;padding-top:7px}
-  .suggest{border:1px solid #e4cf8e;background:#fdf8ea;border-radius:7px;padding:10px 14px;margin-top:8px}
-  /* ★ 結論の1行（2026-08-17 追加）。数字を読む前に結論が分かるよう、いちばん上に置く */
-  .verdict{border:1px solid #cfe3d6;background:#f2f9f4;border-radius:8px;padding:11px 15px;margin:0 0 16px;font-size:14px;line-height:1.6}
-  .verdict b{font-size:16px}
-  .verdict .why{display:block;color:#4a6553;font-size:12px;margin-top:3px}
-  /* ★ 表の中の横棒（2026-08-17 追加）。数字を読まなくても大小が分かるように。
-     数字が右揃えなので、棒も右から伸ばして右端を揃える */
-  .minibar{display:flex;justify-content:flex-end;height:3px;background:#efece3;border-radius:2px;margin-top:3px}
+  :root{
+    /* 色は5つだけ。増やさないこと（Few: 目立たせるのは注意を要するものだけ） */
+    --ink:#1a1a1a;       /* 本文 */
+    --ink-2:#555;        /* 副次 */
+    --muted:#8a8a8a;     /* 注記 */
+    --accent:#8a6d1a;    /* 見出しと強調（1色だけ） */
+    --rule:#d9d5c9;      /* 罫線。これ以上濃くしない */
+  }
+  body{
+    font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+    color:var(--ink); background:#f2f0ea; margin:0;
+    font-size:14px;             /* ≒10.5pt。印刷の下限10ptを確保 */
+    line-height:1.75;           /* 和文は約1.7倍（Typotheque） */
+    font-variant-numeric:lining-nums tabular-nums;   /* 数字を等幅に。列が縦に揃う */
+  }
+  .sheet{max-width:860px;margin:0 auto;background:#fff;padding:38px 44px 44px;min-height:100vh;box-shadow:0 0 24px rgba(0,0,0,.08)}
+
+  /* ── 文字サイズは3段階（大=h1 / 中=h2 / 本文）＋ 注記 ───────── */
+  h1{font-size:23px;line-height:1.4;margin:0 0 3px;font-weight:700;letter-spacing:.01em}
+  .sub{color:var(--muted);font-size:11.5px;margin:0 0 26px}
+  h2{font-size:15px;line-height:1.5;margin:34px 0 3px;font-weight:700;color:var(--ink)}
+  h2 .eyebrow{display:block;font-size:11.5px;font-weight:600;color:var(--accent);letter-spacing:.09em;margin-bottom:2px}
+  .lede{color:var(--ink-2);margin:0 0 12px}     /* 見出しの下の1行 */
+  .note{color:var(--muted);font-size:11.5px;line-height:1.65;margin-top:7px}
+
+  /* ── 表: 縦罫線なし・データ行の横罫なし・地色なし ───────────── */
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
+  th,td{border:none;padding:7px 16px;text-align:left;vertical-align:baseline}
+  th:first-child,td:first-child{padding-left:0}
+  th:last-child,td:last-child{padding-right:0}
+  thead th{font-weight:600;color:var(--muted);font-size:11.5px;padding-bottom:5px;white-space:nowrap;
+           border-bottom:1px solid var(--rule)}
+  td.num,th.num{text-align:right;white-space:nowrap}   /* 「10.3万」が折り返さないように */
+  tbody tr>td{border-bottom:1px solid #f0eee7}   /* ほぼ見えない区切り。消しても可 */
+  tbody tr:last-child>td{border-bottom:none}
+
+  /* ── 強調するのは1か所だけ（結論）。他に囲み枠を作らない ────── */
+  .verdict{border-left:3px solid var(--accent);padding:2px 0 2px 15px;margin:0 0 26px}
+  .verdict .lv{font-size:19px;font-weight:700;line-height:1.45}
+  .verdict .why{display:block;color:var(--ink-2);font-size:14px;margin-top:5px}
+
+  .badge{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:10px;margin-left:10px;
+         vertical-align:4px;font-weight:600;border:1px solid var(--rule);color:var(--muted)}
+
+  /* 表の中の横棒（長さで大小を見せる。色相で量を表さない） */
+  .minibar{display:flex;justify-content:flex-end;height:3px;background:#efece3;border-radius:2px;margin-top:4px}
   .minibar>i{display:block;height:3px;background:#b3ada0;border-radius:2px}
+
+  ol.acts{margin:6px 0 0;padding-left:20px}
+  ol.acts>li{margin-bottom:9px}
+  ol.acts ul{margin:2px 0 0;padding-left:17px;color:var(--ink-2)}
+
+  .foot{margin-top:38px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--rule);padding-top:8px}
   .toolbar{max-width:860px;margin:0 auto;padding:14px 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .toolbar select,.toolbar button,.toolbar a{font-family:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid #cbc5b4;background:#fff;color:#333;cursor:pointer;text-decoration:none}
   .toolbar button:hover,.toolbar a:hover{background:#f5f1e6}
@@ -38,6 +81,9 @@
   @media print{
     body{background:#fff}
     .sheet{box-shadow:none;padding:0;max-width:none;min-height:auto}
+    h2,.lede{break-after:avoid;break-inside:avoid}
+    table,svg{break-inside:avoid}
+    .verdict{break-inside:avoid}
     /* ⚠ !important は消さないこと。JS が toolbar に style.display='flex' を
        インラインで当てるため、!important が無いと印刷・PDF にツールバーが写り込みます
        （2026-08-17 に実際に混入した PDF を出しかけました）。 */
@@ -119,6 +165,39 @@ function niceMax(v){
   return 10*p;
 }
 
+// 6か月平均に対する比（見出しで使う）
+function trendPct(rep){
+  const T=TREND; if(!T||T.length<4) return '—';
+  const i=T.findIndex(d=>d.week_start===rep.week_start); if(i<0) return '—';
+  const avg=T.reduce((s,d)=>s+d.views,0)/T.length;
+  return Math.round(T[i].views/avg*100)+'%';
+}
+
+// 6か月グラフの見出し（結論の文にする）
+function trendAssert(rep){
+  const T=TREND; if(!T||T.length<4) return '';
+  const i=T.findIndex(d=>d.week_start===rep.week_start); if(i<0) return '';
+  const avg=T.reduce((s,d)=>s+d.views,0)/T.length;
+  const r=Math.round(T[i].views/avg*100);
+  const rank=T.map(d=>d.views).slice().sort((a,b)=>b-a).indexOf(T[i].views)+1;
+  return r>=110 ? `${T.length}週の中では上位（${rank}位・平均の${r}%）です`
+       : r>=90  ? `${T.length}週の平均とほぼ同じ水準（${rank}位・${r}%）です`
+                : `${T.length}週の中では低め（${rank}位・平均の${r}%）です`;
+}
+
+// 流入経路（横棒・今週/前週）
+function trafficChart(){
+  if(!window._TR || !window._TR.list.length) return '';
+  const {list, prev} = window._TR;
+  return hbarSVG(list.slice(0,6).map(t=>{
+    const pv = prev.get(String(t.source_type));
+    return {label: esc(TRAFFIC_LABEL[String(t.source_type)]||t.source_type),
+            bars: [{v:t.views,color:C_NOW}, ...(pv!=null?[{v:pv,color:C_PREV}]:[])],
+            right: fmtMan(t.views)};
+  }),{labelW:170,rightW:66,rowH:30})
+  + `<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週　／ 上位6経路</div>`;
+}
+
 function trendBlock(rep){
   const T = TREND;
   if(!T || T.length < 4) return '';                 // 週が少なすぎるうちは出さない
@@ -163,7 +242,6 @@ function trendBlock(rep){
   const ratio = cur ? Math.round(cur.views/avg*100) : null;
 
   return `
-<h2>直近${T.length}週の中での位置（約6か月）</h2>
 <svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img"
      aria-label="直近${T.length}週の週間視聴回数。この週は${cur?fmtMan(cur.views):''}回で、${T.length}週平均の${ratio}%。">
   ${ticks}
@@ -249,8 +327,7 @@ function causeBlock(rep, views, viewsPrev){
   const tot = views-viewsPrev;
   const top = head[0];
   const share = tot ? Math.round(top.d/tot*100) : 0;
-  return `<h2>今週の増減はどこで起きたか</h2>
-<div style="margin-bottom:5px">前週から <b style="color:${tot>=0?C_UP:C_DOWN}">${tot>=0?'+':'−'}${fmtMan(Math.abs(tot))}回</b>${(share>=40&&share<=160)?`。うち <b>${cut(top.t,18)}</b> だけで <b>${share}%</b>を占めます。`:'。'}</div>
+  return `<div class="lede">前週から <b style="color:${tot>=0?C_UP:C_DOWN}">${tot>=0?'+':'−'}${fmtMan(Math.abs(tot))}回</b>。</div>
 ${divSVG(rows,{labelW:LW})}`;
 }
 
@@ -263,9 +340,8 @@ function firstBlock(rep){
   const LW=310, N=fitChars(LW)-6;   // 先頭に「08/12 」が付くぶん短く
   const rows = L.map(v=>({label:`${fmtDate(v.published_at).slice(5)} ${cut(v.title,N)}`, bars:[{v:v.first2d,color:C_ONE}], right:fmtMan(v.first2d)}));
   const ratio = L.length>1 ? (L[0].first2d/Math.max(1,L[L.length-1].first2d)) : null;
-  return `<h2>新作の初速（公開2日間）</h2>
-${hbarSVG(rows,{labelW:LW})}
-<div class="note">${ratio&&ratio>=3?`いちばん強い回と弱い回で <b>${ratio.toFixed(0)}倍</b>の開きがあります。`:''}${wait?`ほか ${wait}本 は公開2日を過ぎていないので出していません。`:''}</div>`;
+  return `${hbarSVG(rows,{labelW:LW})}
+${wait?`<div class="note">ほか ${wait}本 は公開2日を過ぎていないため出していません。</div>`:''}`;
 }
 
 // ════════════════════════════════
@@ -302,13 +378,12 @@ function couponBlock(rep){
   const lag = (COUPON.lag_buckets||[]).map(b=>`${esc(b.label)} ${b.count}`).join(' ／ ');
 
   return `
-<h2>クーポン施策</h2>
 <div class="note" style="margin:0 0 7px">この週に入力のあったコード: <b>${(wk.codes||[]).map(esc).join('、')||'—'}</b>　／　シート取得日: ${fmtDate(COUPON.snapshot_date||'')}</div>
 <table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th></tr>
 <tr><td>コード入力</td><td class="num">${cell(wk.entries,dC)}</td><td class="num">${pw?cell(pw.entries,dP):'—'}</td></tr>
 <tr><td>うち使用済み</td><td class="num">${fmtFull(wk.used)}件（${rate(wk.used,wk.entries)}）</td><td class="num">${pw?`${fmtFull(pw.used)}件（${rate(pw.used,pw.entries)}）`:'—'}</td></tr>
 <tr><td>実人数</td><td class="num">${fmtFull(wk.people)}人</td><td class="num">${pw?fmtFull(pw.people)+'人':'—'}</td></tr></table>
-${codeRows?`<div style="margin-top:11px"><b style="font-size:12.5px">コード別（通算）</b></div>
+${codeRows?`<div style="margin-top:11px"><b style="font-size:14px">コード別（通算）</b></div>
 <table style="margin-top:4px"><tr><th>コード</th><th class="num">入力</th><th class="num">使用</th><th class="num">使用率</th><th class="num">実人数</th></tr>${codeRows}</table>`:''}
 ${lag?`<div class="note" style="margin-top:7px">入力から使用までの時間（通算${fmtFull(COUPON.total||0)}件）: ${lag}</div>`:''}`;
 }
@@ -340,8 +415,8 @@ function verdictBlock(rep, views, viewsPrev){
     else if(pr >= T.length-2) why = `前週比は ${dp>0?'+':''}${dp.toFixed(0)}% ですが、前週は${T.length}週で下から${T.length-pr+1}番目の週でした。`;
     else             why = `前週比は ${dp>0?'+':''}${dp.toFixed(0)}%。`;
   }
-  return `<div class="verdict">今週は <b>${v}</b>。週間視聴回数 <b>${fmtMan(cur)}回</b>で、${T.length}週平均 ${fmtMan(Math.round(avg))}回の <b>${r}%</b>（${T.length}週中 ${rank}位）。
-<span class="why">${why}詳しくは下の「直近${T.length}週の中での位置」を見てください。</span></div>`;
+  return `<div class="verdict"><span class="lv">今週は${v}。${T.length}週平均の${r}%（${T.length}週中${rank}位）</span>
+<span class="why">週間視聴回数 ${fmtMan(cur)}回。${why}</span></div>`;
 }
 
 // ════════════════════════════════
@@ -349,22 +424,19 @@ function verdictBlock(rep, views, viewsPrev){
 // ⚠ **問題が無い週は1行だけにします。**全部「投稿済み・遅延0日」の表は読む価値がないためです。
 //   遅れているもの・未投稿があるときだけ、その行だけを表で出します。
 // ════════════════════════════════
-function planBlock(rep, pp){
+function planLine(rep, pp){
   const items = pp.items || [];
   const pub   = (rep.new_videos||[]).length;
-  if(!items.length) return `<h2>投稿計画の進捗</h2><div class="note">この週の計画データなし</div>`;
+  if(!items.length) return '投稿計画のデータはありません。';
   const bad = items.filter(p=>{
     const done = p.matched || (p.status||'').includes('済');
     return !done || (p.delay_days||0) > 0;
   });
-  // 問題が無ければ節にしない（基本指標の下に1行で出す）
-  if(!bad.length) return `<div class="note">投稿計画: 計画 ${pp.planned} 本 ／ 投稿済み ${pp.posted} 本 ／ 実際に公開 ${pub} 本 ／ 遅延なし</div>`;
-  const head = `<h2>投稿計画の進捗</h2>
-<div>計画 <b>${pp.planned}</b> 本 ／ 投稿済み <b>${pp.posted}</b> 本 ／ 実際に公開 <b>${pub}</b> 本</div>`;
-  return head + `<div class="note" style="margin-bottom:5px">遅れ・未投稿のものだけ出しています（${bad.length}件）。</div>
-<table><tr><th style="width:78px">予定日</th><th>タイトル</th><th style="width:90px">ステータス</th><th class="num" style="width:60px">遅延</th></tr>
-${bad.map(p=>`<tr><td>${fmtDate(p.date)}</td><td>${esc(p.title)}</td><td>${esc(p.status||'—')}</td><td class="num">${p.delay_days!=null?p.delay_days+'日':'—'}</td></tr>`).join('')}</table>`;
+  const base = `投稿計画は ${pp.planned}本予定・${pp.posted}本投稿・実際の公開 ${pub}本`;
+  return bad.length ? `${base}。<b>うち ${bad.length}件が遅れ・未投稿です（${bad.map(p=>esc(p.title).slice(0,14)).join('／')}）。</b>`
+                    : `${base}で、遅延はありません。`;
 }
+
 
 function renderReportPage(rep){
   const c = rep.channel || {};
@@ -392,6 +464,7 @@ function renderReportPage(rep){
   const trP = new Map((rep.traffic_sources_prev||[]).map(t=>[String(t.source_type), t.views]));
   const trList = (rep.traffic_sources||[]).slice(0,8);
   const trMax  = Math.max(1, ...trList.map(t=>t.views));
+  window._TR = {list: trList, prev: trP};
   const trafficRows = trList.map(t=>{
     const prev = trP.get(String(t.source_type));
     return `<tr><td>${esc(TRAFFIC_LABEL[String(t.source_type)]||t.source_type)}</td><td class="num" title="${fmtFull(t.views)}">${fmtMan(t.views)}${miniBar(t.views,trMax)}</td><td class="num">${prev!=null?fmtMan(prev):'—'}</td><td class="num">${prev!=null?pct(t.views,prev):'—'}</td></tr>`;
@@ -400,53 +473,75 @@ function renderReportPage(rep){
   const pp = rep.post_plan || {planned:0,posted:0,items:[]};
   const ai = rep.ai_analysis;
 
+  // ── 見出しは「結論の文」にする（NN/g: トピック句は読み飛ばされる）──────
+  //    ⚠ 見出しをデータから作っています。「基本指標」「流入経路」のような
+  //      内容の無い句に戻さないでください。最初の2語で要旨が伝わるようにします。
+  const trafficLead = (()=>{
+    if(!trList.length) return '';
+    const t0=trList[0], p0=trP.get(String(t0.source_type));
+    const nm=TRAFFIC_LABEL[String(t0.source_type)]||t0.source_type;
+    return p0!=null ? `${nm}が${pct(t0.views,p0)}、これが全体の動きを決めています` : `${nm}が最大の入り口です`;
+  })();
+  const firstLead = (()=>{
+    const L=(rep.new_videos||[]).filter(v=>v.first2d!=null);
+    if(L.length<2) return '';
+    const mx=Math.max(...L.map(v=>v.first2d)), mn=Math.min(...L.map(v=>v.first2d));
+    const r=mn?mx/mn:0;
+    return r>=3 ? `いちばん強い回と弱い回で${r.toFixed(0)}倍の開きがあります` : `本数が少なく、初速の差は読み取れません`;
+  })();
+  const causeLead = (()=>{
+    const L=(rep.top_videos||[]).map(v=>({t:v.title,d:(v.views_week||0)-(v.views_prev_week||0)}));
+    if(!L.length||viewsPrev==null) return '';
+    L.sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
+    const tot=views-viewsPrev, sh=tot?Math.round(L[0].d/tot*100):0;
+    return (sh>=40&&sh<=160) ? `動いたぶんの${sh}%は「${cut(L[0].t,16)}」1本です` : `特定の1本では説明できず、全体が動いています`;
+  })();
+  const cpLead = (()=>{
+    if(!COUPON||COUPON.error) return '';
+    const wk=(COUPON.weekly||[]).find(w=>w.week_start===rep.week_start);
+    if(!wk) return '';
+    return `掲出日の記録が無いため、どの動画の効果かは分けられません`;
+  })();
+  const sec = (eyebrow, assertion, lede) =>
+    `<h2><span class="eyebrow">${eyebrow}</span>${assertion}</h2>${lede?`<div class="lede">${lede}</div>`:''}`;
+
   document.getElementById('sheet').innerHTML = `
-<h1>りいポーカーチャンネル 週次レポート<span class="badge ${rep.final?'final':'flash'}">${rep.final?'確定':'速報'}</span></h1>
-<div class="sub">対象期間: ${fmtDate(rep.week_start)}（土）〜 ${fmtDate(rep.week_end)}（金）　${rep.final?`Analytics確定値 ${rep.confirmed_days}/7日`:`※速報値（確定 ${rep.confirmed_days}/7日）。確定データが揃い次第自動更新されます`}</div>
+<h1>りいポーカーチャンネル 週次レポート<span class="badge">${rep.final?'確定':`速報 ${rep.confirmed_days}/7日`}</span></h1>
+<div class="sub">${fmtDate(rep.week_start)}（土）〜 ${fmtDate(rep.week_end)}（金）${rep.final?'':'　※確定データが揃い次第、自動で更新されます'}</div>
 
 ${verdictBlock(rep, views, viewsPrev)}
 
-<h2>基本指標（前週比）</h2>
-<table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減率</th></tr>
-${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td></tr>`).join('')}</table>
-${c.subscribers_end!=null?`<div class="note">週末時点の登録者数: ${fmtFull(Math.round(c.subscribers_end))} 人</div>`:''}
+${ai&&ai.analysis?`<div>${String(ai.analysis).split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 9px">${esc(p)}</p>`).join('')}</div>`:''}
 
+${sec('今週の数字', partial?`確定は${rep.confirmed_days}日ぶんです`:`前週比 ${pct(views,viewsPrev)}、6か月平均比 ${trendPct(rep)}`, '')}
+<table><thead><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減</th></tr></thead>
+<tbody>${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td></tr>`).join('')}</tbody></table>
+${c.subscribers_end!=null?`<div class="note">週末時点の登録者数 ${fmtFull(Math.round(c.subscribers_end))}人。${planLine(rep, pp)}</div>`:''}
+
+${TREND&&TREND.length>=4?sec('6か月の中での位置', trendAssert(rep), '前週比だけでは「前週がどんな週だったか」で見え方が変わります。'):''}
 ${trendBlock(rep)}
 
+${causeLead?sec('増減の内訳', causeLead, ''):''}
 ${causeBlock(rep, views, viewsPrev)}
+${(rep.top_videos||[]).length?`<table><thead><tr><th>今週よく見られた動画</th><th class="num">今週</th><th class="num">前週</th></tr></thead>
+<tbody>${(()=>{const L=rep.top_videos.slice(0,8); const mx=Math.max(1,...L.map(v=>v.views_week));
+  return L.map(v=>`<tr><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${esc(v.title)}</a></td><td class="num" title="${fmtFull(v.views_week)}">${fmtMan(v.views_week)}${miniBar(v.views_week,mx)}</td><td class="num">${fmtMan(v.views_prev_week)}</td></tr>`).join('');})()}</tbody></table>`:''}
 
-${ai?`<h2>AI分析と提案</h2>
-${ai.headline?`<div style="font-weight:700;font-size:13.5px;padding:9px 13px;background:#eef7f0;border-left:4px solid #4caf7d;border-radius:0 6px 6px 0;margin-bottom:9px">${esc(ai.headline)}</div>`:''}
-${String(ai.analysis||'').split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 7px">${esc(p)}</p>`).join('')}
-${(ai.suggestions||[]).length?`<div class="suggest"><b style="color:#8a6d1a">今週のアクションプラン</b>
-<ol style="margin:5px 0 0;padding-left:20px">${ai.suggestions.map(s=>{
-  const t = (typeof s==='string') ? {title:s,actions:[]} : (s||{});
-  return `<li style="margin-bottom:6px"><b>${esc(t.title||'')}</b>${(t.actions||[]).length?`<ul style="margin:3px 0 0;padding-left:16px">${t.actions.map(a=>`<li style="margin-bottom:2px">${esc(a)}</li>`).join('')}</ul>`:''}</li>`;
-}).join('')}</ol></div>`:''}
-${ai.generated_at?`<div class="note">分析生成日: ${fmtDate(String(ai.generated_at).slice(0,10))}</div>`:''}`:''}
-
-<h2>週間トップ動画</h2>
-<table><tr><th style="width:26px">#</th><th>タイトル</th><th class="num">今週視聴回数</th><th class="num">前週視聴回数</th></tr>
-${(()=>{const L=rep.top_videos||[]; const mx=Math.max(1,...L.map(v=>v.views_week));
-  return L.map((v,i)=>`<tr><td>${i+1}</td><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:#1a1a1a">${esc(v.title)}</a></td><td class="num" title="${fmtFull(v.views_week)}">${fmtMan(v.views_week)}${miniBar(v.views_week,mx)}</td><td class="num">${fmtMan(v.views_prev_week)}</td></tr>`).join('')||'<tr><td colspan="4">データなし</td></tr>';})()}</table>
-
+${firstLead?sec('新作の初速', firstLead, '公開から2日間の視聴回数です。'):''}
 ${firstBlock(rep)}
 
-<h2>流入経路</h2>
-${trList.length?`${hbarSVG(trList.slice(0,6).map(t=>{
-  const pv = trP.get(String(t.source_type));
-  return {label: esc(TRAFFIC_LABEL[String(t.source_type)]||t.source_type),
-          bars: [{v:t.views,color:C_NOW}, ...(pv!=null?[{v:pv,color:C_PREV}]:[])],
-          right: fmtMan(t.views) + (pv!=null?` <tspan fill="#888" font-weight="400">(${pct(t.views,pv)})</tspan>`:'')};
-}),{labelW:150,rightW:120,rowH:30})}
-<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週　／ 上位6経路。かっこ内は前週比。</div>`:'<div class="note">この週の流入経路データはまだ取得されていません（次回の自動更新で追加されます）</div>'}
+${trafficLead?sec('どこから見られたか', trafficLead, ''):''}
+${trafficChart()}
 
-
+${cpLead?sec('クーポン', cpLead, ''):''}
 ${couponBlock(rep)}
 
-${planBlock(rep, pp)}
+${(ai&&(ai.suggestions||[]).length)?`${sec('次にやること', '数字から出てきた打ち手です', '')}
+<ol class="acts">${ai.suggestions.map(s=>{const t=(typeof s==='string')?{title:s,actions:[]}:(s||{});
+  return `<li><b>${esc(t.title||'')}</b>${(t.actions||[]).length?`<ul>${t.actions.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}</li>`;}).join('')}</ol>`:''}
 
-<div class="foot">CHANNEL DESK 自動生成 ／ 表示日時: ${new Date().toLocaleString('ja-JP')} ／ りいポーカーチャンネル【PokerGuild】</div>`;
+<div class="foot">CHANNEL DESK 自動生成 ／ ${new Date().toLocaleString('ja-JP')} ／ りいポーカーチャンネル【PokerGuild】${ai&&ai.generated_at?` ／ 分析 ${fmtDate(String(ai.generated_at).slice(0,10))}`:''}</div>`;
+
 }
 
 function onWeekChange(){
