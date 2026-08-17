@@ -1276,13 +1276,16 @@ def fetch_video_week_traffic(access_token, video_ids, start, end):
 WEEKLY_TREND_WEEKS = 26
 
 
-def build_weekly_trend(analytics_daily, weeks=WEEKLY_TREND_WEEKS):
+def build_weekly_trend(analytics_daily, weeks=WEEKLY_TREND_WEEKS, video_daily=None, videos=None):
     """直近 weeks 週（土〜金）の視聴回数と登録者純増を返す。古い順。
 
-    Returns: [{"week_start","week_end","views","subs_net"}, ...]
+    Returns: [{"week_start","week_end","views","subs_net","driver"?}, ...]
+    `driver` は「その週の3割以上を1本で稼いだとき」だけ入ります（{title, share}）。
+    グラフの山に「なぜ山なのか」を1つ書くために使います。2026-08-17 追加。
     ⚠ 確定値が7日そろった週だけを返します。今週や、確定待ちの週は入りません。
     """
     ad = {r["date"]: r for r in analytics_daily if r.get("views", 0) > 0}
+    vmeta = {v["video_id"]: v.get("title", "") for v in (videos or [])}
     if not ad:
         return []
     last = max(ad)                                   # 確定している最後の日
@@ -1297,12 +1300,24 @@ def build_weekly_trend(analytics_daily, weeks=WEEKLY_TREND_WEEKS):
         got = [ad[x] for x in days if x in ad]
         if len(got) < 7:                             # 7日そろっていない週は出さない
             continue
-        out.append({
+        wv = sum(x.get("views", 0) for x in got)
+        row = {
             "week_start": ws.isoformat(),
             "week_end":   we.isoformat(),
-            "views":      sum(x.get("views", 0) for x in got),
+            "views":      wv,
             "subs_net":   sum(x.get("subs_gained", 0) - x.get("subs_lost", 0) for x in got),
-        })
+        }
+        # その週をいちばん稼いだ動画。3割以上なら「山の理由」として持たせる
+        if video_daily and wv:
+            dset = set(days)
+            best_id, best_v = None, 0
+            for vid, rows in video_daily.items():
+                v = sum(r.get("views", 0) for r in rows if r.get("date") in dset)
+                if v > best_v:
+                    best_id, best_v = vid, v
+            if best_id and best_v / wv >= 0.30:
+                row["driver"] = {"title": vmeta.get(best_id, ""), "share": round(best_v / wv * 100)}
+        out.append(row)
     print(f"  週次トレンド: {len(out)} 週（{out[0]['week_start']}〜{out[-1]['week_end']}）" if out else "  週次トレンド: 0 週")
     return out
 
@@ -1785,7 +1800,7 @@ def main():
         "post_plan":             post_plan,             # 投稿計画（Google スプレッドシート）
         "video_archive":         video_archive,         # 動画アーカイブ（video_id→企画タイプ/ナレーター手入力）
         "weekly_reports":        weekly_reports,        # 週次レポート（土〜金、最大26週）
-        "weekly_trend":          build_weekly_trend(analytics_daily),  # 直近26週の視聴回数・登録純増（グラフ用）
+        "weekly_trend":          build_weekly_trend(analytics_daily, video_daily=video_daily, videos=videos),  # 直近26週の視聴回数・登録純増（グラフ用）
         "coupon":                coupon,                # JOPT Games クーポンの集計（個人情報は含めない）
     }
 

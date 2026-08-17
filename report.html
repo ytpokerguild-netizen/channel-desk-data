@@ -109,6 +109,21 @@ let COUPON  = null;   // data.json の coupon（週ごとの節を出すのに�
 let TREND   = null;   // data.json の weekly_trend（直近26週のグラフ用）
 
 const fmtFull = n => (n??0).toLocaleString('ja-JP');
+// ★ スパークライン（2026-08-17 追加）。表の1セルに26週ぶんの形を入れる。
+// 節を増やさずに「6か月の文脈」を足すための形（Tufte がこの用途で作ったもの）。
+// ⚠ 軸も目盛りも付けません。**形だけ**を見るものです。数値は隣のセルにあります。
+function sparkline(vals, {w=86,h=20,color='#8a8a8a'}={}){
+  if(!vals || vals.length < 4) return '';
+  const mn=Math.min(...vals), mx=Math.max(...vals), rg=(mx-mn)||1;
+  const x=i=>(i/(vals.length-1))*(w-3)+1.5, y=v=>h-2-((v-mn)/rg)*(h-5);
+  const d=vals.map((v,i)=>`${i?'L':'M'}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(' ');
+  const lx=x(vals.length-1), ly=y(vals[vals.length-1]);
+  const zero = (mn<0 && mx>0) ? `<line x1="1.5" y1="${y(0).toFixed(1)}" x2="${w-1.5}" y2="${y(0).toFixed(1)}" stroke="#e8e5dc" stroke-width="1"/>` : '';
+  return `<svg viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" style="display:block;margin-left:auto" aria-hidden="true">
+${zero}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" r="2.4" fill="${TREND_CUR}"/></svg>`;
+}
+
 // ★ 万表記（2026-08-17 追加・オーナーの指摘「数字が理解しにくい」）。
 //   日本語では 587,400回 より 58.7万回 のほうが一瞬で入ります。
 //   ⚠ **ツールチップと表の小さい数字には生の値を残すこと。**万に丸めると精密な比較ができなくなります。
@@ -237,6 +252,20 @@ function trendBlock(rep){
     curLab = `<text x="${(x+dx).toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="${anchor}" font-size="11" font-weight="700" fill="#1a1a1a">${fmtMan(d.views)}</text>`;
   }
 
+  // ★ 山の理由を1つだけ注記する（2026-08-17 追加）。
+  //   ⚠ 1つだけにすること。複数打つと図が読めなくなります。
+  //   対象は「1本で3割以上を稼いだ週」のうち、いちばん視聴回数が多い週。
+  let ann = '';
+  const dr = T.map((d,i)=>({d,i})).filter(x=>x.d.driver).sort((a,b)=>b.d.views-a.d.views)[0];
+  if(dr && dr.i !== curIx){
+    const d=dr.d, x=PL+band*dr.i+band/2, y=yOf(d.views);
+    const right = dr.i > T.length*0.55;
+    const tx = right ? x-7 : x+7;
+    const t  = `${cut(d.driver.title,13)} が${d.driver.share}%`;
+    ann = `<line x1="${x.toFixed(1)}" y1="${(y-4).toFixed(1)}" x2="${x.toFixed(1)}" y2="${(y-15).toFixed(1)}" stroke="#b0aa9c" stroke-width="1"/>
+<text x="${tx.toFixed(1)}" y="${(y-18).toFixed(1)}" text-anchor="${right?'end':'start'}" font-size="10" fill="#6b6659">${t}</text>`;
+  }
+
   const ya = yOf(avg);
   const cur = curIx>=0 ? T[curIx] : null;
   const ratio = cur ? Math.round(cur.views/avg*100) : null;
@@ -249,6 +278,7 @@ function trendBlock(rep){
   <line x1="${PL}" y1="${ya.toFixed(1)}" x2="${W-PR}" y2="${ya.toFixed(1)}" stroke="#666" stroke-width="1" stroke-dasharray="5 4"/>
   <rect x="${PL+2}" y="${(ya-15).toFixed(1)}" width="112" height="13" fill="#fff"/>
   <text x="${PL+5}" y="${(ya-5).toFixed(1)}" font-size="10" fill="#666">${T.length}週平均 ${fmtMan(Math.round(avg))}</text>
+  ${ann}
   ${curLab}
   <line x1="${PL}" y1="${BASE}" x2="${W-PR}" y2="${BASE}" stroke="#ddd" stroke-width="1"/>
   ${xlab}
@@ -453,12 +483,19 @@ function renderReportPage(rep){
   };
   const ssC2 = ssPct(rep.subscribed_status), ssP2 = ssPct(rep.subscribed_status_prev);
 
+  // ★ 26週ぶんの形をスパークラインで併記（2026-08-17）。節を増やさずに6か月の文脈を足す。
+  //   ⚠ 見ている週までで切ります。未来の週を含めると「この週がどこか」が分からなくなります。
+  const tIdx = TREND ? TREND.findIndex(d=>d.week_start===rep.week_start) : -1;
+  const tUpTo = (key)=> (TREND && tIdx>=0) ? TREND.slice(0, tIdx+1).map(d=>d[key]) : null;
+  const spViews = sparkline(tUpTo('views'));
+  const spSubs  = sparkline(tUpTo('subs_net'));
+
   const sumRows = [
-    ['週間視聴回数', fmtMan(views)+' 回'+(partial?`（確定${rep.confirmed_days}日分のみ）`:''), fmtMan(viewsPrev)+' 回', partial?'—':pct(views,viewsPrev)],
-    ['総再生時間',   fmtMin(c.watch_min||0), fmtMin(c.watch_min_prev||0), partial?'—':pct(c.watch_min,c.watch_min_prev)],
-    ['登録者純増', (subsNet>=0?'+':'')+fmtFull(subsNet||0)+' 人', c.subs_net_prev!=null?(c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+' 人':'—', pct(subsNet,c.subs_net_prev)],
-    ['週内の投稿', (rep.new_videos||[]).length+' 本', '', ''],
-    ...(ssC2!=null ? [['登録者による視聴', ssC2+' %', ssP2!=null? ssP2+' %':'—', '']] : []),
+    ['週間視聴回数', fmtMan(views)+' 回'+(partial?`（確定${rep.confirmed_days}日分のみ）`:''), fmtMan(viewsPrev)+' 回', partial?'—':pct(views,viewsPrev), spViews],
+    ['総再生時間',   fmtMin(c.watch_min||0), fmtMin(c.watch_min_prev||0), partial?'—':pct(c.watch_min,c.watch_min_prev), ''],
+    ['登録者純増', (subsNet>=0?'+':'')+fmtFull(subsNet||0)+' 人', c.subs_net_prev!=null?(c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+' 人':'—', pct(subsNet,c.subs_net_prev), spSubs],
+    ['週内の投稿', (rep.new_videos||[]).length+' 本', '', '', ''],
+    ...(ssC2!=null ? [['登録者による視聴', ssC2+' %', ssP2!=null? ssP2+' %':'—', '', '']] : []),
   ];
 
   const trP = new Map((rep.traffic_sources_prev||[]).map(t=>[String(t.source_type), t.views]));
@@ -514,8 +551,8 @@ ${verdictBlock(rep, views, viewsPrev)}
 ${ai&&ai.analysis?`<div>${String(ai.analysis).split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 9px">${esc(p)}</p>`).join('')}</div>`:''}
 
 ${sec('今週の数字', partial?`確定は${rep.confirmed_days}日ぶんです`:`前週比 ${pct(views,viewsPrev)}、6か月平均比 ${trendPct(rep)}`, '')}
-<table><thead><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減</th></tr></thead>
-<tbody>${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td></tr>`).join('')}</tbody></table>
+<table><thead><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減</th><th class="num" style="width:96px">この6か月</th></tr></thead>
+<tbody>${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]||''}</td></tr>`).join('')}</tbody></table>
 ${c.subscribers_end!=null?`<div class="note">週末時点の登録者数 ${fmtFull(Math.round(c.subscribers_end))}人。${planLine(rep, pp)}</div>`:''}
 
 ${TREND&&TREND.length>=4?sec('6か月の中での位置', trendAssert(rep), '前週比だけでは「前週がどんな週だったか」で見え方が変わります。'):''}
