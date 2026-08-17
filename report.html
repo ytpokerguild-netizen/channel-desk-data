@@ -114,17 +114,9 @@ function couponBlock(rep){
 <tr><td>コード入力</td><td class="num">${cell(wk.entries,dC)}</td><td class="num">${pw?cell(pw.entries,dP):'—'}</td></tr>
 <tr><td>うち使用済み</td><td class="num">${fmtFull(wk.used)}件（${rate(wk.used,wk.entries)}）</td><td class="num">${pw?`${fmtFull(pw.used)}件（${rate(pw.used,pw.entries)}）`:'—'}</td></tr>
 <tr><td>実人数</td><td class="num">${fmtFull(wk.people)}人</td><td class="num">${pw?fmtFull(pw.people)+'人':'—'}</td></tr></table>
-${(dP && dC && dP!==dC)?`<div class="note">⚠ 今週は${dC}日ぶん、前週は${dP}日ぶんです。<b>件数をそのまま比べず、1日あたりで見てください。</b></div>`:''}
-
 ${codeRows?`<div style="margin-top:11px"><b style="font-size:12.5px">コード別（通算）</b></div>
 <table style="margin-top:4px"><tr><th>コード</th><th class="num">入力</th><th class="num">使用</th><th class="num">使用率</th><th class="num">実人数</th></tr>${codeRows}</table>`:''}
-${lag?`<div class="note" style="margin-top:7px">入力から使用までの時間（通算${fmtFull(COUPON.total||0)}件）: ${lag}</div>`:''}
-
-<div class="note" style="margin-top:7px">
-⚠ 1件＝1回の入力であって1人ではありません（同じ人が別のコードを使えます）。<br>
-⚠ 直近に入力されたぶんは使用判定の時間が足りていないため、<b>使用率は実際より低めに出ます</b>（シート取得日 ${fmtDate(COUPON.snapshot_date||'')}）。<br>
-⚠ <b>どの動画から来たかは分かりません。</b>掲出日の記録が無いため、この表は動画ごとの効果測定ではありません。
-</div>`;
+${lag?`<div class="note" style="margin-top:7px">入力から使用までの時間（通算${fmtFull(COUPON.total||0)}件）: ${lag}</div>`:''}`;
 }
 
 function renderReportPage(rep){
