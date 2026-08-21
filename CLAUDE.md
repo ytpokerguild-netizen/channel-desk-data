@@ -1,6 +1,6 @@
 # このリポジトリを触るときのルール
 
-CHANNEL DESK（りいポーカーチャンネル【PokerGuild】の分析ダッシュボード）のデータと画面です。
+CHANNEL DESK（【LightTHREE】 -ポーカーメディア‐の分析ダッシュボード）のデータと画面です。
 **どのパソコン・どのアカウントで作業を始めても、まずこのファイルを読んでください。**
 
 - 公開URL: https://ytpokerguild-netizen.github.io/channel-desk-data/index.html

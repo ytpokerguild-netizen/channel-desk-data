@@ -2,7 +2,7 @@
 """OAuth 再認証スクリプト（Claude 連携版）
 - ブラウザを自動で開かず、認証URLを auth_url.txt に書き出す（Claude が開いて操作）
 - 認証完了後、トークンが指すチャンネルを自動検証
-- りいポーカーチャンネル（UCnGhx...）なら token.json を保存して終了
+- 【LightTHREE】 -ポーカーメディア‐（UCnGhx...）なら token.json を保存して終了
 - 別チャンネルなら新しいURLを書き出して再試行
 """
 import json, http.server, urllib.parse, urllib.request

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CHANNEL DESK — りいポーカーチャンネル</title>
+<title>CHANNEL DESK — 【LightTHREE】 -ポーカーメディア‐</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -421,7 +421,7 @@ body{
       <div class="mark">♠</div>
       <div>
         <h1>CHANNEL&nbsp;DESK</h1>
-        <div class="sub">りいポーカーチャンネル</div>
+        <div class="sub" id="channelName">【LightTHREE】 -ポーカーメディア‐</div>
       </div>
     </div>
     <div class="status-dot" id="statusDot"></div>
@@ -843,6 +843,14 @@ async function loadData(bust){
     document.getElementById('loadingState').style.display = 'none';
     document.getElementById('mainContent').style.display = 'block';
     document.getElementById('statusDot').className = 'status-dot live';
+    // ★ チャンネル名は data.json の meta.channel_title から出します（2026-08-21 追加）。
+    //    fetch.py が毎回 API から取り直すので、名前が変わってもコードを直す必要がありません。
+    //    ⚠ 直書きに戻さないこと。2026-08-21 の改名で 8ファイル11か所が旧名のまま取り残されました。
+    //    HTML 側の値は data.json を読めなかったときの保険なので、消さないこと。
+    if(G.meta && G.meta.channel_title){
+      document.getElementById('channelName').textContent = G.meta.channel_title;
+      document.title = 'CHANNEL DESK — ' + G.meta.channel_title;
+    }
     // データ鮮度チェック(12時間超で警告)
     const _staleEl = document.getElementById('staleWarn');
     const _fa2 = G.meta.fetched_at ? new Date(G.meta.fetched_at) : null;

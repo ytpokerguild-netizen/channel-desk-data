@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-fetch.py — りいポーカーチャンネル CHANNEL DESK データ取得スクリプト
+fetch.py — 【LightTHREE】 -ポーカーメディア‐ CHANNEL DESK データ取得スクリプト
 YouTube Data API v3 + YouTube Analytics API v2
 
 取得データ:

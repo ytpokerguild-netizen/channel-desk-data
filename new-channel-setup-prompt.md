@@ -1,7 +1,7 @@
 # YouTubeチャンネル分析ダッシュボード構築プロンプト
 
 使い方: ■ を新チャンネルの値に置き換えて、このファイルごと新しいチャットに読み込ませる。
-参考実装（完成品）: `~/Downloads/channel-desk-data`（りいポーカーチャンネル用）
+参考実装（完成品）: `~/Downloads/channel-desk-data`（【LightTHREE】 -ポーカーメディア‐用）
 
 ---
 

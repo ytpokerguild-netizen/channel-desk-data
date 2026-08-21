@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>週次レポート — りいポーカーチャンネル</title>
+<title>週次レポート — 【LightTHREE】 -ポーカーメディア‐</title>
 <style>
 /* ══════════════════════════════════════════════════════════════
    2026-08-17 全面改訂。「見にくい」という指摘を受け、出典のある原則に沿って直しました。
@@ -105,6 +105,9 @@
 <script>
 const DATA_URL = 'data.json';
 let REPORTS = [];
+// ★ チャンネル名は data.json の meta.channel_title から入れます（2026-08-21 追加）。
+//    ここの初期値は data.json を読めなかったときの保険です。⚠ 直書きに戻さないこと。
+let CHANNEL = '【LightTHREE】 -ポーカーメディア‐';
 let COUPON  = null;   // data.json の coupon（週ごとの節を出すのに使う）
 let TREND   = null;   // data.json の weekly_trend（直近26週のグラフ用）
 
@@ -543,7 +546,7 @@ function renderReportPage(rep){
     `<h2><span class="eyebrow">${eyebrow}</span>${assertion}</h2>${lede?`<div class="lede">${lede}</div>`:''}`;
 
   document.getElementById('sheet').innerHTML = `
-<h1>りいポーカーチャンネル 週次レポート<span class="badge">${rep.final?'確定':`速報 ${rep.confirmed_days}/7日`}</span></h1>
+<h1>${esc(CHANNEL)} 週次レポート<span class="badge">${rep.final?'確定':`速報 ${rep.confirmed_days}/7日`}</span></h1>
 <div class="sub">${fmtDate(rep.week_start)}（土）〜 ${fmtDate(rep.week_end)}（金）${rep.final?'':'　※確定データが揃い次第、自動で更新されます'}</div>
 
 ${verdictBlock(rep, views, viewsPrev)}
@@ -577,7 +580,7 @@ ${(ai&&(ai.suggestions||[]).length)?`${sec('次にやること', '数字から�
 <ol class="acts">${ai.suggestions.map(s=>{const t=(typeof s==='string')?{title:s,actions:[]}:(s||{});
   return `<li><b>${esc(t.title||'')}</b>${(t.actions||[]).length?`<ul>${t.actions.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}</li>`;}).join('')}</ol>`:''}
 
-<div class="foot">CHANNEL DESK 自動生成 ／ ${new Date().toLocaleString('ja-JP')} ／ りいポーカーチャンネル【PokerGuild】${ai&&ai.generated_at?` ／ 分析 ${fmtDate(String(ai.generated_at).slice(0,10))}`:''}</div>`;
+<div class="foot">CHANNEL DESK 自動生成 ／ ${new Date().toLocaleString('ja-JP')} ／ ${esc(CHANNEL)}${ai&&ai.generated_at?` ／ 分析 ${fmtDate(String(ai.generated_at).slice(0,10))}`:''}</div>`;
 
 }
 
@@ -599,6 +602,10 @@ async function loadReport(){
     REPORTS = (data.weekly_reports||[]).slice().sort((a,b)=>b.week_start.localeCompare(a.week_start));
     COUPON  = data.coupon || null;
     TREND   = data.weekly_trend || null;
+    if(data.meta && data.meta.channel_title){
+      CHANNEL = data.meta.channel_title;
+      document.title = '週次レポート — ' + CHANNEL;
+    }
     document.getElementById('loadMsg').style.display = 'none';
     if(!REPORTS.length){
       document.getElementById('loadMsg').style.display = 'block';
