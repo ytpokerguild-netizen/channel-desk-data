@@ -159,7 +159,7 @@ a.chip::after{content:'↗';font-size:9px;margin-left:4px;opacity:.7}
       <div class="flow-item">
         <div class="flow-n">1</div>
         <div class="flow-t">スプシに入力</div>
-        <div class="flow-d">収録方法と稼働日</div>
+        <div class="flow-d">収録方法と稼働日<br><span style="font-size:11px">AI音声は稼働日が自動で入ります</span></div>
         <a class="flow-link" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1927840516" target="_blank" rel="noopener">動画アーカイブを開く ↗</a>
       </div>
       <div class="flow-item">
@@ -221,13 +221,15 @@ a.chip::after{content:'↗';font-size:9px;margin-left:4px;opacity:.7}
           <table>
             <thead><tr><th>どの列</th><th>何を入れる</th></tr></thead>
             <tbody>
-              <tr><td><b>J列「収録方法」</b></td><td><b>実写</b> か <b>AI音声</b> のどちらか</td></tr>
-              <tr><td><b>K列「稼働日」</b></td><td>実写なら<b>撮影した日</b>／AI音声なら<b>AIで作った日</b></td></tr>
+              <tr><td><b>J列「収録方法」</b></td><td><b>プルダウンから選びます</b>（実写 / AI音声）。手で打った文字は入りません</td></tr>
+              <tr><td><b>K列「稼働日」</b></td><td><b>実写だけ入れます。撮影した日</b>を、出てくるカレンダーから選びます<br><b>AI音声は入れなくて大丈夫です。</b>公開日が自動で入ります</td></tr>
             </tbody>
           </table>
         </div>
-        <p><b>「稼働日」は公開日ではありません。</b>ここで「何月分の支払いか」が決まります。
+        <p><b>実写の「稼働日」は公開日ではありません。</b>ここで「何月分の支払いか」が決まります。
            月をまたいで公開された動画は、<b>撮った月のぶん</b>として計算されます。</p>
+        <p><b>AI音声は「稼働日＝公開日」です。</b>収録方法で AI音声 を選んだ瞬間に自動で入ります。
+           <b>書き換えても元に戻ります</b>（演者が収録していないので、稼働した日を決めようがないためです）。</p>
       </div>
     </div>
 
@@ -292,7 +294,8 @@ a.chip::after{content:'↗';font-size:9px;margin-left:4px;opacity:.7}
         <div class="qa-q">本数が 0 のまま出てこない</div>
         <div class="qa-a"><b>稼働日が「日付」になっていない可能性が高いです。</b>
           文字として入っていると集計されません（エラーも出ません）。
-          セルを選んで右寄せに表示されていれば日付、左寄せなら文字です。</div>
+          セルを選んで右寄せに表示されていれば日付、左寄せなら文字です。
+          <b>カレンダーから選べば必ず日付になります。</b></div>
       </div>
 
       <div class="qa">
