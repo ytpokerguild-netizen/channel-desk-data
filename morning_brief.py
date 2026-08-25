@@ -97,22 +97,40 @@ def build_message():
     pn = (net - basenet) / abs(basenet) * 100 if basenet else 0
     lines.append(f"{verdict(pn)} 登録者純増 {net:+d}人（内訳 +{g}/-{l}）")
 
-    # 3) 動画アーカイブの未入力（企画タイプ・ナレーター）
+    # 3) 動画アーカイブの2つの遅れ（2026-08-18 に1本 → 2本立てに分割）
     # 入れ忘れると企画タイプ別・ナレーター別の集計から黙って抜けるので、残っている間は毎朝出す。
     # ⚠ 直近180日ぶんだけ数える（全期間だと 2022 年のテスト動画1本がずっと残る）。
-    #   数え方は notify_archive_input.py と同じにしてあります。片方だけ変えると本数が食い違います。
+    #   数え方は notify_archive_input.py の count_recent() と同じにしてあります。
+    #   **片方だけ変えると本数が食い違い、どちらが正しいか分からなくなります。**
+    #
+    # ★ なぜ2本に分けたか。原因も打ち手も別だからです。
+    #   📝 行はあるが空  → **人が入れる。**頼めば解決する
+    #   ⏳ 行がまだ無い  → **人には入れられない。**syncArchiveFromData（Apps Script・毎時）待ち
+    #   1つの数字にまとめると、「入れてください」と頼まれた人が開いても入れる場所がありません。
+    #
+    # ⚠⚠ **この ⏳ の行が、新作通知の唯一の見張りです。**
+    #   notify_archive_input.py は「行が増えたとき」しか送らないので、
+    #   syncArchiveFromData が止まると**エラーも出さずに永久に黙ります。**
+    #   そのとき ⏳ の本数だけが増え続けます。**この行を消さないでください。**
     arc = d.get("video_archive") or {}
     limit = (date.today() - timedelta(days=180)).isoformat()
-    miss = 0
+    miss = norow = 0
     for v in d.get("videos", []):
         pub = (v.get("published_at") or "")[:10]
         if pub and pub < limit:
             continue
-        a = arc.get(v.get("video_id")) or {}
+        vid = v.get("video_id")
+        if vid not in arc:
+            norow += 1
+            continue
+        a = arc.get(vid) or {}
         if not (a.get("type") or "").strip() or not (a.get("narrator") or "").strip():
             miss += 1
     if miss:
         lines.append(f"📝 企画タイプ／ナレーターの未入力 {miss}本（投稿計画表の動画アーカイブ）")
+    if norow:
+        lines.append(f"⏳ 動画アーカイブにまだ行が無い {norow}本"
+                     f"（自動追加待ち。増え続けるなら Apps Script が止まっています）")
 
     # 「新作初速」は 2026-08-07 に廃止。
     # 理由: 最新1本だけを対象にする設計と「ほぼ毎日投稿 + 確定値2〜4日ラグ」が噛み合わず、
