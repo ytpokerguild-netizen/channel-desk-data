@@ -144,36 +144,48 @@ a.card .card-title{color:var(--gold-soft)}
     </a>
   </div>
 
-  <!-- ── データの見方 ── -->
+<!-- ── 入力するもの ── -->
   <div class="sec">
-    <div class="sec-h">データの見方</div>
+    <div class="sec-h">入力するもの</div>
 
-    <a class="card" href="geo.html">
+    <div class="card">
       <div class="card-top">
-        <span class="card-title">地域別データの読み方 — 「大阪が多い」は誤読だった</span>
-        <span class="tag open">公開</span>
+        <span class="card-title">Youtube投稿計画表（動画アーカイブ / 投稿管理）</span>
+        <span class="tag sheet">スプレッドシート</span>
       </div>
       <div class="card-desc">
-        ダッシュボードの都市別ランキングで大阪が1位に出る理由と、その数字をどう読むか。
-        分母の取り方を間違えると結論が逆になります。都市判定の精度、東京が23区に割れる件、
-        ショート中心だとIP位置判定に不利な理由まで。
+        投稿予定と、公開済み動画の企画タイプ・ナレーター。ダッシュボードが自動で読み込みます。
+        新しいネタは<b>いちばん上</b>に足してください（新しいものが上に来る並びです）。
+        演者への支払いの集計も、このシートの中で完結します。
       </div>
-      <div class="card-meta">実際に一度読み違えて、レポートの結論が逆になった経緯があります</div>
-    </a>
+      <div class="links">
+        <a class="slink" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit" target="_blank" rel="noopener">📊 投稿計画表を開く<span class="ext">↗</span></a>
+        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=574456276" target="_blank" rel="noopener">投稿管理<span class="ext">↗</span></a>
+        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1927840516" target="_blank" rel="noopener">動画アーカイブ<span class="ext">↗</span></a>
+        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1285849852" target="_blank" rel="noopener">請求集計<span class="ext">↗</span></a>
+        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=518591772" target="_blank" rel="noopener">単価マスタ<span class="ext">↗</span></a>
+      </div>
+      <div class="card-meta">タブ名のボタンは、そのタブを直接ひらきます。<b>権限のある Google アカウントでログインしていないと開けません</b>（アクセス依頼の画面になります）</div>
+    </div>
 
-    <a class="card" href="report.html">
+    <div class="card">
       <div class="card-top">
-        <span class="card-title">週次レポート</span>
-        <span class="tag open">公開</span>
+        <span class="card-title">PG運営ログ（非公開）</span>
+        <span class="tag sheet">スプレッドシート・共有オフ</span>
       </div>
       <div class="card-desc">
-        確定値でまとめた週ごとのレポート。ダッシュボードの「週次レポート」タブと同じ内容を、
-        単独ページで開けるようにしたものです。共有用。
+        議事録の構造化版。<b>会議のあとに 宿題 / 決定事項 / 施策 の3シートに行を足します（5〜10分）。</b>
+        公開列を ○ にした行だけが、ダッシュボードの「運営」タブに出ます。空欄と × は出ません。
+        施策シートの<b>開始日</b>を入れておくと、AIが施策の前後で数字を比較できるようになります。
       </div>
-    </a>
+      <div class="links">
+        <a class="slink" href="https://docs.google.com/spreadsheets/d/1v--hBNlRU431gr-4DX4fm9L1Xr6w28-Hv93ufo-w-wo/edit" target="_blank" rel="noopener">📋 PG運営ログを開く<span class="ext">↗</span></a>
+      </div>
+      <div class="card-meta">共有はオフのまま。ここには機微な内容を書いて構いません。<b>リンクを踏んでも、権限が無い人は開けません</b></div>
+    </div>
   </div>
 
-  <!-- ── 運用・システム ── -->
+<!-- ── 運用・システム ── -->
   <div class="sec">
     <div class="sec-h">運用・システム</div>
 
@@ -233,45 +245,33 @@ a.card .card-title{color:var(--gold-soft)}
     </div>
   </div>
 
-  <!-- ── 入力するもの ── -->
+<!-- ── データの見方 ── -->
   <div class="sec">
-    <div class="sec-h">入力するもの</div>
+    <div class="sec-h">データの見方</div>
 
-    <div class="card">
+    <a class="card" href="report.html">
       <div class="card-top">
-        <span class="card-title">Youtube投稿計画表（動画アーカイブ / 投稿管理）</span>
-        <span class="tag sheet">スプレッドシート</span>
+        <span class="card-title">週次レポート</span>
+        <span class="tag open">公開</span>
       </div>
       <div class="card-desc">
-        投稿予定と、公開済み動画の企画タイプ・ナレーター。ダッシュボードが自動で読み込みます。
-        新しいネタは<b>いちばん上</b>に足してください（新しいものが上に来る並びです）。
-        演者への支払いの集計も、このシートの中で完結します。
+        確定値でまとめた週ごとのレポート。ダッシュボードの「週次レポート」タブと同じ内容を、
+        単独ページで開けるようにしたものです。共有用。
       </div>
-      <div class="links">
-        <a class="slink" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit" target="_blank" rel="noopener">📊 投稿計画表を開く<span class="ext">↗</span></a>
-        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=574456276" target="_blank" rel="noopener">投稿管理<span class="ext">↗</span></a>
-        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1927840516" target="_blank" rel="noopener">動画アーカイブ<span class="ext">↗</span></a>
-        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1285849852" target="_blank" rel="noopener">請求集計<span class="ext">↗</span></a>
-        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=518591772" target="_blank" rel="noopener">単価マスタ<span class="ext">↗</span></a>
-      </div>
-      <div class="card-meta">タブ名のボタンは、そのタブを直接ひらきます。<b>権限のある Google アカウントでログインしていないと開けません</b>（アクセス依頼の画面になります）</div>
-    </div>
+    </a>
 
-    <div class="card">
+    <a class="card" href="geo.html">
       <div class="card-top">
-        <span class="card-title">PG運営ログ（非公開）</span>
-        <span class="tag sheet">スプレッドシート・共有オフ</span>
+        <span class="card-title">地域別データの読み方 — 「大阪が多い」は誤読だった</span>
+        <span class="tag open">公開</span>
       </div>
       <div class="card-desc">
-        議事録の構造化版。<b>会議のあとに 宿題 / 決定事項 / 施策 の3シートに行を足します（5〜10分）。</b>
-        公開列を ○ にした行だけが、ダッシュボードの「運営」タブに出ます。空欄と × は出ません。
-        施策シートの<b>開始日</b>を入れておくと、AIが施策の前後で数字を比較できるようになります。
+        ダッシュボードの都市別ランキングで大阪が1位に出る理由と、その数字をどう読むか。
+        分母の取り方を間違えると結論が逆になります。都市判定の精度、東京が23区に割れる件、
+        ショート中心だとIP位置判定に不利な理由まで。
       </div>
-      <div class="links">
-        <a class="slink" href="https://docs.google.com/spreadsheets/d/1v--hBNlRU431gr-4DX4fm9L1Xr6w28-Hv93ufo-w-wo/edit" target="_blank" rel="noopener">📋 PG運営ログを開く<span class="ext">↗</span></a>
-      </div>
-      <div class="card-meta">共有はオフのまま。ここには機微な内容を書いて構いません。<b>リンクを踏んでも、権限が無い人は開けません</b></div>
-    </div>
+      <div class="card-meta">実際に一度読み違えて、レポートの結論が逆になった経緯があります</div>
+    </a>
   </div>
 
   <div class="note">
