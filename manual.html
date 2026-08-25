@@ -77,7 +77,6 @@ a.card .card-title{color:var(--gold-soft)}
   background:rgba(255,255,255,.06);color:var(--muted);
 }
 .tag.open{background:rgba(91,214,138,.12);color:var(--up)}
-.tag.local{background:rgba(91,166,214,.13);color:var(--blue)}
 .tag.sheet{background:rgba(201,162,39,.14);color:var(--gold-soft)}
 
 /* スプレッドシートへのリンク */
@@ -94,6 +93,17 @@ a.card .card-title{color:var(--gold-soft)}
 }
 .slink.sub:hover{filter:none;border-color:var(--gold);background:#22382c}
 .slink .ext{font-size:10px;opacity:.65}
+
+/* 目録（クリックできないもの）。カードと見た目を分けるのが目的です */
+.idx{border:1px dashed var(--line-strong);border-radius:var(--radius);padding:14px 17px}
+.idx-lead{font-size:12px;color:var(--muted-2);line-height:1.75;margin-bottom:11px}
+.idx-lead b{color:var(--muted)}
+.idx-row{display:flex;gap:14px;flex-wrap:wrap;padding:7px 0;border-top:1px solid var(--line);font-size:12.5px;line-height:1.7}
+.idx-row:first-of-type{border-top:none;padding-top:0}
+.idx-n{flex:0 0 250px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px}
+.idx-d{flex:1;min-width:200px;color:var(--muted-2)}
+.idx-d b{color:var(--muted)}
+@media(max-width:600px){ .idx-n{flex:1 1 100%} .idx-row{gap:2px} }
 
 .note{
   border:1px solid var(--line);border-left:3px solid var(--gold);
@@ -122,8 +132,8 @@ a.card .card-title{color:var(--gold-soft)}
   <div class="page-title">📘 マニュアル</div>
   <div class="page-lead">
     チャンネル運営に関する手順書の置き場です。「どこに何があるか」をここに集約しています。<br>
-    <span class="tag open">公開</span> と <span class="tag sheet">スプレッドシート</span> はリンクから開けます（シートは Google にログインしていて、権限がある人だけ）。
-    <span class="tag local">Dropbox</span> は「PGコンソール」フォルダの中にあります（リンクはありません）。
+    <b>ここに並んでいるカードは、押せば開きます。</b><span class="tag sheet">スプレッドシート</span> は Google にログインしていて権限がある人だけです。<br>
+    <b>Dropbox にある書類は、いちばん下に名前だけまとめてあります</b>（押しても開きません）。
   </div>
 
   <!-- ── 制作 ── -->
@@ -135,12 +145,7 @@ a.card .card-title{color:var(--gold-soft)}
         <span class="card-title">切り抜きショート動画 制作・投稿マニュアル</span>
         <span class="tag open">公開</span>
       </div>
-      <div class="card-desc">
-        海外配信の切り抜きショートを作って投稿するまでの全工程。
-        STEP① ネタ探し → ② 素材の録画(OBS) → ③ 台本作成 → ④ ナレーション音声 → ⑤ 編集(Premiere Pro)
-        → ⑥ 自己チェック → ⑦ アップロード・公開 → ⑧ 公開後にやること。承認フローとトラブル対応つき。
-      </div>
-      <div class="card-meta">全11章・1ページ / 新しく入った人はまずこれ。<b>トンマナ（編集のトーン＆マナー）もこれが正本です</b></div>
+      <div class="card-desc">ポーカー配信の切り抜きショートを作って投稿するまでの全工程</div>
     </a>
   </div>
 
@@ -153,11 +158,6 @@ a.card .card-title{color:var(--gold-soft)}
         <span class="card-title">Youtube投稿計画表（動画アーカイブ / 投稿管理）</span>
         <span class="tag sheet">スプレッドシート</span>
       </div>
-      <div class="card-desc">
-        投稿予定と、公開済み動画の企画タイプ・ナレーター。ダッシュボードが自動で読み込みます。
-        新しいネタは<b>いちばん上</b>に足してください（新しいものが上に来る並びです）。
-        演者への支払いの集計も、このシートの中で完結します。
-      </div>
       <div class="links">
         <a class="slink" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit" target="_blank" rel="noopener">📊 投稿計画表を開く<span class="ext">↗</span></a>
         <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=574456276" target="_blank" rel="noopener">投稿管理<span class="ext">↗</span></a>
@@ -165,7 +165,6 @@ a.card .card-title{color:var(--gold-soft)}
         <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1285849852" target="_blank" rel="noopener">請求集計<span class="ext">↗</span></a>
         <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=518591772" target="_blank" rel="noopener">単価マスタ<span class="ext">↗</span></a>
       </div>
-      <div class="card-meta">タブ名のボタンは、そのタブを直接ひらきます。<b>権限のある Google アカウントでログインしていないと開けません</b>（アクセス依頼の画面になります）</div>
     </div>
 
     <div class="card">
@@ -173,15 +172,10 @@ a.card .card-title{color:var(--gold-soft)}
         <span class="card-title">PG運営ログ（非公開）</span>
         <span class="tag sheet">スプレッドシート・共有オフ</span>
       </div>
-      <div class="card-desc">
-        議事録の構造化版。<b>会議のあとに 宿題 / 決定事項 / 施策 の3シートに行を足します（5〜10分）。</b>
-        公開列を ○ にした行だけが、ダッシュボードの「運営」タブに出ます。空欄と × は出ません。
-        施策シートの<b>開始日</b>を入れておくと、AIが施策の前後で数字を比較できるようになります。
-      </div>
+      <div class="card-desc">議事録を構造化</div>
       <div class="links">
         <a class="slink" href="https://docs.google.com/spreadsheets/d/1v--hBNlRU431gr-4DX4fm9L1Xr6w28-Hv93ufo-w-wo/edit" target="_blank" rel="noopener">📋 PG運営ログを開く<span class="ext">↗</span></a>
       </div>
-      <div class="card-meta">共有はオフのまま。ここには機微な内容を書いて構いません。<b>リンクを踏んでも、権限が無い人は開けません</b></div>
     </div>
   </div>
 
@@ -197,52 +191,7 @@ a.card .card-title{color:var(--gold-soft)}
         <span class="card-title">演者への支払いフロー</span>
         <span class="tag open">公開</span>
       </div>
-      <div class="card-desc">
-        演者への動画単価の支払いを、毎月どう締めて、どう本数を伝えるか。
-        実写収録とAI音声収録で単価が違う点、投稿計画表での集計の作り、
-        月末に必ず見る「見張り」2つ。<b>単価表も載せています。</b>
-      </div>
-      <div class="card-meta">締めの基準は公開日ではなく稼働日です（実写＝撮影日／AI音声＝公開日が自動で入ります）</div>
     </a>
-
-    <div class="card">
-      <div class="card-top">
-        <span class="card-title">チャンネル分析AI_運用手順.md</span>
-        <span class="tag local">Dropbox</span>
-      </div>
-      <div class="card-desc">
-        週次のAI分析を回すための手順書。<b>このファイルを Claude に添付して「その手順どおりに週次分析をやって」と言うだけ</b>で動きます。
-        どのアカウントからでも実行できます。分析者としての振る舞い（割合には必ず分母を書く／材料が足りないときは無理に結論を作らない 等）もここに書いてあります。
-      </div>
-      <div class="card-meta">分析の仕様はこれが正本。直せば次回から反映されます</div>
-    </div>
-
-    <div class="card">
-      <div class="card-top">
-        <span class="card-title">引き継ぎ書_CHANNEL_DESK.md</span>
-        <span class="tag local">Dropbox</span>
-      </div>
-      <div class="card-desc">
-        このダッシュボードの仕組み全体。データがどこから来てどう更新されるか、
-        ファイルの役割、触るときの注意点。保守を引き継ぐときはまずこれ。
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-top">
-        <span class="card-title">LINE通知セットアップ手順.md</span>
-        <span class="tag local">Dropbox</span>
-      </div>
-      <div class="card-desc">毎朝のブリーフと障害通知をLINEに送る設定。通知先を増やすときはここ。</div>
-    </div>
-
-    <div class="card">
-      <div class="card-top">
-        <span class="card-title">投稿管理シート改修手順.md</span>
-        <span class="tag local">Dropbox</span>
-      </div>
-      <div class="card-desc">投稿計画スプレッドシートの構成と、直すときの手順。</div>
-    </div>
   </div>
 
 <!-- ── データの見方 ── -->
@@ -254,10 +203,6 @@ a.card .card-title{color:var(--gold-soft)}
         <span class="card-title">週次レポート</span>
         <span class="tag open">公開</span>
       </div>
-      <div class="card-desc">
-        確定値でまとめた週ごとのレポート。ダッシュボードの「週次レポート」タブと同じ内容を、
-        単独ページで開けるようにしたものです。共有用。
-      </div>
     </a>
 
     <a class="card" href="geo.html">
@@ -265,13 +210,25 @@ a.card .card-title{color:var(--gold-soft)}
         <span class="card-title">地域別データの読み方 — 「大阪が多い」は誤読だった</span>
         <span class="tag open">公開</span>
       </div>
-      <div class="card-desc">
-        ダッシュボードの都市別ランキングで大阪が1位に出る理由と、その数字をどう読むか。
-        分母の取り方を間違えると結論が逆になります。都市判定の精度、東京が23区に割れる件、
-        ショート中心だとIP位置判定に不利な理由まで。
-      </div>
-      <div class="card-meta">実際に一度読み違えて、レポートの結論が逆になった経緯があります</div>
     </a>
+  </div>
+
+  <!-- ⚠ ここはクリックできない「目録」です。カードにしないこと。
+       カードの形にすると、押せるものと混ざって「押したのに開かない」が増えます。
+       Dropbox の共有リンクは権限の壁が無く URL を知る人が開けるので、リンクは貼れません。 -->
+  <div class="sec">
+    <div class="sec-h">Dropbox「PGコンソール」にあるもの</div>
+    <div class="idx">
+      <div class="idx-lead">
+        <b>ここはリンクではありません。</b>Dropbox の「PGコンソール」フォルダを開いてください。
+        （書類の中身に非公開の値が入っているため、公開ページからは開けないようにしています）
+      </div>
+      <div class="idx-row"><span class="idx-n">引き継ぎ書_CHANNEL_DESK.md</span><span class="idx-d">仕組み全体。データの流れ、ファイルの役割、触るときの注意点。<b>保守を引き継ぐときはまずこれ</b></span></div>
+      <div class="idx-row"><span class="idx-n">チャンネル分析AI_運用手順.md</span><span class="idx-d">週次AI分析の手順。<b>Claude に添付して「その手順どおりに」と言うだけ</b>で回ります。分析の仕様はこれが正本</span></div>
+      <div class="idx-row"><span class="idx-n">演者への支払いフロー.md</span><span class="idx-d">支払いの<b>決めた経緯と設計</b>。毎月の作業手順は上の「演者への支払いフロー」を見てください</span></div>
+      <div class="idx-row"><span class="idx-n">LINE通知セットアップ手順.md</span><span class="idx-d">毎朝のブリーフと障害通知の設定。通知先を増やすときはここ</span></div>
+      <div class="idx-row"><span class="idx-n">投稿管理シート改修手順.md</span><span class="idx-d">投稿計画表の構成と、直すときの手順</span></div>
+    </div>
   </div>
 
   <div class="note">
@@ -280,7 +237,8 @@ a.card .card-title{color:var(--gold-soft)}
     <b>スプレッドシートのリンクは貼っていますが、中身までは見られません。</b>
     シート側に権限がかかっているので、<b>許可された Google アカウントでログインしている人だけ</b>が開けます。
     権限の無い人がリンクを踏むと「アクセスをリクエスト」の画面になります。<br>
-    <b>Dropbox のファイルにはリンクを貼りません。</b>共有リンクは URL を知っている人がそのまま開けてしまうためです。名前だけ載せています。
+    <b>Dropbox のファイルにはリンクを貼りません。</b>共有リンクは URL を知っている人がそのまま開けてしまうためです。
+    いちばん下に<b>名前だけ</b>まとめてあります。<b>ここにカードを増やさないでください</b> — 押せないものが混ざると、押せるものが探しにくくなります。
   </div>
 
   <div class="foot">
