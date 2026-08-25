@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>演者への支払いフロー｜CHANNEL DESK</title>
+<title>演者への支払い｜CHANNEL DESK</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
@@ -19,75 +19,98 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{
   background:radial-gradient(1200px 600px at 50% -200px,rgba(201,162,39,.06),transparent),var(--bg);
-  color:var(--ink);font-family:"Noto Sans JP",sans-serif;font-size:14px;line-height:1.75;
-  min-height:100vh;
+  color:var(--ink);font-family:"Noto Sans JP",sans-serif;font-size:14px;line-height:1.75;min-height:100vh;
 }
-.wrap{max-width:900px;margin:0 auto;padding:18px 16px 60px}
+.wrap{max-width:880px;margin:0 auto;padding:18px 16px 60px}
 a{color:inherit}
 
-.topbar{
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-  padding:12px 16px;margin-bottom:18px;
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 16px;margin-bottom:20px;
   background:linear-gradient(180deg,rgba(255,255,255,.03),transparent),var(--panel);
-  border:1px solid var(--line);border-radius:var(--radius);
-}
+  border:1px solid var(--line);border-radius:var(--radius)}
 .brand{display:flex;align-items:center;gap:10px;margin-right:auto;text-decoration:none;color:inherit}
-.brand .mark{
-  width:34px;height:34px;border-radius:8px;display:grid;place-items:center;
-  background:linear-gradient(160deg,#1f3a2b,#0d1d15);
-  border:1px solid var(--line-strong);color:var(--gold);font-size:18px;
-}
+.brand .mark{width:34px;height:34px;border-radius:8px;display:grid;place-items:center;
+  background:linear-gradient(160deg,#1f3a2b,#0d1d15);border:1px solid var(--line-strong);color:var(--gold);font-size:18px}
 .brand h1{font-family:"Oswald",sans-serif;font-weight:500;letter-spacing:.14em;font-size:17px;line-height:1}
 .brand .sub{font-size:11px;color:var(--muted);letter-spacing:.1em;margin-top:3px}
-.btn{
-  font-size:12px;font-weight:500;color:var(--ink);background:var(--panel-2);
-  border:1px solid var(--line-strong);border-radius:9px;padding:7px 13px;
-  cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;
-  transition:border-color .15s,background .15s;
-}
+.btn{font-size:12px;font-weight:500;color:var(--ink);background:var(--panel-2);border:1px solid var(--line-strong);
+  border-radius:9px;padding:7px 13px;display:inline-flex;align-items:center;gap:6px;text-decoration:none;
+  transition:border-color .15s,background .15s}
 .btn:hover{border-color:var(--gold);background:#22382c}
 
-.page-title{font-family:"Oswald",sans-serif;font-weight:400;letter-spacing:.1em;font-size:20px;margin-bottom:6px}
-.page-lead{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.8}
+.page-title{font-family:"Oswald",sans-serif;font-weight:400;letter-spacing:.1em;font-size:21px;margin-bottom:8px}
+.page-lead{font-size:13.5px;color:var(--muted);margin-bottom:26px;line-height:1.85}
 
-.sec{margin-bottom:30px}
-.sec-h{
-  font-family:"Oswald",sans-serif;font-weight:400;letter-spacing:.08em;font-size:12px;
-  color:var(--muted);text-transform:uppercase;margin-bottom:12px;
-  display:flex;align-items:center;gap:8px;
-}
+/* 章見出し */
+.sec{margin-bottom:34px}
+.sec-h{font-family:"Oswald",sans-serif;font-weight:400;letter-spacing:.08em;font-size:12px;color:var(--muted);
+  text-transform:uppercase;margin-bottom:13px;display:flex;align-items:center;gap:8px}
 .sec-h::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--gold);flex:0 0 auto}
+.sec-title{font-size:17px;font-weight:700;margin-bottom:14px;line-height:1.5}
 
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;margin-bottom:10px}
-.panel h3{font-size:14px;font-weight:500;margin-bottom:8px;color:var(--gold-soft)}
-.panel p{font-size:13px;color:var(--muted);margin-bottom:9px}
-.panel p:last-child{margin-bottom:0}
-.panel b{color:var(--ink);font-weight:500}
+/* いちばん上の3ステップ */
+.flow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}
+.flow-item{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;position:relative}
+.flow-n{font-family:"Oswald",sans-serif;font-size:26px;color:var(--gold);line-height:1;margin-bottom:8px}
+.flow-t{font-size:13.5px;font-weight:700;line-height:1.55;margin-bottom:5px}
+.flow-d{font-size:12px;color:var(--muted);line-height:1.65}
+@media(max-width:680px){ .flow{grid-template-columns:1fr} }
 
-.tbl-scroll{overflow-x:auto;margin:10px 0 4px}
-table{border-collapse:collapse;width:100%;font-size:13px;min-width:420px}
-th,td{border:1px solid var(--line);padding:8px 11px;text-align:left;vertical-align:top}
+/* 手順カード */
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+  padding:17px 19px;margin-bottom:11px;display:flex;gap:15px;align-items:flex-start}
+.step-n{flex:0 0 auto;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  background:var(--gold);color:#12201a;font-family:"Oswald",sans-serif;font-size:15px;font-weight:500}
+.step-body{flex:1;min-width:0}
+.step-h{font-size:14.5px;font-weight:700;margin-bottom:7px;line-height:1.5}
+.step-body p{font-size:13px;color:var(--muted);margin-bottom:7px;line-height:1.75}
+.step-body p:last-child{margin-bottom:0}
+.step-body b{color:var(--ink);font-weight:500}
+
+.tbl-scroll{overflow-x:auto;margin:12px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;min-width:380px}
+th,td{border:1px solid var(--line);padding:10px 13px;text-align:left;vertical-align:middle}
 th{background:var(--panel-2);color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
-td b{color:var(--ink)}
 td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
-.yen{color:var(--gold-soft);font-weight:500}
+.yen{color:var(--gold-soft);font-weight:700;font-size:15px}
+.who{font-weight:700}
 
-ol,ul{margin:6px 0 6px 1.25em;font-size:13px;color:var(--muted)}
-li{margin-bottom:6px}
-li b{color:var(--ink)}
+/* 計算例 */
+.calc{background:var(--panel-2);border:1px solid var(--line-strong);border-radius:var(--radius);padding:17px 19px}
+.calc-h{font-size:12px;color:var(--gold-soft);letter-spacing:.06em;margin-bottom:11px;font-weight:500}
+.calc-row{display:flex;justify-content:space-between;gap:12px;font-size:13.5px;padding:6px 0;
+  border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.calc-row:last-of-type{border-bottom:none}
+.calc-row .l{color:var(--muted)}
+.calc-row .r{font-variant-numeric:tabular-nums;white-space:nowrap}
+.calc-total{display:flex;justify-content:space-between;gap:12px;margin-top:11px;padding-top:12px;
+  border-top:2px solid var(--gold);font-size:15px;font-weight:700;flex-wrap:wrap}
+.calc-total .r{color:var(--gold-soft);font-variant-numeric:tabular-nums}
+
+.chip{display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+  background:rgba(201,162,39,.13);color:var(--gold-soft);padding:2px 8px;border-radius:6px;white-space:nowrap}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
   background:rgba(255,255,255,.06);padding:1px 6px;border-radius:5px;color:var(--gold-soft)}
 
-.note{
-  border:1px solid var(--line);border-left:3px solid var(--gold);
-  border-radius:8px;padding:12px 15px;font-size:12.5px;color:var(--muted);line-height:1.8;margin:10px 0;
-}
+.note{border:1px solid var(--line);border-left:3px solid var(--gold);border-radius:8px;
+  padding:13px 16px;font-size:12.5px;color:var(--muted);line-height:1.85;margin:12px 0}
 .note b{color:var(--ink)}
 .note.warn{border-left-color:var(--warn)}
-.note.ok{border-left-color:var(--up)}
 
-.foot{margin-top:34px;font-size:11px;color:var(--muted-2);text-align:center;line-height:1.9}
-@media(max-width:600px){ .wrap{padding:12px 11px 44px} .panel{padding:13px 14px} }
+/* 困ったとき */
+.qa{border-bottom:1px solid var(--line);padding:13px 0}
+.qa:last-child{border-bottom:none}
+.qa-q{font-size:13.5px;font-weight:700;margin-bottom:5px}
+.qa-a{font-size:12.5px;color:var(--muted);line-height:1.8}
+.qa-a b{color:var(--ink)}
+
+.tech{background:rgba(255,255,255,.02);border:1px dashed var(--line-strong);border-radius:var(--radius);padding:15px 18px}
+.tech h4{font-size:12.5px;color:var(--muted);font-weight:500;margin-bottom:9px}
+.tech ul{margin-left:1.15em;font-size:12.5px;color:var(--muted);line-height:1.8}
+.tech li{margin-bottom:6px}
+.tech b{color:var(--ink)}
+
+.foot{margin-top:38px;font-size:11px;color:var(--muted-2);text-align:center;line-height:1.9}
+@media(max-width:600px){ .wrap{padding:12px 11px 44px} .step{padding:14px 15px;gap:12px} }
 </style>
 </head>
 <body>
@@ -104,191 +127,218 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
     <a class="btn" href="manual.html">← マニュアルに戻る</a>
   </div>
 
-  <div class="page-title">💰 演者への支払いフロー</div>
+  <div class="page-title">💰 演者への支払い</div>
   <div class="page-lead">
-    演者への動画単価の支払いを、毎月どう締めて、どう本数を伝えるか。<br>
-    集計は<b>投稿計画表の中で完結</b>します。このページは手順の説明で、実際の数字はスプレッドシートにあります。
+    毎月、演者に<b>動画1本あたりの単価</b>で支払います。<br>
+    金額の計算は<b>投稿計画表が自動でやります。</b>やることは「入力」と「確認」と「連絡」の3つだけです。
   </div>
 
-  <div class="note">
-    <b>3行でいうと</b><br>
-    ① 動画1本あたりの単価で毎月払う。<b>実写収録</b>と<b>AI音声収録</b>で単価が違う<br>
-    ② 締めは月末。「何月分か」は<b>稼働日</b>（実写＝撮影日／AI音声＝AI生成日）で決める。<b>公開日ではない</b><br>
-    ③ 投稿計画表の <code>請求集計</code> タブで年と月を入れると、本数と金額が自動で出る
-  </div>
-
-  <!-- ── 1. 単価 ── -->
+  <!-- ── 全体の流れ ── -->
   <div class="sec">
-    <div class="sec-h">1. 単価</div>
-    <div class="panel">
-      <div class="tbl-scroll">
-        <table>
-          <thead><tr><th>演者</th><th>収録方法</th><th>1本あたり</th></tr></thead>
-          <tbody>
-            <tr><td><b>あさひ</b></td><td>実写収録</td><td class="num yen">2,000円</td></tr>
-            <tr><td><b>りい</b></td><td>実写収録</td><td class="num yen">2,500円</td></tr>
-            <tr><td><b>あさひ</b></td><td>AI音声収録</td><td class="num yen">1,000円</td></tr>
-            <tr><td><b>りい</b></td><td>AI音声収録</td><td class="num yen">1,000円</td></tr>
-          </tbody>
-        </table>
+    <div class="sec-h">全体の流れ</div>
+    <div class="flow">
+      <div class="flow-item">
+        <div class="flow-n">1</div>
+        <div class="flow-t">動画ごとに2つ入力</div>
+        <div class="flow-d">収録方法（実写／AI音声）と稼働日。<b>撮ったとき・作ったときに毎回</b></div>
       </div>
-      <p>対象は <b>あさひさん・りいさんの2名</b>です。キアラさんは今のところ対象外です。</p>
-      <p><b>単価を変えるときは、投稿計画表の <code>単価マスタ</code> タブだけを直します。</b>
-         数式には金額を直接書いていないので、そこ1か所で全部に効きます。</p>
+      <div class="flow-item">
+        <div class="flow-n">2</div>
+        <div class="flow-t">月末に年と月を入れる</div>
+        <div class="flow-d">請求集計タブで、<b>本数と金額が自動で出ます</b></div>
+      </div>
+      <div class="flow-item">
+        <div class="flow-n">3</div>
+        <div class="flow-t">演者に本数を伝える</div>
+        <div class="flow-d"><b>実写とAI音声は分けて</b>伝えます</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── 誰にいくら ── -->
+  <div class="sec">
+    <div class="sec-h">1. 誰に いくら</div>
+    <div class="sec-title">支払う相手は あさひさん と りいさん の2人です</div>
+
+    <div class="tbl-scroll">
+      <table>
+        <thead>
+          <tr><th>演者</th><th style="text-align:right">実写収録<br><span style="font-weight:400;font-size:11px">（撮影した動画）</span></th><th style="text-align:right">AI音声収録<br><span style="font-weight:400;font-size:11px">（声だけ使った動画）</span></th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="who">あさひ</td><td class="num yen">2,000円</td><td class="num yen">1,000円</td></tr>
+          <tr><td class="who">りい</td><td class="num yen">2,500円</td><td class="num yen">1,000円</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div style="font-size:12.5px;color:var(--muted);line-height:1.8">
+      すべて<b>動画1本あたり</b>の金額です。ほかの人（キアラさんなど）は、いまのところ支払い対象ではありません。
     </div>
 
     <div class="note warn">
-      <b>⚠ AI音声の1,000円は「声を使った演者にだけ」払います。</b>両演者ではありません。<br>
-      1本あたりの支出は 1,000円 です。一度「両演者に払う」という説明がありましたが、確認して否定されています。
-      <b>両演者だと支出が倍になるので、ここを取り違えないでください。</b>
-    </div>
-
-    <div class="panel">
-      <h3>AI音声収録について（2026-08 開始）</h3>
-      <p><b>演者は収録に関与しません。</b>AI音声で作った動画は、演者が撮影していません。</p>
-      <p>そのため <b>AI生成を行うたびに本数を数えて、その分を伝える</b>という業務が新しく発生します。
-         実写のぶんとは<b>分けて伝えてください</b>（単価が違うため）。</p>
+      <b>AI音声の1,000円は、その声を使った1人にだけ払います。</b>
+      あさひさんの声で作った動画なら、あさひさんに1,000円だけ。<b>りいさんには発生しません。</b>
     </div>
   </div>
 
-  <!-- ── 2. 毎月の手順 ── -->
+  <!-- ── 計算例 ── -->
   <div class="sec">
-    <div class="sec-h">2. 毎月の手順</div>
-    <div class="panel">
-      <ol>
-        <li><b>稼働日を埋める。</b>投稿計画表の <code>動画アーカイブ</code> タブで、その月に稼働した動画の行に
-            <code>収録方法</code>（実写／AI音声）と <code>稼働日</code> を入れる</li>
-        <li><b><code>請求集計</code> タブを開いて、年と月を入れる。</b>本数と金額が自動で出ます</li>
-        <li><b>いちばん下の「見張り」2つが 0 かを確認する</b>（下の §4）。0 でなければ請求から抜けている本数があります</li>
-        <li><b>演者ごとの本数を伝える。</b>実写とAI音声は単価が違うので、分けて伝えます</li>
-      </ol>
-      <p>触るのは<b>年・月・稼働日・収録方法・単価</b>だけです。ほかは数式なので触らないでください。</p>
+    <div class="sec-h">2. 計算のしかた</div>
+    <div class="sec-title">本数 × 単価。それだけです</div>
+
+    <div class="calc">
+      <div class="calc-h">例：あさひさんが 実写3本・AI音声2本 だった月</div>
+      <div class="calc-row"><span class="l">実写収録　3本 × 2,000円</span><span class="r">6,000円</span></div>
+      <div class="calc-row"><span class="l">AI音声収録　2本 × 1,000円</span><span class="r">2,000円</span></div>
+      <div class="calc-total"><span>あさひさんへの支払い</span><span class="r">8,000円</span></div>
     </div>
-    <div class="note warn">
-      <b>⚠ 稼働日が空の行は、どの月にも集計されません。</b>入れ忘れると、その本数が請求から静かに抜けます。<br>
-      <b>⚠ 稼働日は「日付」として入れてください。</b>文字列で入れると日付の比較が一致せず、
-      <b>本数が黙って 0 になります</b>（エラーは出ません）。0本で出たら、まずここを疑ってください。
+
+    <div class="note">
+      <b>この計算は自分でやらなくて構いません。</b>
+      投稿計画表の <span class="chip">請求集計</span> タブが同じ計算をして、金額まで出します。
+      上の例は「どう計算されているか」を知っておくためのものです。
     </div>
   </div>
 
-  <!-- ── 3. スプレッドシートの作り ── -->
+  <!-- ── 手順 ── -->
   <div class="sec">
-    <div class="sec-h">3. スプレッドシートの作り</div>
+    <div class="sec-h">3. 毎月やること</div>
+    <div class="sec-title">4ステップです</div>
 
-    <div class="panel">
-      <h3><code>動画アーカイブ</code> タブに足した2列</h3>
-      <div class="tbl-scroll">
-        <table>
-          <thead><tr><th>列</th><th>値</th><th>なぜ要るか</th></tr></thead>
-          <tbody>
-            <tr><td><code>収録方法</code>（J列）</td><td>実写 ／ AI音声</td><td>単価がこれで変わるため</td></tr>
-            <tr><td><code>稼働日</code>（K列）</td><td>日付</td><td>締めの基準。実写＝撮影日、AI音声＝AI生成日</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p><code>fetch.py</code> は<b>列を名前で探している</b>ので、列を足したり並べ替えても壊れません。
-         逆に<b>列名を変えると黙って空になります</b>（エラーは出ません）。</p>
-    </div>
-
-    <div class="note warn">
-      <b>★ ナレーター欄に「AIあさひ」を作らないでください。</b><br>
-      <code>ナレーター</code> 列は、そのまま<b>ダッシュボードのナレーター別集計</b>に使われています
-      （りい194本／あさひ77本ほか）。ここに <code>AIあさひ</code> を足すと、
-      <b>あさひが2系列に割れて、過去との比較が切れます。</b><br>
-      もう1つ、この列の入力規則は<b>バウンドスクリプトが1時間おきに貼り直しています。</b>
-      シート側で選択肢を足しても、<b>数時間後に静かに戻ります。</b><br>
-      <b>収録方法は別の列で分けてください。</b>ナレーターには<b>声の主をそのまま</b>入れます。
-    </div>
-
-    <div class="note ok">
-      <b>おまけ：</b>この分け方だと、<b>「AI音声の動画は実写と比べて伸びるか」も測れるようになります。</b>
-      ナレーター欄に混ぜてしまうと、この比較ができません。
-    </div>
-
-    <div class="panel">
-      <h3>足した2つのタブ</h3>
-      <div class="tbl-scroll">
-        <table>
-          <thead><tr><th>タブ</th><th>中身</th></tr></thead>
-          <tbody>
-            <tr><td><code>単価マスタ</code></td><td>演者／収録方法／単価。<b>金額を書くのはここだけ</b></td></tr>
-            <tr><td><code>請求集計</code></td><td>年と月を入れると、演者ごとの本数と金額が出る</td></tr>
-          </tbody>
-        </table>
+    <div class="step">
+      <div class="step-n">1</div>
+      <div class="step-body">
+        <div class="step-h">動画ができたら、2つ入力する</div>
+        <p>投稿計画表の <span class="chip">動画アーカイブ</span> タブを開いて、その動画の行に入れます。</p>
+        <div class="tbl-scroll">
+          <table>
+            <thead><tr><th>どの列</th><th>何を入れる</th></tr></thead>
+            <tbody>
+              <tr><td><b>J列「収録方法」</b></td><td><b>実写</b> か <b>AI音声</b> のどちらか</td></tr>
+              <tr><td><b>K列「稼働日」</b></td><td>実写なら<b>撮影した日</b>／AI音声なら<b>AIで作った日</b></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p><b>「稼働日」は公開日ではありません。</b>ここで「何月分の支払いか」が決まります。
+           月をまたいで公開された動画は、<b>撮った月のぶん</b>として計算されます。</p>
       </div>
     </div>
 
-    <div class="panel">
-      <h3>名前付き範囲（数式はこれを使っています）</h3>
-      <p>数式の中に日本語のシート名を書かずに済むよう、6つの名前付き範囲を作ってあります。
-         <b>消すと請求集計が全部エラーになります。</b></p>
-      <div class="tbl-scroll">
-        <table>
-          <thead><tr><th>名前</th><th>範囲</th></tr></thead>
-          <tbody>
-            <tr><td><code>narrator</code></td><td>動画アーカイブ の ナレーター列</td></tr>
-            <tr><td><code>method</code></td><td>動画アーカイブ の 収録方法列</td></tr>
-            <tr><td><code>workdate</code></td><td>動画アーカイブ の 稼働日列</td></tr>
-            <tr><td><code>mPerson</code> / <code>mMethod</code> / <code>mRate</code></td><td>単価マスタ の 演者／収録方法／単価</td></tr>
-          </tbody>
-        </table>
+    <div class="step">
+      <div class="step-n">2</div>
+      <div class="step-body">
+        <div class="step-h">月末に、年と月を入れる</div>
+        <p><span class="chip">請求集計</span> タブを開いて、<b>B1に年（例 2026）、B2に月（例 8）</b>を入れるだけです。</p>
+        <p><b>本数・単価・金額が自動で出ます。</b>ほかのセルは数式なので触らないでください。</p>
       </div>
-      <p>本数は <code>COUNTIFS</code>、単価は <code>SUMIFS</code> で引いています。特別な関数は使っていません。</p>
+    </div>
+
+    <div class="step">
+      <div class="step-n">3</div>
+      <div class="step-body">
+        <div class="step-h">いちばん下の「見張り」2つが 0 か確認する</div>
+        <p><b>どちらも 0 なら、そのまま進めて大丈夫です。</b>0 でなければ下の「4. 締める前の確認」を見てください。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-n">4</div>
+      <div class="step-body">
+        <div class="step-h">演者に本数を伝える</div>
+        <p><b>実写とAI音声は単価が違うので、必ず分けて伝えます。</b></p>
+        <p style="color:var(--ink)">例：「今月は実写3本、AI音声2本でした」</p>
+      </div>
     </div>
   </div>
 
-  <!-- ── 4. 見張り ── -->
+  <!-- ── 見張り ── -->
   <div class="sec">
-    <div class="sec-h">4. 月末に必ず見る「見張り」2つ</div>
-    <div class="panel">
-      <p><code>請求集計</code> タブのいちばん下に、<b>黙って請求から抜けるのを防ぐ数字が2つ</b>あります。
-         <b>どちらも 0 であることを確認してから締めてください。</b></p>
-      <div class="tbl-scroll">
-        <table>
-          <thead><tr><th>見張り</th><th>0 でないときの意味</th></tr></thead>
-          <tbody>
-            <tr><td><b>稼働日が空の行</b></td>
-                <td>その本数は<b>どの月にも集計されていません。請求から抜けます</b></td></tr>
-            <tr><td><b>単価マスタに無い演者</b></td>
-                <td>あさひさん・りいさん以外に稼働が入っています。単価マスタに足すか、入力ミスかを確認</td></tr>
-          </tbody>
-        </table>
-      </div>
-      <p><b>キアラさんを単価マスタに入れていないのは、この見張りがあるからです。</b>
-         対象外の人に稼働が入っても、0 でなくなるので気づけます。</p>
+    <div class="sec-h">4. 締める前の確認</div>
+    <div class="sec-title">この2つが 0 でないときは、支払いに漏れがあります</div>
+
+    <div class="tbl-scroll">
+      <table>
+        <thead><tr><th>表示</th><th>0 でないときの意味</th><th>どうするか</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>稼働日が空の行</b></td>
+            <td>収録方法は入っているのに<b>稼働日が入っていない</b>動画があります。<b>その本数は請求から抜けています</b></td>
+            <td>動画アーカイブの K列を埋める</td>
+          </tr>
+          <tr>
+            <td><b>単価マスタに無い演者</b></td>
+            <td>あさひさん・りいさん<b>以外の人に稼働が入っています</b></td>
+            <td>入力ミスなら直す。本当に支払う人なら単価マスタに行を足す</td>
+          </tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
-  <!-- ── 5. 決まったこと・未決 ── -->
+  <!-- ── 困ったとき ── -->
   <div class="sec">
-    <div class="sec-h">5. 決まったこと・未決</div>
-    <div class="panel">
-      <h3>決まったこと（2026-08-25）</h3>
-      <div class="tbl-scroll">
-        <table>
-          <tbody>
-            <tr><td><b>AI音声の1,000円は声を使った演者にだけ</b></td><td>両演者ではない。1本あたりの支出は1,000円</td></tr>
-            <tr><td><b>対象は あさひ・りい の2名</b></td><td>キアラは今は作らない</td></tr>
-            <tr><td><b>対象は 2026-08 分から</b></td><td>過去にさかのぼらない</td></tr>
-            <tr><td><b>1本＝実写かAI音声のどちらか一方</b></td><td>混ざることはない</td></tr>
-            <tr><td><b>単価は単価マスタで変える</b></td><td>数式には直接書かない</td></tr>
-          </tbody>
-        </table>
+    <div class="sec-h">5. 困ったとき</div>
+    <div class="sec-title">よくあるつまずき</div>
+    <div style="background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:6px 19px">
+
+      <div class="qa">
+        <div class="qa-q">本数が 0 のまま出てこない</div>
+        <div class="qa-a"><b>稼働日が「日付」になっていない可能性が高いです。</b>
+          文字として入っていると集計されません（エラーも出ません）。
+          セルを選んで右寄せに表示されていれば日付、左寄せなら文字です。</div>
       </div>
+
+      <div class="qa">
+        <div class="qa-q">単価を変えたい</div>
+        <div class="qa-a"><span class="chip">単価マスタ</span> タブの <b>C列（単価）だけ</b>を直します。
+          <b>ここ1か所を直せば、請求集計にも自動で反映されます。</b>ほかは触らないでください。</div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q">支払う人が増えた</div>
+        <div class="qa-a"><b>2か所に足します。</b>
+          ① <span class="chip">単価マスタ</span> に「演者／収録方法／単価」の行を追加（実写とAI音声の2行）
+          ② <span class="chip">請求集計</span> の表にもその人の行を追加。
+          <b>①だけだと集計に出てきません。</b></div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q">先月いくら払ったか見たい</div>
+        <div class="qa-a"><b>請求集計の年と月を先月に戻せば見られます。</b>
+          ただし<b>そのあと動画アーカイブを編集すると、先月の金額も変わります。</b>
+          記録として残したいときは、締めた時点で金額をどこかに控えておいてください。</div>
+      </div>
+
+      <div class="qa">
+        <div class="qa-q">1本の中で実写とAI音声が混ざっている</div>
+        <div class="qa-a"><b>そういう動画は無い前提で作っています。</b>
+          もし出てきたら、勝手に決めずに運営者に確認してください。</div>
+      </div>
+
     </div>
-    <div class="note warn">
-      <b>★ 未決が1つ残っています：締めたあとに金額を固定するか</b><br>
-      いまの形だと、<b>締めたあとに稼働記録を編集すると過去月の金額も変わります。</b>
-      つまり「先月いくら払ったか」が後から動きます。支払い履歴としては、これでは足りません。<br>
-      やり方は2つあります。<b>どちらも入れていません。</b><br>
-      ・確定額を別タブに書き出して固定する（締めた月の行をコピーして値で貼る）<br>
-      ・支払い済みフラグ列を持つ（<code>2026-08 締め済み</code> など）。締めた行は編集しない運用にする
+  </div>
+
+  <!-- ── 技術メモ ── -->
+  <div class="sec">
+    <div class="sec-h">シートを触る人へ</div>
+    <div class="tech">
+      <h4>この3つを守らないと、集計が黙って壊れます</h4>
+      <ul>
+        <li><b>ナレーター列に「AIあさひ」のような値を作らないこと。</b>
+            この列はダッシュボードの集計に直結していて、演者が2系列に割れて過去と比較できなくなります。
+            収録方法は必ず<b>J列</b>で分けてください</li>
+        <li><b>名前付き範囲（<code>narrator</code> <code>method</code> <code>workdate</code>
+            <code>mPerson</code> <code>mMethod</code> <code>mRate</code>）を消さないこと。</b>
+            消すと請求集計が全部エラーになります</li>
+        <li><b>列名を変えないこと。</b>データ取得は列を名前で探しているので、
+            名前を変えると<b>エラーも出さずに空になります</b></li>
+      </ul>
     </div>
   </div>
 
   <div class="foot">
-    CHANNEL DESK ／ 演者への支払いフロー<br>
-    最終更新: 2026-08-25 ・ 詳細な経緯は Dropbox「PGコンソール」の <b>演者への支払いフロー.md</b> にあります
+    CHANNEL DESK ／ 演者への支払い<br>
+    最終更新: 2026-08-25 ・ 決めた経緯や設計の詳細は Dropbox「PGコンソール」の <b>演者への支払いフロー.md</b> にあります
   </div>
 
 </div>
