@@ -204,6 +204,48 @@ function trendAssert(rep){
 }
 
 // 流入経路（横棒・今週/前週）
+// ════════════════════════════════
+// 流入元を「いちばん多い1本」と「それ以外」に割る（2026-08-25 追加・レビュー指摘 A-4）
+//   なぜ: 「この経路が伸びた」だけでは、単発ヒットの副産物なのか、
+//         チャンネル全体の流入が変わったのかを区別できないため。
+//   ⚠ ここでは因果を書きません。「1本を抜いても前週を超えているか」という
+//     事実だけを出します。抜いた残りが前週割れなら、1本で説明がつく可能性が高い、
+//     というのは読み手の判断です。
+//   ⚠ video_traffic は上位5本ぶんしかありません。「それ以外」には
+//     6本目以降と過去動画がまとめて入ります。1本を引く以上のことはできません。
+// ════════════════════════════════
+function trafficSplitBlock(rep){
+  const vt = rep.video_traffic;
+  if(!vt || !window._TR || !window._TR.list.length) return '';
+  const {list, prev} = window._TR;
+  const t0 = list[0], st = String(t0.source_type);
+  const p0 = prev.get(st);
+  if(p0==null || !t0.views) return '';
+
+  const titles = {};
+  (rep.top_videos||[]).forEach(v=>{ titles[v.video_id]=v.title; });
+  (rep.new_videos||[]).forEach(v=>{ if(v.video_id) titles[v.video_id]=v.title; });
+
+  const rows = Object.keys(vt).map(vid=>{
+    const m = (vt[vid]||[]).find(r=>String(r.source_type)===st);
+    return {vid, v: m? m.views : 0};
+  }).filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
+  if(!rows.length) return '';
+
+  const top = rows[0];
+  const rest = t0.views - top.v;
+  const nm = TRAFFIC_LABEL[st]||st;
+  const shareOfNow = Math.round(top.v/t0.views*100);
+  const restBeatsPrev = rest > p0;
+
+  return `<div class="note" style="margin-top:9px;line-height:1.9">
+<b>${esc(nm)} ${fmtMan(t0.views)}回の内訳</b>（前週 ${fmtMan(p0)}回）<br>
+・いちばん多い1本「${esc(cut(titles[top.vid]||top.vid,22))}」… <b>${fmtMan(top.v)}回</b>（この経路の${shareOfNow}%）<br>
+・<b>この1本を除くと ${fmtMan(rest)}回</b>で、前週の ${fmtMan(p0)}回を${restBeatsPrev?'<b>上回ります</b>':'下回ります'}<br>
+<span style="color:var(--muted-2)">※ 動画ごとの内訳は上位5本ぶんだけです。「除いた残り」には6本目以降と過去動画が入ります</span>
+</div>`;
+}
+
 function trafficChart(){
   if(!window._TR || !window._TR.list.length) return '';
   const {list, prev} = window._TR;
@@ -416,7 +458,8 @@ function couponBlock(rep){
 <tr><td>コード入力</td><td class="num">${cell(wk.entries,dC)}</td><td class="num">${pw?cell(pw.entries,dP):'—'}</td></tr>
 <tr><td>うち使用済み</td><td class="num">${fmtFull(wk.used)}件（${rate(wk.used,wk.entries)}）</td><td class="num">${pw?`${fmtFull(pw.used)}件（${rate(pw.used,pw.entries)}）`:'—'}</td></tr>
 <tr><td>実人数</td><td class="num">${fmtFull(wk.people)}人</td><td class="num">${pw?fmtFull(pw.people)+'人':'—'}</td></tr></table>
-${codeRows?`<div style="margin-top:11px"><b style="font-size:14px">コード別（通算）</b></div>
+${codeRows?`<div style="margin-top:16px;padding-top:11px;border-top:1px solid var(--line)"><b style="font-size:14px">累計（開始日〜${fmtDate(rep.week_end)}）・コード別</b>
+<div class="note" style="margin:2px 0 0">⚠ 上の表は<b>この週だけ</b>、ここから下は<b>開始日からの累計</b>です。足し合わせても上の数字にはなりません。</div></div>
 <table style="margin-top:4px"><tr><th>コード</th><th class="num">入力</th><th class="num">使用</th><th class="num">使用率</th><th class="num">実人数</th></tr>${codeRows}</table>`:''}
 ${lag?`<div class="note" style="margin-top:7px">入力から使用までの時間（通算${fmtFull(COUPON.total||0)}件）: ${lag}</div>`:''}`;
 }
@@ -498,7 +541,7 @@ function renderReportPage(rep){
     ['総再生時間',   fmtMin(c.watch_min||0), fmtMin(c.watch_min_prev||0), partial?'—':pct(c.watch_min,c.watch_min_prev), ''],
     ['登録者純増', (subsNet>=0?'+':'')+fmtFull(subsNet||0)+' 人', c.subs_net_prev!=null?(c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+' 人':'—', pct(subsNet,c.subs_net_prev), spSubs],
     ['週内の投稿', (rep.new_videos||[]).length+' 本', '', '', ''],
-    ...(ssC2!=null ? [['登録者による視聴', ssC2+' %', ssP2!=null? ssP2+' %':'—', '', '']] : []),
+    ...(ssC2!=null ? [['視聴回数に占める登録者視聴', ssC2+' %', ssP2!=null? ssP2+' %':'—', '', '']] : []),
   ];
 
   const trP = new Map((rep.traffic_sources_prev||[]).map(t=>[String(t.source_type), t.views]));
@@ -516,25 +559,40 @@ function renderReportPage(rep){
   // ── 見出しは「結論の文」にする（NN/g: トピック句は読み飛ばされる）──────
   //    ⚠ 見出しをデータから作っています。「基本指標」「流入経路」のような
   //      内容の無い句に戻さないでください。最初の2語で要旨が伝わるようにします。
+  // ⚠ ここで因果を言い切らないこと（2026-08-25 レビュー指摘）。
+  //   「動画別の増減」と「流入元別の増減」は別の軸で、片方をもう片方の原因にはできません。
+  //   見出しは事実（順位と実数）だけにします。
   const trafficLead = (()=>{
     if(!trList.length) return '';
     const t0=trList[0], p0=trP.get(String(t0.source_type));
     const nm=TRAFFIC_LABEL[String(t0.source_type)]||t0.source_type;
-    return p0!=null ? `${nm}が${pct(t0.views,p0)}、これが全体の動きを決めています` : `${nm}が最大の入り口です`;
+    // 前週の首位を出して、入れ替わったかを見る
+    const prevTop=[...trP.entries()].sort((a,b)=>b[1]-a[1])[0];
+    if(prevTop && String(prevTop[0])!==String(t0.source_type)){
+      const pn=TRAFFIC_LABEL[String(prevTop[0])]||prevTop[0];
+      return `流入の首位が入れ替わり、${pn}から${nm}になりました`;
+    }
+    return p0!=null ? `${nm}が首位のままで、前週比 ${pct(t0.views,p0)}` : `${nm}が最大の入り口です`;
   })();
+  // ⚠ 最大÷最小は本数が少ない週ほど極端に出ます。毎週出す指標としては中央値を軸にします
+  //   （2026-08-25 レビュー指摘）。最大と最小の開きは下の補足に回しました。
   const firstLead = (()=>{
-    const L=(rep.new_videos||[]).filter(v=>v.first2d!=null);
+    const L=(rep.new_videos||[]).filter(v=>v.first2d!=null).map(v=>v.first2d).sort((a,b)=>a-b);
     if(L.length<2) return '';
-    const mx=Math.max(...L.map(v=>v.first2d)), mn=Math.min(...L.map(v=>v.first2d));
-    const r=mn?mx/mn:0;
-    return r>=3 ? `いちばん強い回と弱い回で${r.toFixed(0)}倍の開きがあります` : `本数が少なく、初速の差は読み取れません`;
+    const med = L.length%2 ? L[(L.length-1)/2] : (L[L.length/2-1]+L[L.length/2])/2;
+    const over = L.filter(v=>v>=med*2).length;
+    return over ? `初速の中央値は ${fmtMan(med)}回、そのうち ${over}本が中央値の2倍を超えました`
+                : `初速の中央値は ${fmtMan(med)}回、大きく外れた回はありません`;
   })();
   const causeLead = (()=>{
     const L=(rep.top_videos||[]).map(v=>({t:v.title,d:(v.views_week||0)-(v.views_prev_week||0)}));
     if(!L.length||viewsPrev==null) return '';
     L.sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
     const tot=views-viewsPrev, sh=tot?Math.round(L[0].d/tot*100):0;
-    return (sh>=40&&sh<=160) ? `動いたぶんの${sh}%は「${cut(L[0].t,16)}」1本です` : `特定の1本では説明できず、全体が動いています`;
+    // ⚠ 「87%」だけだと分母が伝わりません。差の実数と内訳の実数を両方書きます（2026-08-25 レビュー指摘）
+    return (sh>=40&&sh<=160)
+      ? `前週比 ${(tot>=0?'+':'')+fmtMan(tot)}回のうち ${(L[0].d>=0?'+':'')+fmtMan(L[0].d)}回（${sh}%）を「${cut(L[0].t,16)}」1本が占めます`
+      : `特定の1本では説明できず、全体が動いています`;
   })();
   const cpLead = (()=>{
     if(!COUPON||COUPON.error) return '';
@@ -558,20 +616,21 @@ ${sec('今週の数字', partial?`確定は${rep.confirmed_days}日ぶんです`
 <tbody>${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]||''}</td></tr>`).join('')}</tbody></table>
 ${c.subscribers_end!=null?`<div class="note">週末時点の登録者数 ${fmtFull(Math.round(c.subscribers_end))}人。${planLine(rep, pp)}</div>`:''}
 
-${TREND&&TREND.length>=4?sec('6か月の中での位置', trendAssert(rep), '前週比だけでは「前週がどんな週だったか」で見え方が変わります。'):''}
-${trendBlock(rep)}
-
 ${causeLead?sec('増減の内訳', causeLead, ''):''}
 ${causeBlock(rep, views, viewsPrev)}
 ${(rep.top_videos||[]).length?`<table><thead><tr><th>今週よく見られた動画</th><th class="num">今週</th><th class="num">前週</th></tr></thead>
 <tbody>${(()=>{const L=rep.top_videos.slice(0,8); const mx=Math.max(1,...L.map(v=>v.views_week));
   return L.map(v=>`<tr><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${esc(v.title)}</a></td><td class="num" title="${fmtFull(v.views_week)}">${fmtMan(v.views_week)}${miniBar(v.views_week,mx)}</td><td class="num">${fmtMan(v.views_prev_week)}</td></tr>`).join('');})()}</tbody></table>`:''}
 
-${firstLead?sec('新作の初速', firstLead, '公開から2日間の視聴回数です。'):''}
-${firstBlock(rep)}
-
 ${trafficLead?sec('どこから見られたか', trafficLead, ''):''}
 ${trafficChart()}
+${trafficSplitBlock(rep)}
+
+${TREND&&TREND.length>=4?sec('参考：6か月の中での位置', trendAssert(rep), '前週比だけでは「前週がどんな週だったか」で見え方が変わります。'):''}
+${trendBlock(rep)}
+
+${firstLead?sec('新作の初速', firstLead, '公開から2日間の視聴回数です。'):''}
+${firstBlock(rep)}
 
 ${cpLead?sec('クーポン', cpLead, ''):''}
 ${couponBlock(rep)}
