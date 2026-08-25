@@ -88,6 +88,21 @@ td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 
 .chip{display:inline-block;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
   background:rgba(201,162,39,.13);color:var(--gold-soft);padding:2px 8px;border-radius:6px;white-space:nowrap}
+a.chip{text-decoration:none;border:1px solid rgba(201,162,39,.32);padding:2px 7px;
+  transition:background .15s,border-color .15s}
+a.chip:hover{background:rgba(201,162,39,.26);border-color:var(--gold)}
+a.chip::after{content:'↗';font-size:9px;margin-left:4px;opacity:.7}
+
+/* シートをひらくバー */
+.openbar{display:flex;align-items:center;gap:13px;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--line-strong);border-radius:var(--radius);
+  padding:14px 17px;margin-bottom:26px}
+.open-main{font-size:13.5px;font-weight:700;color:#12201a;background:var(--gold);
+  border-radius:9px;padding:9px 16px;text-decoration:none;display:inline-flex;align-items:center;gap:7px;
+  transition:filter .15s;white-space:nowrap}
+.open-main:hover{filter:brightness(1.12)}
+.openbar-note{font-size:12.5px;color:var(--muted);line-height:1.7}
+.openbar-note b{color:var(--ink)}
 code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
   background:rgba(255,255,255,.06);padding:1px 6px;border-radius:5px;color:var(--gold-soft)}
 
@@ -131,6 +146,15 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
   <div class="page-lead">
     毎月、演者に<b>動画1本あたりの単価</b>で支払います。<br>
     金額の計算は<b>投稿計画表が自動でやります。</b>やることは「入力」と「確認」と「連絡」の3つだけです。
+  </div>
+
+  <div class="openbar">
+    <a class="open-main" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit" target="_blank" rel="noopener">📊 投稿計画表を開く ↗</a>
+    <div class="openbar-note">
+      入力も集計も、<b>すべてこのシートの中</b>でやります。<br>
+      このページに出てくる <a class="chip" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1927840516" target="_blank" rel="noopener">動画アーカイブ</a>
+      のような箱は<b>タブの名前</b>です。押すとそのタブが開きます。
+    </div>
   </div>
 
   <!-- ── 全体の流れ ── -->
@@ -195,7 +219,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
 
     <div class="note">
       <b>この計算は自分でやらなくて構いません。</b>
-      投稿計画表の <span class="chip">請求集計</span> タブが同じ計算をして、金額まで出します。
+      投稿計画表の <a class="chip" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1285849852" target="_blank" rel="noopener">請求集計</a> タブが同じ計算をして、金額まで出します。
       上の例は「どう計算されているか」を知っておくためのものです。
     </div>
   </div>
@@ -209,7 +233,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
       <div class="step-n">1</div>
       <div class="step-body">
         <div class="step-h">動画ができたら、2つ入力する</div>
-        <p>投稿計画表の <span class="chip">動画アーカイブ</span> タブを開いて、その動画の行に入れます。</p>
+        <p>投稿計画表の <a class="chip" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1927840516" target="_blank" rel="noopener">動画アーカイブ</a> タブを開いて、その動画の行に入れます。</p>
         <div class="tbl-scroll">
           <table>
             <thead><tr><th>どの列</th><th>何を入れる</th></tr></thead>
@@ -228,7 +252,7 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
       <div class="step-n">2</div>
       <div class="step-body">
         <div class="step-h">月末に、年と月を入れる</div>
-        <p><span class="chip">請求集計</span> タブを開いて、<b>B1に年（例 2026）、B2に月（例 8）</b>を入れるだけです。</p>
+        <p><a class="chip" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1285849852" target="_blank" rel="noopener">請求集計</a> タブを開いて、<b>B1に年（例 2026）、B2に月（例 8）</b>を入れるだけです。</p>
         <p><b>本数・単価・金額が自動で出ます。</b>ほかのセルは数式なので触らないでください。</p>
       </div>
     </div>
@@ -290,15 +314,15 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
 
       <div class="qa">
         <div class="qa-q">単価を変えたい</div>
-        <div class="qa-a"><span class="chip">単価マスタ</span> タブの <b>C列（単価）だけ</b>を直します。
+        <div class="qa-a"><a class="chip" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=518591772" target="_blank" rel="noopener">単価マスタ</a> タブの <b>C列（単価）だけ</b>を直します。
           <b>ここ1か所を直せば、請求集計にも自動で反映されます。</b>ほかは触らないでください。</div>
       </div>
 
       <div class="qa">
         <div class="qa-q">支払う人が増えた</div>
         <div class="qa-a"><b>2か所に足します。</b>
-          ① <span class="chip">単価マスタ</span> に「演者／収録方法／単価」の行を追加（実写とAI音声の2行）
-          ② <span class="chip">請求集計</span> の表にもその人の行を追加。
+          ① <a class="chip" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=518591772" target="_blank" rel="noopener">単価マスタ</a> に「演者／収録方法／単価」の行を追加（実写とAI音声の2行）
+          ② <a class="chip" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1285849852" target="_blank" rel="noopener">請求集計</a> の表にもその人の行を追加。
           <b>①だけだと集計に出てきません。</b></div>
       </div>
 

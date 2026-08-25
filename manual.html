@@ -78,6 +78,22 @@ a.card .card-title{color:var(--gold-soft)}
 }
 .tag.open{background:rgba(91,214,138,.12);color:var(--up)}
 .tag.local{background:rgba(91,166,214,.13);color:var(--blue)}
+.tag.sheet{background:rgba(201,162,39,.14);color:var(--gold-soft)}
+
+/* スプレッドシートへのリンク */
+.links{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.slink{
+  font-size:12.5px;font-weight:700;color:#12201a;background:var(--gold);
+  border-radius:9px;padding:7px 13px;text-decoration:none;
+  display:inline-flex;align-items:center;gap:6px;transition:filter .15s;
+}
+.slink:hover{filter:brightness(1.12)}
+.slink.sub{
+  background:var(--panel-2);color:var(--gold-soft);font-weight:500;
+  border:1px solid var(--line-strong);
+}
+.slink.sub:hover{filter:none;border-color:var(--gold);background:#22382c}
+.slink .ext{font-size:10px;opacity:.65}
 
 .note{
   border:1px solid var(--line);border-left:3px solid var(--gold);
@@ -99,13 +115,15 @@ a.card .card-title{color:var(--gold-soft)}
         <div class="sub">【LightTHREE】 -ポーカーメディア‐</div>
       </div>
     </a>
+    <a class="btn" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit" target="_blank" rel="noopener">📊 投稿計画表を開く ↗</a>
     <a class="btn" href="index.html">← ダッシュボードに戻る</a>
   </div>
 
   <div class="page-title">📘 マニュアル</div>
   <div class="page-lead">
     チャンネル運営に関する手順書の置き場です。「どこに何があるか」をここに集約しています。<br>
-    <span class="tag open">公開</span> はリンクから開けます。<span class="tag local">Dropbox</span> は「PGコンソール」フォルダの中にあります（リンクはありません）。
+    <span class="tag open">公開</span> と <span class="tag sheet">スプレッドシート</span> はリンクから開けます（シートは Google にログインしていて、権限がある人だけ）。
+    <span class="tag local">Dropbox</span> は「PGコンソール」フォルダの中にあります（リンクはありません）。
   </div>
 
   <!-- ── 制作 ── -->
@@ -222,33 +240,47 @@ a.card .card-title{color:var(--gold-soft)}
     <div class="card">
       <div class="card-top">
         <span class="card-title">Youtube投稿計画表（動画アーカイブ / 投稿管理）</span>
-        <span class="tag local">スプレッドシート</span>
+        <span class="tag sheet">スプレッドシート</span>
       </div>
       <div class="card-desc">
         投稿予定と、公開済み動画の企画タイプ・ナレーター。ダッシュボードが自動で読み込みます。
         新しいネタは<b>いちばん上</b>に足してください（新しいものが上に来る並びです）。
+        演者への支払いの集計も、このシートの中で完結します。
       </div>
+      <div class="links">
+        <a class="slink" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit" target="_blank" rel="noopener">📊 投稿計画表を開く<span class="ext">↗</span></a>
+        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=574456276" target="_blank" rel="noopener">投稿管理<span class="ext">↗</span></a>
+        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1927840516" target="_blank" rel="noopener">動画アーカイブ<span class="ext">↗</span></a>
+        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1285849852" target="_blank" rel="noopener">請求集計<span class="ext">↗</span></a>
+        <a class="slink sub" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=518591772" target="_blank" rel="noopener">単価マスタ<span class="ext">↗</span></a>
+      </div>
+      <div class="card-meta">タブ名のボタンは、そのタブを直接ひらきます。<b>権限のある Google アカウントでログインしていないと開けません</b>（アクセス依頼の画面になります）</div>
     </div>
 
     <div class="card">
       <div class="card-top">
         <span class="card-title">PG運営ログ（非公開）</span>
-        <span class="tag local">スプレッドシート・共有オフ</span>
+        <span class="tag sheet">スプレッドシート・共有オフ</span>
       </div>
       <div class="card-desc">
         議事録の構造化版。<b>会議のあとに 宿題 / 決定事項 / 施策 の3シートに行を足します（5〜10分）。</b>
         公開列を ○ にした行だけが、ダッシュボードの「運営」タブに出ます。空欄と × は出ません。
         施策シートの<b>開始日</b>を入れておくと、AIが施策の前後で数字を比較できるようになります。
       </div>
-      <div class="card-meta">共有はオフのまま。ここには機微な内容を書いて構いません</div>
+      <div class="links">
+        <a class="slink" href="https://docs.google.com/spreadsheets/d/1v--hBNlRU431gr-4DX4fm9L1Xr6w28-Hv93ufo-w-wo/edit" target="_blank" rel="noopener">📋 PG運営ログを開く<span class="ext">↗</span></a>
+      </div>
+      <div class="card-meta">共有はオフのまま。ここには機微な内容を書いて構いません。<b>リンクを踏んでも、権限が無い人は開けません</b></div>
     </div>
   </div>
 
   <div class="note">
     <b>このページは公開されています。</b>
-    URL を知っていれば誰でも開けます（パスワードはかかっていません）。
-    そのため、非公開のスプレッドシートや Dropbox のファイルは<b>名前だけ載せてリンクは貼っていません</b>。
-    新しい手順書を足すときも、リンクを貼ってよいのは公開して差し支えないものだけにしてください。
+    URL を知っていれば誰でも開けます（パスワードはかかっていません）。<br>
+    <b>スプレッドシートのリンクは貼っていますが、中身までは見られません。</b>
+    シート側に権限がかかっているので、<b>許可された Google アカウントでログインしている人だけ</b>が開けます。
+    権限の無い人がリンクを踏むと「アクセスをリクエスト」の画面になります。<br>
+    <b>Dropbox のファイルにはリンクを貼りません。</b>共有リンクは URL を知っている人がそのまま開けてしまうためです。名前だけ載せています。
   </div>
 
   <div class="foot">
