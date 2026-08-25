@@ -158,18 +158,18 @@ a.chip::after{content:'↗';font-size:9px;margin-left:4px;opacity:.7}
     <div class="flow">
       <div class="flow-item">
         <div class="flow-n">1</div>
-        <div class="flow-t">スプシに入力</div>
-        <div class="flow-d">収録方法と稼働日<br><span style="font-size:11px">AI音声は稼働日が自動で入ります</span></div>
-        <a class="flow-link" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1927840516" target="_blank" rel="noopener">動画アーカイブを開く ↗</a>
+        <div class="flow-t">動画を作成</div>
       </div>
       <div class="flow-item">
         <div class="flow-n">2</div>
-        <div class="flow-t">月末に年と月を入れる</div>
-        <a class="flow-link" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1285849852" target="_blank" rel="noopener">請求集計を開く ↗</a>
+        <div class="flow-t">スプシに入力</div>
+        <div class="flow-d">収録方法と稼働日</div>
+        <a class="flow-link" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1927840516" target="_blank" rel="noopener">動画アーカイブを開く ↗</a>
       </div>
       <div class="flow-item">
         <div class="flow-n">3</div>
-        <div class="flow-t">演者に本数と金額を伝える</div>
+        <div class="flow-t">月末に請求書処理</div>
+        <a class="flow-link" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1285849852" target="_blank" rel="noopener">請求集計を開く ↗</a>
       </div>
     </div>
   </div>
@@ -210,26 +210,24 @@ a.chip::after{content:'↗';font-size:9px;margin-left:4px;opacity:.7}
   <!-- ── 手順 ── -->
   <div class="sec">
     <div class="sec-h">3. 毎月やること</div>
-    <div class="sec-title">4ステップです</div>
+    <div class="sec-title">5ステップです</div>
 
     <div class="step">
       <div class="step-n">1</div>
       <div class="step-body">
-        <div class="step-h">動画ができたら、2つ入力する</div>
+        <div class="step-h">動画ができたら、スプレッドシートを更新</div>
         <p>投稿計画表の <a class="chip" href="https://docs.google.com/spreadsheets/d/1Xqxx4vnKfQVQ_qEx8T3tpAA9_vD1uBfihdvWPfHVdmI/edit#gid=1927840516" target="_blank" rel="noopener">動画アーカイブ</a> タブを開いて、その動画の行に入れます。</p>
         <div class="tbl-scroll">
           <table>
-            <thead><tr><th>どの列</th><th>何を入れる</th></tr></thead>
+            <thead><tr><th>項目</th><th>何を入れる</th></tr></thead>
             <tbody>
-              <tr><td><b>J列「収録方法」</b></td><td><b>プルダウンから選びます</b>（実写 / AI音声）。手で打った文字は入りません</td></tr>
-              <tr><td><b>K列「稼働日」</b></td><td><b>実写だけ入れます。撮影した日</b>を、出てくるカレンダーから選びます<br><b>AI音声は入れなくて大丈夫です。</b>公開日が自動で入ります</td></tr>
+              <tr><td><b>収録方法</b></td><td><b>プルダウンから選びます</b>（実写 / AI音声）。手で打った文字は入りません</td></tr>
+              <tr><td><b>稼働日</b></td><td><b>実写は撮影日を入力。</b>カレンダーから選べます<br><b>AI音声は日付が自動入力されます。</b></td></tr>
             </tbody>
           </table>
         </div>
         <p><b>実写の「稼働日」は公開日ではありません。</b>ここで「何月分の支払いか」が決まります。
            月をまたいで公開された動画は、<b>撮った月のぶん</b>として計算されます。</p>
-        <p><b>AI音声は「稼働日＝公開日」です。</b>収録方法で AI音声 を選んだ瞬間に自動で入ります。
-           <b>書き換えても元に戻ります</b>（演者が収録していないので、稼働した日を決めようがないためです）。</p>
       </div>
     </div>
 
@@ -246,7 +244,7 @@ a.chip::after{content:'↗';font-size:9px;margin-left:4px;opacity:.7}
       <div class="step-n">3</div>
       <div class="step-body">
         <div class="step-h">いちばん下の「見張り」2つが 0 か確認する</div>
-        <p><b>どちらも 0 なら、そのまま進めて大丈夫です。</b>0 でなければ下の「4. 締める前の確認」を見てください。</p>
+        <p>0 でなければ下の「4. 締める前の確認」を見てください。</p>
       </div>
     </div>
 
@@ -254,8 +252,15 @@ a.chip::after{content:'↗';font-size:9px;margin-left:4px;opacity:.7}
       <div class="step-n">4</div>
       <div class="step-body">
         <div class="step-h">演者に本数と金額を伝える</div>
-        <p><b>実写とAI音声は単価が違うので、分けて伝えます。</b>金額は請求集計に出ているものをそのまま伝えます。</p>
-        <p style="color:var(--ink)">例：「今月は実写3本、AI音声2本で 8,000円です」</p>
+        <p>請求集計に出ている<b>本数と金額</b>を、そのまま伝えます。</p>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-n">5</div>
+      <div class="step-body">
+        <div class="step-h">請求書を受け取って、振込を依頼する</div>
+        <p>演者から請求書をもらったら、<b>上長へ申請し、振込を依頼します。</b></p>
       </div>
     </div>
   </div>
