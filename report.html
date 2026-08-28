@@ -262,9 +262,12 @@
     .main .trafficsvg{display:none!important}
     /* 運用詳細の完全版では、逆に印刷用の2行のほうを出さない */
     .detail .trafficprint{display:none!important}
-    /* ★ 紙の1ページ目のアクションは**タイトルだけ**、1件1行にします（レビュー4回目 §1）。
-       説明を1行でも足すと1ページに収まりません。詳しい確認方法は運用詳細の完全版にあります。 */
-    .main .act .aa{display:none!important}
+    /* ★ 紙の1ページ目のアクションは **タイトル＋補足1行** まで（レビュー4回目 §4-5 の形）。
+       2行目以降の詳しい確認方法は運用詳細の完全版にあります。
+       ⚠ nth-of-type は同じタグ（div）で数えます。.at が1番目なので、最初の .aa を残すには n+3 です。
+       ⚠ 1ページに収まらなくなったら、まずここを `.aa{display:none}` に戻して
+          タイトルだけにしてください。**本文14pxを下げるのは最後の手段です。** */
+    .main .act .aa:nth-of-type(n+3){display:none!important}
     .main .act{padding:4px 0}
     .main .act .an{display:flex;gap:6px;align-items:baseline;min-width:62px}
     .main .act .ak{margin-top:0}
