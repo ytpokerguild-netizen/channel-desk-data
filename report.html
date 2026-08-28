@@ -249,19 +249,28 @@ function trafficSplitBlock(rep){
 function trafficChart(){
   if(!window._TR || !window._TR.list.length) return '';
   const {list, prev} = window._TR;
-  return hbarSVG(list.slice(0,6).map(t=>{
-    const pv = prev.get(String(t.source_type));
-    return {label: esc(TRAFFIC_LABEL[String(t.source_type)]||t.source_type),
+  // 前週の順位（2026-08-28 追加）。見出しの「首位が入れ替わり」を図の上でも確かめられるようにする。
+  // ⚠ ここに構成比（%）は出さないこと。1本の動画で毎週動くため、意味の薄い数字になります。
+  const prevRank = new Map([...prev.entries()].sort((a,b)=>b[1]-a[1]).map(([k],i)=>[String(k), i+1]));
+  return hbarSVG(list.slice(0,6).map((t,i)=>{
+    const st = String(t.source_type), pv = prev.get(st);
+    const pr = prevRank.get(st), cr = i+1;
+    const moved = pr && pr!==cr && (pr<=3 || cr<=3);   // 上位3位に絡む入れ替わりだけ出す
+    return {label: esc(TRAFFIC_LABEL[st]||t.source_type),
             bars: [{v:t.views,color:C_NOW}, ...(pv!=null?[{v:pv,color:C_PREV}]:[])],
-            right: fmtMan(t.views)};
-  }),{labelW:170,rightW:66,rowH:30})
-  + `<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週　／ 上位6経路</div>`;
+            right: fmtMan(t.views),
+            sub: moved ? `${pr}位→${cr}位` : '',
+            subFill: moved ? (cr<pr ? C_UP : C_DOWN) : ''};
+  }),{labelW:170,rightW:72,rowH:32})
+  + `<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週　／ 上位6経路　／ 右下の「2位→1位」は前週からの順位の動きです（上位3位に絡んだときだけ表示）</div>`;
 }
 
 function trendBlock(rep){
   const T = TREND;
   if(!T || T.length < 4) return '';                 // 週が少なすぎるうちは出さない
-  const W = 780, H = 208, PL = 58, PR = 8, TOP = 16, BASE = 150;
+  // 「参考」の図なので、本文より軽く見える高さにおさえる（2026-08-28 レビュー指摘）。
+  // ⚠ TOP を小さくしすぎると、いちばん高い棒の上に出す注記（ann / curLab）が枠外に切れます。
+  const W = 780, H = 150, PL = 58, PR = 8, TOP = 24, BASE = 108;
   const plotW = W - PL - PR;
   const band  = plotW / T.length;
   const bw    = Math.min(24, Math.max(3, band - 2));   // ≤24px・隣と2pxあける
@@ -329,7 +338,9 @@ function trendBlock(rep){
   ${xlab}
 </svg>
 ${cur?``:''}
-<div class="note">濃い色がこの週、薄い色がそれ以外の週です。前週比だけでは「前週がどんな週だったか」で見え方が変わるため、6か月の中での位置を併記しています。${T.length}週ぶんは <b>7日そろった週だけ</b>を並べています。</div>`;
+<div class="note">濃い色がこの週、薄い色がそれ以外の週です。${T.length}週ぶんは <b>7日そろった週だけ</b>を並べています。</div>`;
+// ⚠ ここに「前週比だけでは〜」を書き戻さないこと。同じ文が見出し直下（sec の3つめの引数）に出ており、
+//   2026-08-28 のレビューで重複を指摘されて消しています。
 }
 
 // ════════════════════════════════
@@ -344,7 +355,8 @@ ${cur?``:''}
 // ════════════════════════════════
 const C_UP='#1f6f9c', C_DOWN='#c0553f', C_NOW='#8a6d1a', C_PREV='#6f8f9e', C_ONE='#b3ada0';
 
-// rows: [{label, bars:[{v,color}], right}]  ゼロから右に伸びる横棒
+// rows: [{label, bars:[{v,color}], right, sub, subFill}]  ゼロから右に伸びる横棒
+// sub … 右の数字の下に添える小さな注記（順位変化など）。省略可。
 function hbarSVG(rows, {W=780, labelW=250, rightW=70, rowH=26, max=null}={}){
   if(!rows.length) return '';
   const H = rows.length*rowH + 6;
@@ -358,9 +370,12 @@ function hbarSVG(rows, {W=780, labelW=250, rightW=70, rowH=26, max=null}={}){
       const w = Math.max(1, (b.v||0)/mx*plotW), y = y0 + (rowH-8-(bh*n+2*(n-1)))/2 + j*(bh+2);
       return `<rect x="${x0}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${b.color}"/>`;
     }).join('');
+    // sub があるときは右の数字を少し上げ、その下に小さく添える（2026-08-28 追加）
+    const cy = y0 + rowH/2, ry = r.sub ? cy-5 : cy-1;
     return `${bars}
-<text x="${labelW-8}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="#1a1a1a">${r.label}</text>
-<text x="${W-4}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="#444" font-weight="600">${r.right}</text>`;
+<text x="${labelW-8}" y="${(cy-1).toFixed(1)}" text-anchor="end" font-size="11" fill="#1a1a1a">${r.label}</text>
+<text x="${W-4}" y="${ry.toFixed(1)}" text-anchor="end" font-size="11" fill="#444" font-weight="600">${r.right}</text>${r.sub?`
+<text x="${W-4}" y="${(cy+9).toFixed(1)}" text-anchor="end" font-size="10" fill="${r.subFill||'#6b6659'}" font-weight="700">${r.sub}</text>`:''}`;
   }).join('');
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${body}</svg>`;
 }
