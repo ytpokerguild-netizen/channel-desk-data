@@ -1,0 +1,62 @@
+name: 日次の見張り通知
+
+# ═══════════════════════════════════════════════════════════════════
+# なぜ独立したワークフローなのか（2026-08-28 新設）
+# ═══════════════════════════════════════════════════════════════════
+# この2つの通知は daily_fetch.yml の中のステップでした。3時間おきに走るワークフローなので、
+# 「1日1回だけ出す」ために `date -u +%H` が "00" のときだけ通す判定を入れていました。
+#
+# ⚠⚠ **その形では、遅延した日は1本も出ません。**
+#   GitHub の schedule はベストエフォートで、混雑時は遅延し、実行ごと飛びます。
+#   実際 2026-08-28 は取得が9時間止まり、遅れて走った実行は "00" ではなかったため、
+#   その日の日次通知は出ませんでした。**いちばん知りたい日に黙る**作りです。
+#
+# → ワークフロー自体を1日1回にして、**時刻判定そのものを無くしました。**
+#   何時に走っても、その日のぶんは1回出ます。
+#
+# ⚠⚠ **この2つを daily_fetch.yml へ戻さないこと。**戻すと時刻判定が必要になり、同じ問題に戻ります。
+#   staleness_guard.yml と同じ考え方です（見張り役を、見張る対象の中に入れない）。
+#
+# ⚠ 正直に書いておきます。**これ自身も schedule なので、GitHub のスケジューラごと止まれば黙ります。**
+#   そこまで守るなら GitHub の外から見張る必要があります（未対応）。
+#
+# ⚠ LINE の通数は増えません。これまでも1日1回でした（月200通の無料枠）。
+# ═══════════════════════════════════════════════════════════════════
+
+on:
+  schedule:
+    # 1日1回・約 JST 9時。⚠ **:00 ちょうどにしないこと。**混雑して飛ばされます
+    # ⚠ daily_fetch（:23）・staleness_guard（:37）とわざと分をずらしています
+    - cron: "11 0 * * *"
+  workflow_dispatch:
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # 引き継ぎ書類（正本は Dropbox）への反映漏れを思い出させる。
+      # ⚠ continue-on-error: 片方が落ちても、もう片方は出すこと。
+      - name: 引き継ぎ書類の反映漏れを通知
+        continue-on-error: true
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
+        run: python docs_check.py pending
+
+      # ★ 週次AI分析の「形」を見張る（2026-08-17 追加・2026-08-28 にここへ移動）。
+      #   §7 の形を誰も数えておらず、気づいたときには9週すべてが違反していました。
+      #   7月まで7週連続で守れていた実績があっても、外れたことに人は気づけません。
+      - name: 週次AI分析の形をチェック
+        continue-on-error: true
+        env:
+          LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
+          LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
+        run: python check_report_format.py notify
