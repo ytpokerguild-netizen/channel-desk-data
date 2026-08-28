@@ -48,6 +48,32 @@ BODY_WARN_UNDER = 220
 # 本文の冒頭に書かない言い回し。レポート上部のバッジと重複する（2026-08-17 運営者の指示）
 STATUS_PHRASES = ("確定した確定値", "分すべて確定", "まだ確定していません", "速報値です")
 
+# ★ 2026-08-28 追加（外部レビュー4回目 §3）。
+# `owner_decision` … レポート冒頭の「オーナー判断」。判断不要／要確認／要承認 の3つだけ。
+#   ⚠⚠ **未設定を「判断不要」の既定値にしないこと。**判定漏れがそのまま
+#     「判断不要」としてオーナーに提出される事故になります。**確定週で未設定なら違反**です。
+#     （速報＝`final:false` の週は書きかけなので見逃します。画面には「未設定」と出ます）
+#   判定基準（運用手順 §7 と同じ。ここを緩めないこと）:
+#     判断不要 … 既存方針・承認済み予算内／外部への新しい約束なし／取り返しがつく／
+#                オーナーが選ばないと進められない事項が無い
+#     要確認   … 意見が欲しいが、回答を待たずに現行運用は継続できる。**確認事項は1つに絞る**
+#     要承認   … 未承認の費用／契約・発注・採用・外注／本数や制作体制の大きな変更／
+#                KPI・方針の変更／対外発表・スポンサーへの約束／元に戻しにくい変更
+#                → **何を承認してほしいか・推奨案・費用または影響・いつまでに必要か** を必ず添える
+#   集約: 要承認が1件でもあれば要承認 ＞ 要確認が1件以上なら要確認 ＞ それ以外は判断不要
+OWNER_DECISIONS = ("判断不要", "要確認", "要承認")
+# ⚠ この週より前は見逃します。`owner_decision` は 2026-08-28 に新設した項目で、
+#   それ以前の9週には**存在しようがない**ためです。過去週を後から埋めることはしません
+#   （当時オーナーに何を確認したかを、いま推測で書くことになるからです）。
+#   ⚠ この日付を過去にずらさないこと。9週ぶんの検査が一斉に赤くなり、LINE が鳴り続けます。
+OWNER_DECISION_FROM = "2026-08-15"
+
+# `suggestions[].kind` … 打ち手の種別。**この4つから増やさないこと**（同 §2）。
+#   実行=制作/投稿/導線を実際に変える｜検証=継続するかを確かめる｜
+#   分析=既存データを分解する｜計測整備=欠損・タグ・掲出日などを整える
+#   ⚠ 「共有」「報告」「承認」は種別ではありません。owner_decision で扱います。
+ACTION_KINDS = ("実行", "検証", "分析", "計測整備")
+
 
 def load_weeks():
     with open(DATA_FILE, encoding="utf-8") as f:
@@ -74,6 +100,27 @@ def check_week(w):
         out.append("suggestions が無い")
     elif any(not isinstance(s, dict) for s in sug):
         out.append("suggestions が旧式（文字列の配列）。{title, actions} に直す")
+    else:
+        # 種別は4つだけ。⚠ 推測で付けないこと（当たらない週が必ず出ます）
+        bad_kinds = [s.get("kind") for s in sug
+                     if s.get("kind") and s.get("kind") not in ACTION_KINDS]
+        if bad_kinds:
+            out.append(f"suggestions[].kind が範囲外（{'/'.join(map(str, bad_kinds))}）。"
+                       f"使えるのは {'・'.join(ACTION_KINDS)} だけ")
+
+    # ★ オーナー判断（確定週では必須）
+    od = (a.get("owner_decision") or "").strip()
+    if not od:
+        if w.get("final") and (w.get("week_start") or "") >= OWNER_DECISION_FROM:
+            out.append("owner_decision が未設定。**確定週では必須**です。"
+                       f"{'／'.join(OWNER_DECISIONS)} のいずれかを、運用手順 §7 の基準で入れてください")
+    elif not od.startswith(OWNER_DECISIONS):
+        out.append(f"owner_decision が「{od[:20]}」。"
+                   f"{'／'.join(OWNER_DECISIONS)} のいずれかで書き始めてください")
+    elif od.startswith("要承認") and len(od) < 20:
+        # 要承認は「何を・推奨案・費用または影響・期限」を添える決まり
+        out.append("owner_decision が要承認なのに説明が短い。"
+                   "何を承認してほしいか／推奨案／費用または影響／いつまでに必要か を書いてください")
     if "⚠" in body:
         out.append("本文に ⚠ の注記が入っている（注記は運用手順 §3 に置く）")
     head = body[:60]
