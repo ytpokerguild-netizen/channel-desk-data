@@ -146,7 +146,10 @@
   .acts2{margin:9px 0 0}
   .act{display:flex;gap:14px;align-items:baseline;padding:15px 0;border-top:1px solid var(--rule)}
   .act:first-child{border-top:none;padding-top:5px}
-  .act .an{flex:0 0 auto;min-width:22px;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em}
+  /* ⚠ min-width は種別のいちばん長い「計測整備」（4文字・11px = 実測46.6px）が入る幅にすること。
+       22px のままだと種別の字数ぶんタイトルの開始位置がずれ、01・02 と 03 で頭がそろいません
+       （2026-08-28 レビュー5回目の実装確認で発見。実測 201.3px → 224.6px）。 */
+  .act .an{flex:0 0 auto;min-width:48px;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em}
   .act .ak{font-weight:400;font-size:11px;color:var(--muted);margin-top:1px}
   /* 折りたたみ（確認方法・主要指標の詳細）。⚠ 既定は閉じたまま。開いた状態で保存しないこと */
   .more{margin-top:5px}
@@ -286,7 +289,9 @@
           タイトルだけにしてください。**本文14pxを下げるのは最後の手段です。** */
     .main .more{display:none!important}
     .main .act{padding:4px 0}
-    .main .act .an{display:flex;gap:6px;align-items:baseline;min-width:62px}
+    /* ⚠ 紙は番号と種別を横に並べるので、62px だと「01 計測整備」（実測68.4px）が入らず
+         そこだけタイトルがずれます。番号13px + gap6px + 種別4文字46.6px を満たす幅にすること。 */
+    .main .act .an{display:flex;gap:6px;align-items:baseline;min-width:70px}
     .main .act .ak{margin-top:0}
     /* 流入の結論の「計測条件」は紙の1ページ目には出さない（運用詳細の完全版にある） */
     .main .finding .fn{display:none!important}
