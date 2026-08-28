@@ -83,6 +83,47 @@
   .badge{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:10px;margin-left:10px;
          vertical-align:4px;font-weight:600;border:1px solid var(--rule);color:var(--muted)}
 
+  /* ★ 主要3指標（2026-08-28 レビュー3回目 §1）。オーナーが最初の30秒で見るところ。
+     ⚠ 4つめを足さないこと。3つだから一目で入ります。 */
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 26px;margin:14px 0 0}
+  .tile{padding:0 0 2px}
+  .tile .tv{font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.01em}
+  .tile .tl{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .tile .ts{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+  /* 結論の下の2行（次週の確認 / オーナー判断） */
+  .headrows{margin:15px 0 0;border-top:1px solid var(--rule);padding-top:10px}
+  .hrow{display:flex;gap:12px;align-items:baseline;font-size:13px;line-height:1.7;margin-top:3px}
+  .hrow .hk{flex:0 0 92px;color:var(--muted);font-size:11.5px}
+  .hrow .hv{color:var(--ink)}
+  .hrow .od{font-weight:700}
+
+  /* ★ 増減の内訳（2026-08-28 レビュー3回目 §2）。
+     ⚠ 中央ゼロ線の左右分岐グラフには戻さないこと。読み手に暗算を要求し、
+        スマホでは中央線と数値が画面外に出て意味が失われていました。
+     ⚠ 棒はすべて左端起点。増加と減少は「別のリスト」に分けます。 */
+  .wf{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;font-size:14px;
+      border-left:3px solid var(--rule);padding:9px 0 9px 14px;margin:4px 0 18px}
+  .wf b{font-weight:700}
+  .wf .op{color:var(--muted);font-size:12.5px}
+  .facwrap{display:grid;grid-template-columns:1fr 1fr;gap:0 34px}
+  .facg h4{font-size:12.5px;font-weight:700;margin:0 0 6px;color:var(--ink-2)}
+  .fac{margin:0 0 11px}
+  .fac .ft2{display:flex;gap:12px;align-items:baseline;justify-content:space-between;font-size:13px;line-height:1.55}
+  .fac .fn2{flex:1 1 auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .fac .fv{flex:0 0 auto;font-weight:700;white-space:nowrap}
+  .fbar{height:8px;border-radius:2px;background:#efece3;margin-top:4px}
+  .fbar>i{display:block;height:8px;border-radius:2px}
+  .facnone{font-size:13px;color:var(--muted)}
+
+  /* ★ 本編と運用詳細の区切り（2026-08-28 レビュー3回目 §3）。
+     ⚠ この線より上に運用詳細を足さないこと。上はオーナーが最初の2画面で読む場所です。 */
+  .split{margin:44px 0 4px;border-top:2px solid var(--ink);padding-top:9px;
+         font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
+  .split span{display:block;font-weight:400;font-size:11.5px;color:var(--muted);letter-spacing:0;margin-top:2px}
+
+  /* スマホ用の積み上げ表示。PC では隠す（同じ数字を2回描くので、必ず片方だけ出すこと） */
+  .mobonly{display:none}
+
   /* ★ 打ち手（2026-08-28 レビュー指摘 A-4）。3つを一目で数えられることが目的。
      ⚠ カードの背景・影は付けないこと。数えられれば十分です。 */
   .acts2{margin:9px 0 0}
@@ -120,16 +161,29 @@
      ⚠ ページ全体を縮小して PC 版をそのまま見せないこと。文字が読めなくなります。
      ⚠ 本文は 14px 未満にしないこと。 */
   @media (max-width:640px){
-    .sheet{padding:24px 16px 30px}
+    .sheet{padding:22px 16px 30px}
     h1{font-size:20px;line-height:1.45}
     .verdict .lv{font-size:17px}
     .finding .ft{font-size:15px}
     th,td{padding:7px 10px}
+    /* 主要3指標と増減の2列は縦に積む */
+    .tiles{grid-template-columns:1fr;gap:13px 0}
+    .tiles .tile{border-top:1px solid #f0eee7;padding-top:9px}
+    .tiles .tile:first-child{border-top:none;padding-top:0}
+    .facwrap{grid-template-columns:1fr;gap:0}
+    .facg+.facg{margin-top:16px}
+    .hrow{flex-direction:column;gap:0}
+    .hrow .hk{flex:none}
+    /* 表を隠して積み上げカードに差し替える節がある */
+    .mobonly{display:block}
+    .pconly{display:none}
   }
+  /* ★ 横スクロールは「運用詳細」だけに許す（2026-08-28 レビュー3回目 §6）。
+     ⚠ 本編（結論・主要指標・増減・流入・アクション）で横スクロールを発生させないこと。
+        オーナーが最初に読む情報をスワイプさせないためです。本編は縦積みのHTMLで出します。 */
   @media (max-width:760px){
-    /* 縮めずに横へ流す。SVG は viewBox を保ったまま実寸で描く */
-    .scrollx>svg{min-width:700px}
-    .scrollx>table{min-width:600px}
+    .detail .scrollx>svg{min-width:700px}
+    .detail .scrollx>table{min-width:600px}
   }
 
   @media print{
@@ -142,8 +196,29 @@
        ⚠ 特に「流入グラフ＋その結論」は必ず同じページに載せること。 */
     .finding{break-inside:avoid;break-before:avoid}
     .act,.acts2{break-inside:avoid}
+    .tiles,.headrows,.wf,.fac{break-inside:avoid}
+    /* ★ 紙は縦が足りないので本編を詰める（2026-08-28 レビュー3回目 §10-6）。
+       ⚠ 本文の 14px は下げないこと（印刷の本文は10〜12pt が下限。14px ≒ 10.5pt）。
+          詰めてよいのは**余白と見出しの間隔だけ**です。 */
+    h2{margin:17px 0 3px}
+    .verdict{margin-bottom:13px}
+    .tiles{margin-top:9px;gap:2px 22px}
+    .tile .tv{font-size:19px}
+    .headrows{margin-top:9px;padding-top:7px}
+    .wf{margin:3px 0 10px;padding:6px 0 6px 12px}
+    .fac{margin-bottom:7px}
+    .act{padding:9px 0}
+    .finding{padding:8px 0 8px 14px;margin-top:10px}
+    table{margin-top:2px}
+    th,td{padding:4px 14px}
+    /* ★ 「運用詳細」の前で改ページ（2026-08-28 レビュー3回目 §3）。
+       PDF の1ページ目だけで、今週どうだったか・なぜか・来週どうするか・判断依頼があるか
+       が完結するようにするためです。⚠ この改ページを外さないこと。 */
+    .split{break-before:page;page-break-before:always}
     .scrollx{overflow-x:visible;background:none}
     .scrollx>svg,.scrollx>table{min-width:0}
+    .mobonly{display:none!important}
+    .pconly{display:block!important}
     /* ⚠ !important は消さないこと。JS が toolbar に style.display='flex' を
        インラインで当てるため、!important が無いと印刷・PDF にツールバーが写り込みます
        （2026-08-17 に実際に混入した PDF を出しかけました）。 */
@@ -275,13 +350,16 @@ function trendAssert(rep){
 //   ⚠ video_traffic は上位5本ぶんしかありません。「それ以外」には
 //     6本目以降と過去動画がまとめて入ります。1本を引く以上のことはできません。
 // ════════════════════════════════
-function trafficSplitBlock(rep){
+// ⚠ 計算と描画を分けてあります。冒頭の3つめのタイル（verdictBlock）が
+//   同じ判定「1本を除いても前週を上回るか」を先に必要とするためです。
+//   window._SPLIT に置いて共有します。片方だけ直さないこと。
+function trafficSplitData(rep){
   const vt = rep.video_traffic;
-  if(!vt || !window._TR || !window._TR.list.length) return '';
+  if(!vt || !window._TR || !window._TR.list.length) return null;
   const {list, prev} = window._TR;
   const t0 = list[0], st = String(t0.source_type);
   const p0 = prev.get(st);
-  if(p0==null || !t0.views) return '';
+  if(p0==null || !t0.views) return null;
 
   const titles = {};
   (rep.top_videos||[]).forEach(v=>{ titles[v.video_id]=v.title; });
@@ -291,36 +369,61 @@ function trafficSplitBlock(rep){
     const m = (vt[vid]||[]).find(r=>String(r.source_type)===st);
     return {vid, v: m? m.views : 0};
   }).filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
-  if(!rows.length) return '';
+  if(!rows.length) return null;
 
-  const top = rows[0];
-  const rest = t0.views - top.v;
-  const nm = TRAFFIC_LABEL[st]||st;
-  const shareOfNow = Math.round(top.v/t0.views*100);
-  const restBeatsPrev = rest > p0;
-
+  const top = rows[0], rest = t0.views - top.v;
+  return {nm: TRAFFIC_LABEL[st]||st, now: t0.views, p0, top, rest,
+          title: titles[top.vid]||top.vid, restBeatsPrev: rest > p0};
+}
+function trafficSplitBlock(rep){
+  const S = window._SPLIT || trafficSplitData(rep);
+  if(!S) return '';
   // ★ ここはこのレポートでいちばん重要な発見です（2026-08-28 レビュー指摘 A-1）。
   //   ⚠ .note（薄いグレーの注記）に戻さないこと。**節の結論**として見せます。
   //     「総視聴の増加は1本」と「流入構造の変化は1本ではない」を分けて読ませるのが目的で、
   //     ここが注釈の見た目だと、読み手は前者だけを持ち帰ります。
-  const title = restBeatsPrev
-    ? `この1本を除いても${esc(nm)}は前週を上回ります`
-    : `${esc(nm)}の増加は、この1本によるものです`;
+  //   ⚠ 「この経路の19%」という構成比は出しません（構成比を出さない方針・レビュー3回目 §8）。
+  //     実数だけで結論は伝わります。
+  //   ⚠ 1週の結果だけで「流入構造が変わった」と断定しないこと。書けるのは「兆候」までです。
+  const title = S.restBeatsPrev
+    ? `この1本を除いても${esc(S.nm)}は前週を上回ります`
+    : `${esc(S.nm)}の増加は、この1本によるものです`;
   return `<div class="finding">
 <div class="ft">${title}</div>
-<div class="fb">いちばん多い1本「${esc(cut(titles[top.vid]||top.vid,22))}」は <b>${fmtMan(top.v)}回</b>（この経路の${shareOfNow}%）。
-除いた残りは <b>${fmtMan(rest)}回</b>で、前週の <b>${fmtMan(p0)}回</b>を${restBeatsPrev?'<b>上回ります</b>':'<b>下回ります</b>'}。</div>
-<div class="fn">${esc(nm)}は今週 ${fmtMan(t0.views)}回（前週 ${fmtMan(p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「除いた残り」には6本目以降と過去動画が入ります</div>
+<div class="fb">いちばん多い1本「${esc(cut(S.title,22))}」は <b>${fmtMan(S.top.v)}回</b>。
+除いた残りは <b>${fmtMan(S.rest)}回</b>で、前週の <b>${fmtMan(S.p0)}回</b>を${S.restBeatsPrev?'<b>上回ります</b>':'<b>下回ります</b>'}。
+${S.restBeatsPrev?'1本だけでは説明できない増加で、<b>構造変化の兆候</b>があります（1週では確定できません）。':''}</div>
+<div class="fn">${esc(S.nm)}は今週 ${fmtMan(S.now)}回（前週 ${fmtMan(S.p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「除いた残り」には6本目以降と過去動画が入ります</div>
 </div>`;
 }
 
+// 前週の順位。片方だけ直さないよう、SVG版とスマホ版で共有する
+function trafficRanks(){
+  const {prev} = window._TR;
+  return new Map([...prev.entries()].sort((a,b)=>b[1]-a[1]).map(([k],i)=>[String(k), i+1]));
+}
+// ★ スマホ用（2026-08-28 レビュー3回目 §6）。
+//   ⚠ 本編のグラフを横スクロールに逃がさないこと。同じデータを縦積みのHTMLで出し、
+//     CSS（.pconly / .mobonly）で表示を切り替えます。**外部ライブラリは要りません。**
+//   ⚠ PC版と数字がずれないよう、必ず window._TR から作ること。
+function trafficMobile(){
+  const {list, prev} = window._TR;
+  const rk = trafficRanks();
+  return `<div class="mobonly">${list.slice(0,4).map((t,i)=>{
+    const st=String(t.source_type), pv=prev.get(st), pr=rk.get(st), cr=i+1;
+    const moved = pr && pr!==cr && (pr<=3 || cr<=3);
+    return `<div class="fac"><div class="ft2"><span class="fn2"><b>${esc(TRAFFIC_LABEL[st]||t.source_type)}</b></span><span class="fv">${fmtMan(t.views)}回</span></div>
+<div class="fbar"><i style="width:${Math.max(2,Math.round(t.views/Math.max(1,list[0].views)*100))}%;background:${C_NOW}"></i></div>
+<div class="note" style="margin-top:3px">前週 ${pv!=null?fmtMan(pv)+'回':'—'}${moved?` ／ <b style="color:${cr<pr?C_UP:C_DOWN}">${pr}位→${cr}位</b>`:''}</div></div>`;
+  }).join('')}<div class="note">上位4経路。画面の広い端末では上位6経路を図で見られます</div></div>`;
+}
 function trafficChart(){
   if(!window._TR || !window._TR.list.length) return '';
   const {list, prev} = window._TR;
-  // 前週の順位（2026-08-28 追加）。見出しの「首位が入れ替わり」を図の上でも確かめられるようにする。
+  // 見出しの「首位が入れ替わり」を図の上でも確かめられるようにする。
   // ⚠ ここに構成比（%）は出さないこと。1本の動画で毎週動くため、意味の薄い数字になります。
-  const prevRank = new Map([...prev.entries()].sort((a,b)=>b[1]-a[1]).map(([k],i)=>[String(k), i+1]));
-  return hbarSVG(list.slice(0,6).map((t,i)=>{
+  const prevRank = trafficRanks();
+  return `<div class="pconly">` + hbarSVG(list.slice(0,6).map((t,i)=>{
     const st = String(t.source_type), pv = prev.get(st);
     const pr = prevRank.get(st), cr = i+1;
     const moved = pr && pr!==cr && (pr<=3 || cr<=3);   // 上位3位に絡む入れ替わりだけ出す
@@ -333,7 +436,8 @@ function trafficChart(){
             right: fmtMan(t.views)+'回',
             sub, subFill: moved ? (cr<pr ? C_UP : C_DOWN) : ''};
   }),{labelW:168,rightW:142,rowH:33})
-  + `<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV_FILL};border:1px solid ${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週（薄い塗り＋枠線）　／ 上位6経路　／ 右下の「2位→1位」は前週からの順位の動きです（上位3位に絡んだときだけ表示）</div>`;
+  + `<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV_FILL};border:1px solid ${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週（薄い塗り＋枠線）　／ 上位6経路　／ 右下の「2位→1位」は前週からの順位の動きです（上位3位に絡んだときだけ表示）</div></div>`
+  + trafficMobile();
 }
 
 function trendBlock(rep){
@@ -467,43 +571,74 @@ function hbarSVG(rows, {W=780, labelW=250, rightW=70, rowH=26, max=null, guides=
   return `<div class="scrollx"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${body}${gl}</svg></div>`;
 }
 
-// 増減（ゼロ線の左右に伸びる）。rows: [{label, v, right}]
-function divSVG(rows, {W=780, labelW=250, rightW=76, rowH=26}={}){
-  if(!rows.length) return '';
-  const H = rows.length*rowH + 16;
-  const x0 = labelW, plotW = W - labelW - rightW;
-  const mx = Math.max(1, ...rows.map(r=>Math.abs(r.v||0)));
-  const zero = x0 + plotW/2;
-  const body = rows.map((r,i)=>{
-    const y0=i*rowH+3, bh=13, y=y0+(rowH-8-bh)/2;
-    const w = Math.abs(r.v||0)/mx*(plotW/2);
-    const up = (r.v||0) >= 0;
-    return `<rect x="${(up?zero:zero-w).toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(1,w).toFixed(1)}" height="${bh}" rx="3" fill="${up?C_UP:C_DOWN}"/>
-<text x="${labelW-8}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="#1a1a1a">${r.label}</text>
-<text x="${W-4}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="${up?C_UP:C_DOWN}" font-weight="600">${r.right}</text>`;
-  }).join('');
-  return `<div class="scrollx"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${body}
-<line x1="${zero}" y1="0" x2="${zero}" y2="${H-13}" stroke="#ccc" stroke-width="1"/>
-<text x="${zero-5}" y="${H-2}" text-anchor="end" font-size="10" fill="#888">← 減</text>
-<text x="${zero+5}" y="${H-2}" font-size="10" fill="#888">増 →</text></svg></div>`;
-}
+// ⚠ divSVG（中央のゼロ線から左右に伸びる増減グラフ）は 2026-08-28 に削除しました。
+//   レビュー3回目 §2 の指摘: 「今週の再生回数」なのか「前週との差」なのか「差への寄与」なのかが
+//   図から判別できず、青と赤を足すと何になるのかも読み取れない。読み手に暗算を要求していた。
+//   さらにスマホでは中央線と右の数値が画面外に出て、意味がほぼ失われていました。
+//   ⚠ 復活させないこと。代わりは causeBlock（前週→増加→減少→今週 ＋ 左端起点の2リスト）です。
+
 // ラベル欄に入る文字数は幅から計算する（11px フォントで日本語は約12px/字）。
 // ⚠ 直に文字数を決め打ちすると、長いタイトルで左にはみ出して切れます（2026-08-17 に実際に起きた）。
 const fitChars = labelW => Math.max(6, Math.floor((labelW-14)/12));
 const cut = (t,n)=> (t||'').length>n ? esc(t.slice(0,n-1))+'…' : esc(t||'');
 
-// ── 要因分解: 今週の増減はどの動画で起きたか ──────────────────
+// ════════════════════════════════
+// 増減の内訳（2026-08-28 全面作り直し・レビュー3回目 §2）
+//
+// ⚠ 中央ゼロ線から左右に伸ばす divSVG には戻さないこと。指摘された問題:
+//   ・「今週の再生回数」なのか「前週との差」なのか「差への寄与」なのかが図から分からない
+//   ・青と赤を足すと何になるのかが読み取れない
+//   ・読み手に暗算（中央からの距離の比較）を要求する
+//   ・スマホでは中央線と右の数値が画面外に出て、意味がほぼ失われる
+//
+// 代わりに「前週 → 増加要因 → 減少要因 → 今週」を先に文で見せ、
+// そのあと増加と減少を**別のリスト**にして、棒はすべて左端起点にします。
+//
+// ⚠ 合計は必ず一致させること。increase + decrease === 今週 − 前週。
+//   top_videos は上位8本ぶんしかないので、それ以外は「その他の動画（合計）」に入れ、
+//   その符号の側へ寄せています。**その他は増減を打ち消し合った正味の値**です。
+// ⚠ 「増加分の87%を1本が占める」という割合は出さないこと。
+//   分母が純増（増加要因−減少要因）なので、純増が小さい週は200%や500%になり、
+//   純減の週は意味が成立しません。自動レポートの見出しとして安定しません。
+// ════════════════════════════════
+function causeSplit(rep, views, viewsPrev){
+  const all = (rep.top_videos||[]).map(v=>({t:v.title, d:(v.views_week||0)-(v.views_prev_week||0)}));
+  if(!all.length || viewsPrev==null) return null;
+  const tot     = views - viewsPrev;
+  const restRaw = tot - all.reduce((s,x)=>s+x.d,0);      // 上位8本の外にあるぶん（正味）
+  const ups = all.filter(x=>x.d>0).sort((a,b)=>b.d-a.d);
+  const dns = all.filter(x=>x.d<0).sort((a,b)=>a.d-b.d);
+  const upOther = ups.slice(3).reduce((s,x)=>s+x.d,0) + Math.max(0, restRaw);
+  const dnOther = dns.slice(3).reduce((s,x)=>s+x.d,0) + Math.min(0, restRaw);
+  const upRows = ups.slice(0,3).map(x=>({t:x.t, d:x.d}));
+  const dnRows = dns.slice(0,3).map(x=>({t:x.t, d:x.d}));
+  if(upOther > 0) upRows.push({t:'その他の動画（合計）', d:upOther, other:true});
+  if(dnOther < 0) dnRows.push({t:'その他の動画（合計）', d:dnOther, other:true});
+  const upSum = upRows.reduce((s,x)=>s+x.d,0);
+  const dnSum = dnRows.reduce((s,x)=>s+x.d,0);
+  return {tot, upRows, dnRows, upSum, dnSum, views, viewsPrev};
+}
 function causeBlock(rep, views, viewsPrev){
-  const L = (rep.top_videos||[]).map(v=>({t:v.title, d:(v.views_week||0)-(v.views_prev_week||0)}));
-  if(!L.length || viewsPrev==null) return '';
-  L.sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
-  const head = L.slice(0,5), rest = (views-viewsPrev) - head.reduce((s,x)=>s+x.d,0);
-  const LW=310, N=fitChars(LW);
-  const rows = head.map(x=>({label:cut(x.t,N), v:x.d, right:(x.d>=0?'+':'−')+fmtMan(Math.abs(x.d))+'回'}));
-  if(Math.abs(rest) > 0) rows.push({label:'その他の動画（合計）', v:rest, right:(rest>=0?'+':'−')+fmtMan(Math.abs(rest))+'回'});
-  const tot = views-viewsPrev;
-  return `<div class="lede">前週から <b style="color:${tot>=0?C_UP:C_DOWN}">${tot>=0?'+':'−'}${fmtMan(Math.abs(tot))}回</b>。</div>
-${divSVG(rows,{labelW:LW, rightW:88})}`;
+  const S = causeSplit(rep, views, viewsPrev);
+  if(!S) return '';
+  const mx = Math.max(1, ...S.upRows.concat(S.dnRows).map(x=>Math.abs(x.d)));
+  const list = (rows, color, title) => `<div class="facg"><h4>${title}</h4>${
+    rows.length ? rows.map(r=>`<div class="fac">
+<div class="ft2"><span class="fn2">${r.other?'<span style="color:var(--muted)">':''}${esc(r.t)}${r.other?'</span>':''}</span><span class="fv" style="color:${color}">${r.d>=0?'+':'−'}${fmtMan(Math.abs(r.d))}回</span></div>
+<div class="fbar"><i style="width:${Math.max(2,Math.round(Math.abs(r.d)/mx*100))}%;background:${color}"></i></div></div>`).join('')
+              : '<div class="facnone">該当なし</div>'}</div>`;
+  // ⚠ 表示は万単位に丸めるので、画面上の「増加−減少」が「差し引き」と1目盛りずれることがあります。
+  //   ずれる週だけ「約」を付けます（常に付けない。付けっぱなしだと精度の情報が伝わりません）。
+  const r1 = n => Math.round(n/1000)/10;                    // 万・小数第1位
+  const approx = (Math.abs(r1(S.upSum)+r1(S.dnSum)-r1(S.tot)) > 0.05) ? '約' : '';
+  return `<div class="wf">
+<span>前週 <b>${fmtMan(S.viewsPrev)}回</b></span>
+<span class="op">＋</span><span>増加要因 <b style="color:${C_UP}">${approx}+${fmtMan(S.upSum)}回</b></span>
+<span class="op">−</span><span>減少要因 <b style="color:${C_DOWN}">${approx}−${fmtMan(Math.abs(S.dnSum))}回</b></span>
+<span class="op">＝</span><span>今週 <b>${fmtMan(S.views)}回</b>（差し引き ${S.tot>=0?'+':'−'}${fmtMan(Math.abs(S.tot))}回）</span>
+</div>
+<div class="facwrap">${list(S.upRows, C_UP, '増えた要因')}${list(S.dnRows, C_DOWN, '減った要因')}</div>
+<div class="note">棒はすべて左端が起点で、いちばん大きい要因を100%とした長さです。片側3本までを出し、残りは「その他の動画（合計）」にまとめています。<b>その他は上位8本の外にある動画の増減を打ち消し合った正味の値</b>なので、個々の動画の増減より小さく見えることがあります。</div>`;
 }
 
 // ── 新作の初速（公開2日間） ──────────────────────────────
@@ -578,34 +713,80 @@ ${lag?`<div class="note" style="margin-top:7px">入力から使用までの時�
 }
 
 // ════════════════════════════════
-// 結論の1行（2026-08-17 追加・オーナーの指摘「直感的にわかりにくい」）
-// ⚠ 数字を読む前に結論が分かるように、レポートのいちばん上に置きます。
-//   判定は 26週平均に対する比だけで決めています（前週比では決めません。
-//   前週が突出していると「半減」に見えてしまうため。2026-08-08 週が実際にそうでした）。
-// ════════════════════════════════
+// 今週の結論（レポートのいちばん上）
+// ⚠ 2026-08-28 全面作り直し（レビュー3回目 §1・運営者の承認済み）。
+//   旧版は「今週はやや好調。26週平均の126%（26週中7位）」がページで最も強い見出しでした。
+//   ★ 読み手はまず「今週は順調だった」と受け取りますが、実態は
+//     「視聴は伸びたが、最大寄与の1本を除くと土台はほぼ横ばい」でした。
+//   ⚠ 26週平均比・順位は**参考情報**です。主見出しに戻さないこと（下の小さな行か「参考」の節へ）。
+//   ★ 見出しの文はコードで決めています。ai_analysis の headline（78〜109字）は長すぎて
+//     ここには入らず、過去10週ぶんを短く書き直すこともできないためです。
+//     headline は「運用詳細」の分析メモに残してあります。
 function verdictBlock(rep, views, viewsPrev){
   const T = TREND;
-  if(!T || T.length < 4) return '';
-  const i = T.findIndex(d=>d.week_start===rep.week_start);
-  if(i < 0) return '';
-  const cur = T[i].views;
-  const avg = T.reduce((s,d)=>s+d.views,0) / T.length;
-  const r   = Math.round(cur/avg*100);
-  const v   = r >= 130 ? '好調' : r >= 110 ? 'やや好調' : r >= 90 ? '平年並み' : r >= 70 ? 'やや低調' : '低調';
-  const sorted = T.map(d=>d.views).slice().sort((a,b)=>b-a);
-  const rank   = sorted.indexOf(cur) + 1;
+  if(viewsPrev==null || !viewsPrev) return '';
+  const S   = causeSplit(rep, views, viewsPrev);
+  const tot = views - viewsPrev;
+  const dp  = tot/viewsPrev*100;
+  // 最大の増加要因（1本）を除いた前週比。「土台が動いたか」を見るための数字
+  const topD = S && S.upRows.length ? S.upRows[0].d : 0;
+  const base = (tot - topD)/viewsPrev*100;
+  // ⚠ 「横ばい」の帯は ±5%。±3% にすると +3.0% が「伸長」に化け、この見出しの目的
+  //   （土台が動いたかどうか）が逆に伝わります（2026-08-28 に実際に起きた）。
+  //   このチャンネルの週次は ±20〜75% 動くので ±5% は保守的な帯です。
+  //   ⚠ 帯を変えるときは、過去26週ぶんで判定が変わらないことを確かめてから変えること。
+  const FLAT = 5;
+  const dir  = v => v >= FLAT ? '伸長' : v <= -FLAT ? '減速' : '横ばい';
+  const head = dir(dp)===dir(base)
+      ? `視聴は${dir(dp)}。土台も${dir(base)}`
+      : `視聴は${dir(dp)}。ただし土台は${dir(base)}`;
 
-  // 前週比が大きく動いたときだけ、その理由を1行そえる
-  let why = '';
-  const dp = (viewsPrev ? (views-viewsPrev)/viewsPrev*100 : 0);
-  if(Math.abs(dp) >= 20 && i > 0){
-    const pr = sorted.indexOf(T[i-1].views) + 1;
-    if(pr <= 3)      why = `前週比は ${dp>0?'+':''}${dp.toFixed(0)}% ですが、前週は${T.length}週で${pr}番目に高い週でした。`;
-    else if(pr >= T.length-2) why = `前週比は ${dp>0?'+':''}${dp.toFixed(0)}% ですが、前週は${T.length}週で下から${T.length-pr+1}番目の週でした。`;
-    else             why = `前週比は ${dp>0?'+':''}${dp.toFixed(0)}%。`;
+  // 3つめのタイル: 流入の首位と、その伸びが1本で説明できるか
+  let t3v = '—', t3l = '流入首位', t3s = '';
+  if(window._TR && window._TR.list.length){
+    const t0 = window._TR.list[0];
+    t3v = TRAFFIC_LABEL[String(t0.source_type)] || t0.source_type;
+    const sp = window._SPLIT;                      // trafficSplitBlock が置く
+    if(sp) t3s = sp.restBeatsPrev ? '当該動画を除いても前週超え' : '当該動画1本による増加';
+    else {
+      const p0 = window._TR.prev.get(String(t0.source_type));
+      t3s = p0!=null ? `前週比 ${pct(t0.views,p0)}` : '';
+    }
   }
-  return `<div class="verdict"><span class="lv">今週は${v}。${T.length}週平均の${r}%（${T.length}週中${rank}位）</span>
-<span class="why">週間視聴回数 ${fmtMan(cur)}回。${why}</span></div>`;
+  const tile = (v,l,s)=>`<div class="tile"><div class="tv">${v}</div><div class="tl">${l}</div>${s?`<div class="ts">${s}</div>`:''}</div>`;
+
+  // 参考（26週の中での位置）は主見出しから外し、小さく1行だけ添える
+  let ref = '';
+  if(T && T.length>=4){
+    const i=T.findIndex(d=>d.week_start===rep.week_start);
+    if(i>=0){
+      const avg=T.reduce((s,d)=>s+d.views,0)/T.length;
+      const rank=T.map(d=>d.views).slice().sort((a,b)=>b-a).indexOf(T[i].views)+1;
+      ref = `${T.length}週平均の${Math.round(T[i].views/avg*100)}%（${T.length}週中${rank}位）。詳しくは「参考：${T.length}週の中での位置」を見てください`;
+    }
+  }
+
+  // 次週の確認 … 打ち手の1つめ（無ければ流入の継続確認）
+  const ai = rep.ai_analysis || {};
+  const s0 = (ai.suggestions||[])[0];
+  const nextCheck = ai.next_check || (s0 ? (typeof s0==='string'? s0 : (s0.title||'')) : '')
+                    || (t3v!=='—' ? `${t3v}が首位を保つかを見る` : '');
+  // ⚠ オーナー判断は ai_analysis.owner_decision があればそれを、無ければ「判断不要」。
+  //   判定基準は運用手順 §7 に置いてあります。勝手に「要承認」を出さないこと。
+  const od  = ai.owner_decision || '判断不要';
+  const odC = /要承認/.test(od) ? C_DOWN : /要確認/.test(od) ? C_NOW : 'var(--ink)';
+
+  return `<div class="verdict"><span class="lv">${esc(head)}</span></div>
+<div class="tiles">
+${tile(fmtMan(views)+'回', '週間視聴回数', `前週比 ${(dp>=0?'+':'')+dp.toFixed(1)}%`)}
+${tile((base>=0?'+':'')+base.toFixed(1)+'%', '最大寄与動画を除いた前週比', topD? `除いた1本：${cut(S.upRows[0].t,11)}`:'')}
+${tile(esc(String(t3v)), t3l, t3s)}
+</div>
+<div class="headrows">
+<div class="hrow"><span class="hk">次週の確認</span><span class="hv">${esc(nextCheck)}</span></div>
+<div class="hrow"><span class="hk">オーナー判断</span><span class="hv od" style="color:${odC}">${esc(od)}</span></div>
+${ref?`<div class="hrow"><span class="hk">参考</span><span class="hv" style="color:var(--muted);font-size:11.5px">${ref}</span></div>`:''}
+</div>`;
 }
 
 // ════════════════════════════════
@@ -701,15 +882,17 @@ function renderReportPage(rep){
     return over ? `初速の中央値は ${fmtMan(med)}回、そのうち ${over}本が中央値の2倍を超えました`
                 : `初速の中央値は ${fmtMan(med)}回、大きく外れた回はありません`;
   })();
+  // ⚠ ここに割合（「増加分の87%」）を戻さないこと（2026-08-28 レビュー3回目 §2）。
+  //   分母が純増（増加要因−減少要因）なので、純増が小さい週は200%・500%になり、
+  //   純減の週は意味が成立しません。自動レポートの見出しとして安定しません。実数だけで書きます。
   const causeLead = (()=>{
-    const L=(rep.top_videos||[]).map(v=>({t:v.title,d:(v.views_week||0)-(v.views_prev_week||0)}));
-    if(!L.length||viewsPrev==null) return '';
-    L.sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
-    const tot=views-viewsPrev, sh=tot?Math.round(L[0].d/tot*100):0;
-    // ⚠ 「87%」だけだと分母が伝わりません。差の実数と内訳の実数を両方書きます（2026-08-25 レビュー指摘）
-    return (sh>=40&&sh<=160)
-      ? `前週比 ${(tot>=0?'+':'')+fmtMan(tot)}回のうち ${(L[0].d>=0?'+':'')+fmtMan(L[0].d)}回（${sh}%）を「${cut(L[0].t,16)}」1本が占めます`
-      : `特定の1本では説明できず、全体が動いています`;
+    const S = causeSplit(rep, views, viewsPrev);
+    if(!S) return '';
+    const t = `純増は ${(S.tot>=0?'+':'−')+fmtMan(Math.abs(S.tot))}回`;
+    if(!S.upRows.length) return `${t}。増えた動画はありません`;
+    const u = S.upRows[0];
+    return u.other ? `${t}。特定の1本では説明できず、全体が動いています`
+                   : `${t}。最大の増加要因は「${cut(u.t,16)}」の +${fmtMan(u.d)}回`;
   })();
   const cpLead = (()=>{
     if(!COUPON||COUPON.error) return '';
@@ -734,43 +917,62 @@ function renderReportPage(rep){
     return `<h2><span class="eyebrow"><span class="secn">${n}</span>${eyebrow}</span>${assertion}</h2>${lede?`<div class="lede">${lede}</div>`:''}`;
   };
 
+  // 流入の「1本を除いた残り」は冒頭のタイルでも使うので先に出しておく
+  window._SPLIT = trafficSplitData(rep);
+
+  // 主要指標のスマホ版（表を縦に積む。⚠ PC版の表と数字を必ず一致させること）
+  const sumMobile = `<div class="mobonly">${sumRows.map(r=>`<div class="fac">
+<div class="ft2"><span class="fn2"><b>${r[0]}</b></span><span class="fv">${r[1]}</span></div>
+<div class="note" style="margin-top:2px">前週 ${r[2]||'—'}${r[3]&&r[3]!=='—'?` ／ ${r[3]}`:''}</div></div>`).join('')}</div>`;
+
+  // ⚠ 打ち手の種別（検証／分析／計測整備）は ai_analysis.suggestions[].kind から出します。
+  //   無いときは何も出しません。**推測でラベルを付けないこと。**
+  const actList = (ai&&(ai.suggestions||[]).length)
+    ? `<div class="acts2">${ai.suggestions.map((s,i)=>{const t=(typeof s==='string')?{title:s,actions:[]}:(s||{});
+        return `<div class="act"><div class="an">${String(i+1).padStart(2,'0')}${t.kind?`<div style="font-weight:400;font-size:11px;color:var(--muted);margin-top:1px">${esc(t.kind)}</div>`:''}</div><div><div class="at">${esc(t.title||'')}</div>${(t.actions||[]).map(a=>`<div class="aa">${esc(a)}</div>`).join('')}</div></div>`;}).join('')}</div>`
+    : '';
+
   document.getElementById('sheet').innerHTML = `
-<h1>${esc(CHANNEL)} 週次レポート<span class="badge">${rep.final?'確定':`速報 ${rep.confirmed_days}/7日`}</span></h1>
-<div class="sub">${fmtDate(rep.week_start)}（土）〜 ${fmtDate(rep.week_end)}（金）${rep.final?'':'　※確定データが揃い次第、自動で更新されます'}</div>
+${/* ★ タイトルは2段（2026-08-28 レビュー3回目 §7）。
+      チャンネル名を1行目に置くと、スマホでは名前の途中で折り返し、「確定」バッジが
+      タイトルの途中に見えていました。**何のページか**を先に出します。 */''}
+<h1>週次レポート<span class="badge">${rep.final?'データ確定':`速報 ${rep.confirmed_days}/7日`}</span></h1>
+<div class="sub">${esc(CHANNEL)}<br>${fmtDate(rep.week_start)}（土）〜 ${fmtDate(rep.week_end)}（金）${rep.final?'':'　※確定データが揃い次第、自動で更新されます'}</div>
 
 ${verdictBlock(rep, views, viewsPrev)}
 
-${/* ⚠ 段落の間隔を 9px → 16px に広げてあります（2026-08-28 レビュー指摘 A-2 の一部）。
-      5段落がほぼ同じ太さで続き、最初の画面が「文章の壁」に見えていたためです。
-      ★ レビューの本題（冒頭を「前週比+23%。ただし増加分の87%は1本」に書き換える／
-        本文に 総視聴・流入・新作・クーポン・来週見ること の小見出しを付ける）は、
-        ai_analysis の作り方＝運用手順 §7 の仕様変更にあたるため**運営者の判断待ち**です。
-        A-1・A-7 と同じ扱いにしています。ここで勝手に書き換えないこと。 */''}
-${ai&&ai.analysis?`<div>${String(ai.analysis).split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 16px">${esc(p)}</p>`).join('')}</div>`:''}
-
-${sec('今週の数字', partial?`確定は${rep.confirmed_days}日ぶんです`:`前週比 ${pct(views,viewsPrev)}、6か月平均比 ${trendPct(rep)}`, '')}
-<div class="scrollx"><table><thead><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減</th><th class="num" style="width:96px">この6か月</th></tr></thead>
+${/* ⚠ 見出しを「前週比 +23.0%、6か月平均比 126%」に戻さないこと。
+      どちらも上のタイルと参考行にあり、3回目の重複になります（レビュー3回目 §9）。
+      ここでは上に出していない数字（登録者）を出します。 */''}
+${sec('主要指標', partial?`確定は${rep.confirmed_days}日ぶんです`
+      : (subsNet!=null ? `登録者は ${(subsNet>=0?'+':'')+fmtFull(subsNet)}人（前週 ${c.subs_net_prev!=null?((c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+'人'):'—'}）` : ''), '')}
+<div class="pconly scrollx"><table><thead><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減</th><th class="num" style="width:96px">この6か月</th></tr></thead>
 <tbody>${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]||''}</td></tr>`).join('')}</tbody></table></div>
+${sumMobile}
 ${c.subscribers_end!=null?`<div class="note key">週末時点の登録者数 ${fmtFull(Math.round(c.subscribers_end))}人。${planLine(rep, pp)}</div>`:''}
 
-${causeLead?sec('増減の内訳', causeLead, ''):''}
+${causeLead?sec('前週から何が変わったか', causeLead, ''):''}
 ${causeBlock(rep, views, viewsPrev)}
 
 ${trafficLead?sec('どこから見られたか', trafficLead, ''):''}
 ${trafficChart()}
 ${trafficSplitBlock(rep)}
 
-${/* ★ 動画の一覧は「流入の結論」の後ろに置きます（2026-08-28 レビュー指摘 A-3）。
-      理由: 8行の表が「増減の内訳」と「どこから見られたか」の間に挟まっていたため、
-      2つの分析の間にスクロールが入り、別の話に見えていました。
-      総視聴の変化 → 流入経路の変化 → 具体的な動画一覧、の順にします。
-      ⚠ 行数は8行のままです（「着手しないこと」⑨）。動かしたのは位置だけです。 */''}
+${/* ★ アクションは「運用詳細」より前（2026-08-28 レビュー3回目 §4）。
+      レポートの目的が次の1週間の打ち手を決めることなら、最下部にあるのは順番が逆です。
+      ⚠ ここより下へ移さないこと。
+      ⚠ 見出しを「打ち手は3つです」に戻さないこと。中身は検証・分析・計測整備で、
+        すべてが施策ではありません。 */''}
+${actList?`${sec('次週のアクション', `${ai.suggestions.length}件`, '')}
+${actList}`:''}
+
+${/* ══ ここから下は運用詳細。⚠ この区切りより上に詳細を足さないこと ══ */''}
+<div class="detail">
+<div class="split">以下は運用詳細です<span>オーナー向けの報告はここまでです。ここから下は、上の結論の裏づけと、日々の運用で使う数字です。</span></div>
+
 ${(rep.top_videos||[]).length?`${sec('今週よく見られた動画', topLead, '')}
 <div class="scrollx"><table><thead><tr><th>動画</th><th class="num">今週</th><th class="num">前週</th></tr></thead>
 <tbody>${rep.top_videos.slice(0,8).map(v=>`<tr><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${esc(v.title)}</a></td><td class="num" title="${fmtFull(v.views_week)}">${fmtMan(v.views_week)}回</td><td class="num">${v.views_prev_week!=null?fmtMan(v.views_prev_week)+'回':'—'}</td></tr>`).join('')}</tbody></table></div>`:''}
-
-${TREND&&TREND.length>=4?sec('参考：6か月の中での位置', trendAssert(rep), '前週比だけでは「前週がどんな週だったか」で見え方が変わります。'):''}
-${trendBlock(rep)}
 
 ${firstLead?sec('新作の初速', firstLead, '公開から2日間の視聴回数です。'):''}
 ${firstBlock(rep)}
@@ -778,13 +980,18 @@ ${firstBlock(rep)}
 ${cpLead?sec('クーポン', cpLead, ''):''}
 ${couponBlock(rep)}
 
-${/* ★ 打ち手は「番号＋行動＋補足」の横並びにします（2026-08-28 レビュー指摘 A-4）。
-      理由: レポートの目的は次の1週間の打ち手を決めることなのに、いちばん行動に近い部分が
-      入れ子の箇条書きで、3つの境界が弱く、読み終えた人が行動だけを拾い直せませんでした。
-      ⚠ 背景色・影・枠は付けないこと。**3つを一目で数えられる**ことだけが目的です。 */''}
-${(ai&&(ai.suggestions||[]).length)?`${sec('次にやること', `打ち手は ${ai.suggestions.length}つです`, '')}
-<div class="acts2">${ai.suggestions.map((s,i)=>{const t=(typeof s==='string')?{title:s,actions:[]}:(s||{});
-  return `<div class="act"><div class="an">${String(i+1).padStart(2,'0')}</div><div><div class="at">${esc(t.title||'')}</div>${(t.actions||[]).map(a=>`<div class="aa">${esc(a)}</div>`).join('')}</div></div>`;}).join('')}</div>`:''}
+${TREND&&TREND.length>=4?sec(`参考：${TREND.length}週の中での位置`, trendAssert(rep), '前週比だけでは「前週がどんな週だったか」で見え方が変わります。'):''}
+${trendBlock(rep)}
+
+${/* ★ 冒頭にあった5段落の自由文章はここへ移しました（2026-08-28 レビュー3回目 §1・運営者の承認済み）。
+      理由: スマホでは数画面、PCでも最初の画面の大半を占めていて、オーナーが最初の30秒で
+      知りたい4点（今週は良かったか／何が動かしたか／次週に何をするか／判断することはあるか）
+      が一画面に入りませんでした。
+      ⚠ 消してはいません。過去10週ぶんの分析もここで読めます。**冒頭へ戻さないこと。** */''}
+${ai&&(ai.analysis||ai.headline)?`${sec('分析メモ', '書いた人の所見です', '')}
+${ai.headline?`<div class="note key" style="margin-bottom:10px"><b>要約</b>　${esc(ai.headline)}</div>`:''}
+${ai.analysis?`<div style="font-size:13px;color:var(--ink-2)">${String(ai.analysis).split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 12px">${esc(p)}</p>`).join('')}</div>`:''}`:''}
+</div>
 
 <div class="foot">CHANNEL DESK 自動生成 ／ ${new Date().toLocaleString('ja-JP')} ／ ${esc(CHANNEL)}${ai&&ai.generated_at?` ／ 分析 ${fmtDate(String(ai.generated_at).slice(0,10))}`:''}</div>`;
 
