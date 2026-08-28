@@ -328,8 +328,15 @@
 <div class="msg" id="loadMsg" style="display:none">読み込み中...</div>
 <div class="sheet" id="sheet" style="display:none"></div>
 
+<!-- ★ 数字は report_model.js で1回だけ確定させます（2026-08-28 レビュー6回目 §1）。
+     ⚠⚠ **このファイルに計算を書き戻さないこと。**ここは表示だけを担当します。
+       report_brief.html も同じモデルを読みます。片方だけ直すと、同じ週の同じ指標が
+       2つの資料で食い違います（実際に「アクション3件 / NEXT CHECK 4件」の食い違いが出ました）。
+     ⚠ 読み込み順を変えないこと。下の <script> はこれが定義済みである前提で書かれています。 -->
+<script src="report_model.js"></script>
 <script>
 const DATA_URL = 'data.json';
+const M = window.CDModel;   // ⚠ 別名を増やさないこと。M.〜 で辿れることを揃えています
 // ?debug=1 のときだけ出す内部向け表示（いまは「分析メモ」だけ）。
 // ⚠ ここに機微なものを足さないこと。URL に付けるだけで誰でも見られます。
 const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
@@ -340,7 +347,7 @@ let CHANNEL = '【LightTHREE】 -ポーカーメディア‐';
 let COUPON  = null;   // data.json の coupon（週ごとの節を出すのに使う）
 let TREND   = null;   // data.json の weekly_trend（直近26週のグラフ用）
 
-const fmtFull = n => (n??0).toLocaleString('ja-JP');
+const fmtFull = M.fmtFull;   // ⚠ 実装は report_model.js。ここで定義し直さないこと
 // ★ スパークライン（2026-08-17 追加）。表の1セルに26週ぶんの形を入れる。
 // 節を増やさずに「6か月の文脈」を足すための形（Tufte がこの用途で作ったもの）。
 // ⚠ 軸も目盛りも付けません。**形だけ**を見るものです。数値は隣のセルにあります。
@@ -360,32 +367,18 @@ ${zero}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.3" stroke-li
 //   日本語では 587,400回 より 58.7万回 のほうが一瞬で入ります。
 //   ⚠ **ツールチップと表の小さい数字には生の値を残すこと。**万に丸めると精密な比較ができなくなります。
 //   ⚠ ダッシュボード（index.html）の fmt() と同じ規則にしてあります。片方だけ変えないこと。
-const fmtMan  = n => (n==null) ? '—' : (Math.abs(n)>=10000
-                    ? (n/10000).toFixed(1).replace(/\.0$/,'')+'万'
-                    : n.toLocaleString('ja-JP'));
+const fmtMan  = M.fmtMan;   // ⚠ 丸め方は report_model.js。片方だけ変えると資料間で数字がずれます
 // ⚠ 表の中の細い棒（miniBar）は 2026-08-28 に削除しました。
 //   数値の下に3pxの短い線が出るだけで、下線・読み込み表示・装飾のどれとも見分けがつかず、
 //   一覧はもともと視聴回数順なので順位の情報も足していませんでした（レビュー指摘 B-2）。
 //   復活させるなら中途半端な下線ではなく、セル全体に敷く比例バーにしてください。
-const fmtDate = s => s ? s.replace(/-/g,'/') : '';
-const fmtMin  = m => m >= 60 ? Math.round(m/60).toLocaleString()+'時間' : (m||0).toLocaleString()+'分';
-const esc     = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const pct     = (a,b)=> (b==null||!b) ? '—' : ((a-b)/b*100>=0?'+':'')+((a-b)/b*100).toFixed(1)+'%';
+const fmtDate = M.fmtDate;
+const fmtMin  = M.fmtMin;
+const esc     = M.esc;
+const pct     = M.pct;
 
 // YouTube Studio の表記に準拠（APIの値 → Studioの日本語ラベル）
-const TRAFFIC_LABEL = {
-  'SUBSCRIBER':'ブラウジング機能','YT_SEARCH':'YouTube検索','SHORTS':'ショートフィード',
-  'EXT_URL':'外部','NOTIFICATION':'通知','RELATED_VIDEO':'関連動画',
-  'BROWSE':'ブラウジング機能','CHANNEL':'チャンネルページ','YT_CHANNEL':'チャンネルページ',
-  'DIRECT':'直接入力','ADVERTISING':'広告','PLAYLIST':'再生リスト',
-  'END_SCREEN':'終了画面','NO_LINK_EMBEDDED':'埋め込み','OTHER':'その他',
-  'ANNOTATION':'アノテーション','CAMPAIGN_CARD':'プロモーション',
-  'SHORTS_CONTENT_LINKS':'ショート内リンク','YT_OTHER_PAGE':'その他のYouTube機能',
-  'NO_LINK_OTHER':'直接入力または不明','SOUND_PAGE':'音源ページ','HASHTAGS':'ハッシュタグ',
-  '3':'ブラウジング','9':'YouTube検索','10':'関連動画','4':'チャンネルページ',
-  '5':'外部サイト','7':'Google検索','19':'通知','18':'エンドスクリーン',
-  '11':'再生リスト','0':'直接/不明','1':'広告','17':'プロモーション','8':'その他'
-};
+const TRAFFIC_LABEL = M.TRAFFIC_LABEL;   // ⚠ 実装は report_model.js。ラベルがずれると別経路に見えます
 
 // ════════════════════════════════
 // 直近26週（約6か月）の位置づけ
@@ -448,27 +441,10 @@ function trendAssert(rep){
 //   同じ判定「1本を除いても前週を上回るか」を先に必要とするためです。
 //   window._SPLIT に置いて共有します。片方だけ直さないこと。
 function trafficSplitData(rep){
-  const vt = rep.video_traffic;
-  if(!vt || !window._TR || !window._TR.list.length) return null;
-  const {list, prev} = window._TR;
-  const t0 = list[0], st = String(t0.source_type);
-  const p0 = prev.get(st);
-  if(p0==null || !t0.views) return null;
-
-  const titles = {};
-  (rep.top_videos||[]).forEach(v=>{ titles[v.video_id]=v.title; });
-  (rep.new_videos||[]).forEach(v=>{ if(v.video_id) titles[v.video_id]=v.title; });
-
-  const rows = Object.keys(vt).map(vid=>{
-    const m = (vt[vid]||[]).find(r=>String(r.source_type)===st);
-    return {vid, v: m? m.views : 0};
-  }).filter(r=>r.v>0).sort((a,b)=>b.v-a.v);
-  if(!rows.length) return null;
-
-  const top = rows[0], rest = t0.views - top.v;
-  return {nm: TRAFFIC_LABEL[st]||st, now: t0.views, p0, top, rest,
-          title: titles[top.vid]||top.vid, restBeatsPrev: rest > p0};
+  // ⚠ 中身は report_model.js の M.trafficSplit() です。**ここに計算を書き戻さないこと。**
+  return M.trafficSplit(rep);
 }
+
 function trafficSplitBlock(rep){
   const S = window._SPLIT || trafficSplitData(rep);
   if(!S) return '';
@@ -707,28 +683,12 @@ const cut = (t,n)=> (t||'').length>n ? esc(t.slice(0,n-1))+'…' : esc(t||'');
 //   純減の週は意味が成立しません。自動レポートの見出しとして安定しません。
 // ════════════════════════════════
 function causeSplit(rep, views, viewsPrev){
-  // short … データ側の短い表示名（任意）。pub … 公開日。見出しでタイトルを切らないために使う
-  const all = (rep.top_videos||[]).map(v=>({t:v.title, short:v.short_title||'', pub:v.published_at||'',
-                                            d:(v.views_week||0)-(v.views_prev_week||0)}));
-  if(!all.length || viewsPrev==null) return null;
-  const tot     = views - viewsPrev;
-  const restRaw = tot - all.reduce((s,x)=>s+x.d,0);      // 上位8本の外にあるぶん（正味）
-  const ups = all.filter(x=>x.d>0).sort((a,b)=>b.d-a.d);
-  const dns = all.filter(x=>x.d<0).sort((a,b)=>a.d-b.d);
-  const upOther = ups.slice(3).reduce((s,x)=>s+x.d,0) + Math.max(0, restRaw);
-  const dnOther = dns.slice(3).reduce((s,x)=>s+x.d,0) + Math.min(0, restRaw);
-  // ⚠ ここで {t,d} だけに絞らないこと。short_title / published_at が落ちて、
-  //   見出しが「最大の1本」に化けます（2026-08-28 に実際に起きた）。
-  const upRows = ups.slice(0,3).map(x=>({...x}));
-  const dnRows = dns.slice(0,3).map(x=>({...x}));
-  // ⚠ 両側に同じ「その他の動画（合計）」を出さないこと。同じ項目が増えた側と減った側に
-  //   同時にあるように見えます（2026-08-28 レビュー4回目 §4-4）。側ごとに名前を分けます。
-  if(upOther > 0) upRows.push({t:'その他の増加要因', d:upOther, other:true});
-  if(dnOther < 0) dnRows.push({t:'その他の減少要因', d:dnOther, other:true});
-  const upSum = upRows.reduce((s,x)=>s+x.d,0);
-  const dnSum = dnRows.reduce((s,x)=>s+x.d,0);
-  return {tot, upRows, dnRows, upSum, dnSum, views, viewsPrev};
+  // ⚠⚠ 中身は report_model.js の M.cause() に移しました（2026-08-28 レビュー6回目 §1）。
+  //   report_brief.html が同じ計算を書き写して持っていたため、分岐する運用リスクがありました。
+  //   **ここに計算を書き戻さないこと。**
+  return M.cause(rep, views, viewsPrev);
 }
+
 function causeBlock(rep, views, viewsPrev){
   const S = causeSplit(rep, views, viewsPrev);
   if(!S) return '';
@@ -866,26 +826,13 @@ function subLine(rep){
 // ⚠⚠ 値が無いときに「判断不要」を既定にしないこと。入力漏れが
 //   「オーナーのやることは無い」としてそのまま提出される事故になります。
 // ════════════════════════════════
-const OWNER_GATE_RANK = {none:0, confirm:1, approve:2};
+const OWNER_GATE_RANK = M.OWNER_GATE_RANK;   // ⚠ 実装は report_model.js
 function ownerState(rep){
-  const ai = rep.ai_analysis || {};
-  const raw = (ai.owner_decision||'').trim();
-  if(raw) return {level: /要承認/.test(raw) ? 'approve' : /要確認/.test(raw) ? 'confirm' : 'none',
-                  text: raw, derived:false};
-  // 明示が無くても、各アクションが owner_gate を持っていれば**いちばん重いもの**へ集約する。
-  // ⚠ これは推測ではなくデータの集約です。gate が1つも無ければ「未設定」のままにします。
-  const gates = (ai.suggestions||[]).map(s=>(s&&s.owner_gate)||'').filter(g=>g in OWNER_GATE_RANK);
-  if(gates.length){
-    const lv = gates.reduce((a,b)=>OWNER_GATE_RANK[b]>OWNER_GATE_RANK[a]?b:a, 'none');
-    // ⚠ ここに「要確認」「要承認」の語を入れないこと。表示側で見出しとして付けるので二重になります。
-    return {level: lv, derived:true,
-            text: lv==='approve' ? 'アクションから集約しました。何を承認してほしいか・推奨案・費用または影響・期限を書いてください'
-                : lv==='confirm' ? 'アクションから集約しました。確認事項を1つに絞って書いてください'
-                : '判断不要'};
-  }
-  return {level:'unset', text:'未設定', derived:false};
+  // ⚠ 中身は report_model.js の M.ownerState() です。**ここに計算を書き戻さないこと。**
+  //   ⚠⚠ 値が無いときに「判断不要」を既定にしないこと（モデル側のコメント参照）。
+  return M.ownerState(rep);
 }
-// タイトル横の小さなバッジ。判断不要のときだけ出す（要確認・要承認は下の通知で出す）
+
 function ownerBadge(rep){
   const s = ownerState(rep);
   if(s.level==='none')  return `<span class="badge">オーナー対応なし</span>`;
@@ -915,23 +862,15 @@ function ownerNotice(rep){
 function verdictBlock(rep, views, viewsPrev){
   const T = TREND;
   if(viewsPrev==null || !viewsPrev) return '';
-  const S   = causeSplit(rep, views, viewsPrev);
-  const tot = views - viewsPrev;
-  const dp  = tot/viewsPrev*100;
-  // 最大の増加要因（1本）を除いた前週比。「土台が動いたか」を見るための数字
-  const topD = S && S.upRows.length ? S.upRows[0].d : 0;
-  const base = (tot - topD)/viewsPrev*100;
-  // ⚠ 「横ばい」の帯は ±5%。±3% にすると +3.0% が「伸長」に化け、この見出しの目的
-  //   （土台が動いたかどうか）が逆に伝わります（2026-08-28 に実際に起きた）。
-  //   このチャンネルの週次は ±20〜75% 動くので ±5% は保守的な帯です。
-  //   ⚠ 帯を変えるときは、過去26週ぶんで判定が変わらないことを確かめてから変えること。
-  const FLAT = 5;
-  // ⚠ 語彙は「増加／減少／横ばい」。「伸長」「土台」は抽象的で、数字が専門でない読み手に
-  //   そのままは伝わりません（2026-08-28 レビュー4回目 §4-2）。
-  const dir  = v => v >= FLAT ? '増加' : v <= -FLAT ? '減少' : '横ばい';
-  const head = dir(dp)===dir(base)
-      ? `視聴は${dir(dp)}。1本を除いても${dir(base)}`
-      : `視聴は${dir(dp)}。ただし1本を除くと${dir(base)==='横ばい'?'ほぼ横ばい':dir(base)}`;
+  // ⚠⚠ 判定は report_model.js の M.verdict() が持ちます（2026-08-28 レビュー6回目 §1）。
+  //   ここで dp / base / 見出しを計算し直さないこと。ブリーフと食い違います。
+  const V = M.verdict(rep, views, viewsPrev);
+  if(!V) return '';
+  const dp = V.deltaPct, base = V.baselinePct;
+  // ⚠ 「横ばい」の帯（±5%）と見出しの語彙は report_model.js に移しました。
+  //   ±3% にすると +3.0% が「増加」に化け、この見出しの目的（土台が動いたかどうか）が
+  //   逆に伝わります（2026-08-28 に実際に起きた）。**帯をここに書き戻さないこと。**
+  const head = V.headline;
 
   // 3つめのタイル: 流入の首位と、その伸びが1本で説明できるか
   let t3v = '—', t3l = '流入首位', t3s = '';

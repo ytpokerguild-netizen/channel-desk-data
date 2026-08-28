@@ -29,3 +29,11 @@ jobs:
           LINE_CHANNEL_TOKEN: ${{ secrets.LINE_CHANNEL_TOKEN }}
           LINE_GROUP_ID:      ${{ secrets.LINE_GROUP_ID }}
         run: python docs_check.py push
+
+      # ★ 2026-08-28 追加（外部レビュー6回目 §1）。
+      #   report.html と report_brief.html が、同じ report_model.js から数字を取っているかを見張ります。
+      #   ⚠ かつて2つが同じ計算を書き写して持っていて、**実際に分岐しました**
+      #     （正式レポートのアクション3件 ↔ ブリーフの NEXT CHECK 4件）。
+      #   ⚠ この検査は「食い違っていないか」しか見ません。**数字が正しいかは人が読むこと。**
+      - name: 2つの資料が同じモデルから作られているか確認
+        run: node check_consistency.js

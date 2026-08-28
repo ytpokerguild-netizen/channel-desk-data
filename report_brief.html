@@ -6,152 +6,166 @@
 <title>CHANNEL DESK 週次ブリーフ</title>
 <!--
   ═══════════════════════════════════════════════════════════════════════
-  週次ブリーフ（画面用）  2026-08-28 作成
+  週次ブリーフ（画面用）  2026-08-28 作成／同日 レビュー6回目を反映
   ═══════════════════════════════════════════════════════════════════════
+  ★ これは `report.html` の**置き換えではありません。**同じ数字の別の見せ方です。
+     report.html … 明色・A4に1ページ・**正式な記録**。提出・印刷・あとから参照する資料
+     このファイル … 暗色・**画面で3分で把握する**資料。会議・画面共有・事前確認用
+  ⚠ **正はいつも `report.html`** です。迷ったらそちらを見てください。
 
-  ★ これは `report.html` の**置き換えではありません。**別物として並走させる試作です。
-     report.html … 明色・A4に1ページで刷れる「提出資料」。レビュー5回で条件付き最終承認済み。
-     このファイル … 暗色・全画面スクロール送りの「読ませる資料」。**印刷は想定していません。**
-     ⚠ どちらを正にするかは運営者が決めます。**勝手に report.html を消さないこと。**
+  ★★ 数字は `report_model.js` で1回だけ確定させ、両方がそこから描きます。
+     ⚠⚠ **このファイルに計算を書き戻さないこと。**
+       以前は同じ計算を書き写して持っており、**実際に分岐しました** —
+       正式レポートのアクションが3件なのに、ここには NEXT CHECK が4件ありました
+       （4件目はオーナー判断で、種類の違うものが混ざっていた）。
 
-  ★ 見た目の出どころ: 運営者から参照指定のあったページを Chrome で実測し、
-     色・書体・余白・装置を写しました（`/tmp/ref/design_tokens.md` に実測値）。
-     ⚠ **数字は参照ページから取っていません。**参照ページの値は data.json と一致しません
-       （登録者純増が +110 と +200 など）。**数字は必ず data.json から取ること。**
-
-  ⚠⚠ 参照ページにあった次の2つは**意図的に入れていません**（2026-08-28 運営者の判断）:
-     ・「週間増加分の 87.3%」… レビュー4回目で矛盾の元として本編から削除済み
-     ・「Shorts構成比 49.5%」… 引き継ぎ書「★ 着手しないこと」で構成比は出さないと決めている
-     **どちらも復活させないこと。**流入は構成比ではなく**実数と順位**で見せています。
+  ⚠⚠ 参照ページにあった「週間増加分の 87.3%」と「Shorts構成比 49.5%」は入れません
+     （2026-08-28 運営者の判断）。流入は**実数と順位**で見せています。復活させないこと。
 -->
 <style>
 :root{
-  /* ★ 参照ページの実測値。⚠ 増加=緑・減少=赤です。report.html（青=増加・赤=減少）とは
-       逆なので、**片方だけ変えないこと。**混ざると読み手が符号を読み違えます。 */
+  /* ═══ 色の意味（2026-08-28 レビュー6回目 §3）═══
+     ⚠⚠ **増加＝青系**です。緑にしないこと。理由が3つあります:
+       ① `report.html` が青＝増加なので、同じ週の同じ数字で意味が一致する
+       ② 青と赤のほうが、緑と赤より色覚多様性に対応しやすい
+       ③ 「増加」は必ずしも「良い」とは限らない。緑だと増加＝成功という評価まで含んで見える
+     緑は **確認済み・正常・確定** にだけ使います（04の「確認できた事実」など）。 */
   --bg:#090d13; --panel:#111822; --line:rgba(255,255,255,.10); --line-2:rgba(255,255,255,.06);
   --text:#f5f7fa; --muted:#9da8b8; --dim:#7c8899;
-  --green:#58d6a2; --red:#ff756d; --amber:#f3c768; --blue:#6ea8ff;
-  --shorts:#ff655f; --browse:#7185a5;
+  --up:#6ec2ff;      /* 増加・今週の伸び（青／シアン） */
+  --down:#ff756d;    /* 減少 */
+  --warn:#f3c768;    /* 注意・留保・未確定 */
+  --ok:#58d6a2;      /* 確認済み・正常・完了 */
+  --prev:#7185a5;    /* 前週・補助情報 */
   --max:1240px;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
-html{scroll-behavior:smooth;scroll-snap-type:y proximity}
-/* ⚠ mandatory ではなく proximity です。mandatory だと、中身が画面より高い節で
-     下端が読めないまま次へ飛ばされます（狭い画面で実際に起きます）。 */
+/* ★ 既定はふつうの縦スクロール（レビュー6回目 §5）。
+   ⚠⚠ 既定を画面送りに戻さないこと。毎週読む資料では、前の画面と数字を見比べにくく、
+      目的の項目へ戻るのが遅く、画面に収めるために文字を縮めたくなります。
+      会議で使うときだけ `?mode=present` で画面送りにします。 */
+html{scroll-behavior:smooth}
+/* ⚠⚠ `mandatory` にしないこと。中身が画面より高い節で**下端が読めなくなります。**
+     1280×800 や 1366×768 では 02節・05節が画面より高くなります（実測 858px / 画面 800px）。
+     文字を縮めて収めるのは禁止（レビュー6回目 §5「文字サイズを保ったまま多少縦に続く方が安全」）
+     なので、`proximity` にして**必要なら普通にスクロールできる**状態を保ちます。 */
+html.present{scroll-snap-type:y proximity}
 body{
   margin:0;color:var(--text);font-size:15px;line-height:1.7;
   font-variant-numeric:tabular-nums;
   background:
     radial-gradient(circle at 78% 15%, rgba(78,112,162,.14), transparent 32%),
-    radial-gradient(circle at 18% 85%, rgba(255,101,95,.08), transparent 28%),
+    radial-gradient(circle at 18% 85%, rgba(255,101,95,.06), transparent 28%),
     var(--bg);
   background-attachment:fixed;
 }
 a{color:inherit}
-.green{color:var(--green)}.red{color:var(--red)}.amber{color:var(--amber)}
-.blue{color:var(--blue)}.muted{color:var(--muted)}
+.up{color:var(--up)}.down{color:var(--down)}.warn{color:var(--warn)}
+.ok{color:var(--ok)}.muted{color:var(--muted)}
 b{font-weight:700}
 
-/* 上端の進捗バー */
 .topline{position:fixed;inset:0 0 auto;z-index:30;height:4px;background:rgba(255,255,255,.06)}
 .topline span{display:block;height:100%;width:0;
-  background:linear-gradient(90deg,var(--red),var(--amber));transition:width .15s linear}
-/* 左のドット */
-.rail{position:fixed;left:26px;top:50%;transform:translateY(-50%);z-index:25;
-  display:flex;flex-direction:column;gap:11px}
-.rail a{width:8px;height:8px;border-radius:50%;border:1px solid rgba(255,255,255,.28);
-  display:block;transition:background .2s,border-color .2s}
-.rail a.on{background:var(--amber);border-color:var(--amber)}
-/* 右下の案内 */
-.keys{position:fixed;right:22px;bottom:18px;z-index:25;display:flex;gap:8px;align-items:center;
-  font-size:11.5px;color:var(--dim)}
+  background:linear-gradient(90deg,var(--prev),var(--up));transition:width .15s linear}
+
+/* 左のナビ。★ 丸だけでは行き先が分からないので、ホバー・フォーカスで名前を出します（§5） */
+.rail{position:fixed;left:22px;top:50%;transform:translateY(-50%);z-index:25;
+  display:flex;flex-direction:column;gap:4px}
+.rail a{display:flex;align-items:center;gap:10px;padding:4px 6px;border-radius:8px;
+  text-decoration:none;color:var(--dim);font-size:11px;letter-spacing:.06em;white-space:nowrap}
+.rail a i{width:8px;height:8px;border-radius:50%;border:1px solid rgba(255,255,255,.28);flex:0 0 auto}
+.rail a span{opacity:0;transform:translateX(-4px);transition:opacity .15s,transform .15s;
+  pointer-events:none;text-transform:uppercase;font-weight:700}
+.rail:hover a span,.rail a:focus-visible span{opacity:1;transform:none}
+.rail a.on{color:var(--text)} .rail a.on i{background:var(--warn);border-color:var(--warn)}
+.rail a:focus-visible{outline:2px solid var(--up);outline-offset:2px}
+.pos{position:fixed;left:22px;bottom:20px;z-index:25;font-size:12px;color:var(--muted);
+  letter-spacing:.06em;font-variant-numeric:tabular-nums}
+.pos b{color:var(--text);font-size:14px}
+
+.modes{position:fixed;right:20px;bottom:18px;z-index:26;display:flex;gap:6px;align-items:center}
+.modes a{font-size:11.5px;color:var(--dim);text-decoration:none;border:1px solid var(--line);
+  border-radius:8px;padding:5px 11px;background:rgba(255,255,255,.03)}
+.modes a.on{color:var(--text);border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08)}
+.keys{display:none;font-size:11.5px;color:var(--dim);gap:6px;align-items:center}
+html.present .keys{display:flex}
 .keys kbd{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:6px;
   border:1px solid var(--line);background:rgba(255,255,255,.04);font:inherit;font-size:11px}
 
-section{min-height:100vh;padding:58px 0;scroll-snap-align:start;display:flex;align-items:center}
+/* ⚠ 既定は「内容ぶんの高さ」。画面に収めるために本文を縮めないこと（§5）。
+     文字サイズを保ったまま多少縦に続くほうが安全です。 */
+section{padding:52px 0;border-top:1px solid var(--line-2)}
+section:first-child{border-top:none}
+html.present section{min-height:100svh;display:flex;align-items:center;
+  scroll-snap-align:start;border-top:none;padding:48px 0}
 .inner{width:100%;max-width:var(--max);margin:0 auto;padding:0 28px}
 
-/* ── 見出し ─────────────────────────────── */
 .eyebrow{display:flex;gap:10px;align-items:center;font-size:12px;font-weight:750;
-  letter-spacing:.13em;color:var(--amber);text-transform:uppercase;margin:0 0 10px}
-.eyebrow::before{content:"";width:26px;height:2px;background:var(--amber);border-radius:2px;flex:0 0 auto}
+  letter-spacing:.13em;color:var(--warn);text-transform:uppercase;margin:0 0 10px}
+.eyebrow::before{content:"";width:26px;height:2px;background:var(--warn);border-radius:2px;flex:0 0 auto}
 h1,h2{margin:0 0 22px;font-weight:700;letter-spacing:-.04em;line-height:1.15}
-h1{font-size:clamp(34px,5.4vw,68px);letter-spacing:-.045em;line-height:1.14}
-h2{font-size:clamp(28px,3.9vw,50px);letter-spacing:-.035em}
-/* ★ 但し書きの行だけ琥珀。結論と留保を色で分ける（参照ページのいちばん効いている装置） */
-h1 .but,h2 .but{color:var(--amber);display:block}
+h1{font-size:clamp(32px,5vw,64px);letter-spacing:-.045em;line-height:1.14}
+h2{font-size:clamp(26px,3.6vw,46px);letter-spacing:-.035em}
+/* ★ 但し書きの行だけ琥珀。結論と留保を色で分ける。ここは成功しているので変えないこと */
+h1 .but,h2 .but{color:var(--warn);display:block}
 
-/* ── カード ─────────────────────────────── */
 .card{background:linear-gradient(160deg,rgba(255,255,255,.055),rgba(255,255,255,.02));
   border:1px solid var(--line);border-radius:16px;padding:22px;
-  box-shadow:0 16px 50px rgba(0,0,0,.12);position:relative;overflow:hidden}
+  box-shadow:0 16px 50px rgba(0,0,0,.12);display:flex;flex-direction:column}
+.card>.push{margin-top:auto}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-/* ⚠ 左右で高さが違うとき、短いほうのカードは下に空白ができます。
-     カードを縦のフレックスにして、最後の要素を `margin-top:auto` で下端に寄せます。
-     （高さを揃えるために中身を水増ししないこと。空白のほうがましです） */
-.card{display:flex;flex-direction:column}
-.card>.push{margin-top:auto}
 
-/* 数字カード。右下の淡い光で、そのカードの性格（増/減）を出す */
+/* 数字カード。⚠ 発光でデータの意味を表さないこと（§3）。
+     以前は緑・黄・青を出し分けていましたが、色の違いに意味がありませんでした。
+     いまは全部おなじ弱い青にしてあります。**増減の色は数字と矢印だけで表します。** */
 .kpi .lab{font-size:12px;color:var(--muted);margin:0 0 2px}
-.kpi .val{font-size:clamp(28px,3.1vw,40px);font-weight:820;letter-spacing:-.04em;line-height:1.15}
+.kpi .val{font-weight:820;letter-spacing:-.04em;line-height:1.15}
+.kpi.main .val{font-size:clamp(28px,3.1vw,40px)}
+.kpi.sub  .val{font-size:clamp(22px,2.2vw,29px)}   /* ★ 主要3つと補助3つを2層に（§01） */
 .kpi .dl{font-size:13px;font-weight:700;margin-top:5px}
 .kpi .dl span{color:var(--muted);font-weight:400}
 .kpi .nt{font-size:12px;color:var(--muted);line-height:1.55;margin-top:8px}
-.kpi .blob{position:absolute;right:-34px;bottom:-46px;width:150px;height:150px;border-radius:50%;
-  filter:blur(26px);opacity:.30;pointer-events:none}
+.kpi{position:relative;overflow:hidden}
+.kpi::after{content:"";position:absolute;right:-40px;bottom:-50px;width:150px;height:150px;
+  border-radius:50%;filter:blur(28px);opacity:.13;background:var(--up);pointer-events:none}
+.tier{font-size:11.5px;font-weight:750;letter-spacing:.11em;color:var(--dim);
+  text-transform:uppercase;margin:0 0 8px}
 
-/* 注記の箱 */
 .note{font-size:12.5px;color:#bdc8d7;background:rgba(110,168,255,.05);
   border-left:1px solid rgba(110,168,255,.18);border-radius:12px;padding:13px 16px;line-height:1.7}
-.note b:first-child{color:var(--blue)}
+.note b:first-child{color:var(--up)}
 .foot{font-size:12px;color:var(--dim);margin-top:12px}
 
-/* 見出しつきの箱（i / ! など）。色で「言えること／言えないこと」を分ける */
 .callout{display:flex;gap:14px;align-items:flex-start;border:1px solid var(--line);
-  border-left:3px solid var(--amber);border-radius:14px;padding:16px 18px;
+  border-left:3px solid var(--warn);border-radius:14px;padding:16px 18px;
   background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
 .callout .ic{flex:0 0 auto;width:30px;height:30px;border-radius:9px;display:grid;place-items:center;
-  font-weight:800;font-size:14px;background:rgba(243,199,104,.16);color:var(--amber)}
+  font-weight:800;font-size:14px;background:rgba(243,199,104,.16);color:var(--warn)}
 .callout h3{margin:0 0 4px;font-size:15px;font-weight:700}
 .callout p{margin:0;font-size:13.5px;color:#c7d0dc;line-height:1.75}
-.callout.ok{border-left-color:var(--green)} .callout.ok .ic{background:rgba(88,214,162,.16);color:var(--green)}
-.callout.no{border-left-color:var(--red)}   .callout.no .ic{background:rgba(255,117,109,.16);color:var(--red)}
-.callout.nu{border-left-color:var(--dim)}   .callout.nu .ic{background:rgba(157,168,184,.14);color:var(--muted)}
+.callout.ok{border-left-color:var(--ok)}   .callout.ok .ic{background:rgba(88,214,162,.16);color:var(--ok)}
+.callout.no{border-left-color:var(--down)} .callout.no .ic{background:rgba(255,117,109,.16);color:var(--down)}
+.callout.nu{border-left-color:var(--up)}   .callout.nu .ic{background:rgba(110,194,255,.16);color:var(--up)}
 
-/* 小見出しつきのミニカード（01·RESULT など） */
 .brief .k{font-size:11.5px;font-weight:750;letter-spacing:.11em;color:var(--dim);text-transform:uppercase}
 .brief h3{margin:8px 0 6px;font-size:16px;font-weight:700}
 .brief p{margin:0;font-size:13px;color:#c1cbd8;line-height:1.75}
 
-/* チップ（確定バッジ・期間） */
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 22px}
 .chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:#c7d0dc;
   border:1px solid var(--line);border-radius:999px;padding:5px 13px;background:rgba(255,255,255,.03)}
-.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--green)}
-.chip.warn{border-color:rgba(243,199,104,.45);color:var(--amber)}
-.chip.bad{border-color:rgba(255,117,109,.5);color:var(--red)}
+.chip .dot{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+.chip.bad{border-color:rgba(255,117,109,.5);color:var(--down)}
+.chip code{font:inherit;font-size:11px;color:var(--dim);letter-spacing:.03em}
 
-/* 横棒（指数比較・流入・クーポン） */
-.bars{display:grid;gap:9px;margin-top:4px}
-.bar{display:grid;grid-template-columns:var(--lw,132px) 1fr auto;gap:12px;align-items:center;font-size:13px}
-.bar .bn{color:#c7d0dc;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* ★ 動画名は途中で切らず、2行まで折り返します（外部レビュー D「長い動画タイトルは2行まで」／
-     同5回目 §3-3「途中省略はタイトルの終わりが分からない」）。
-   ⚠ 1行の text-overflow:ellipsis に戻さないこと。390px では題名の半分が消えます
-     （実測 561px の題名が 246px の枠に入っていました）。 */
+.bt{height:9px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}
+.bt .bf{height:100%;border-radius:5px}
 .clamp2{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;
   overflow:hidden;white-space:normal;line-height:1.55}
-
-/* ★ 増減要因の行。**棒を文字の後ろに敷いて**1行に収めています。
-     ⚠ ラベルの下に棒を積む形（2段）に戻さないこと。7行あるので 1280×800 で
-       節が画面に収まらなくなります（実測 838px / 画面 800px）。
-     ★ report.html のコメントにある「中途半端な下線ではなく、セル全体に敷く比例バー」
-       がこれです。 */
+/* ⚠ 増減要因は「文字の後ろに比例バー」の1行。ラベルの下に棒を積む2段に戻さないこと（縦が倍になります） */
 .fr{position:relative;border-radius:9px;overflow:hidden;padding:8px 12px;
     display:flex;justify-content:space-between;gap:14px;align-items:center;
     background:rgba(255,255,255,.035);margin-bottom:6px}
@@ -159,30 +173,27 @@ h1 .but,h2 .but{color:var(--amber);display:block}
 .fr .nm{position:relative;font-size:13px;color:#e3e9f1;line-height:1.5;min-width:0}
 .fr .vl{position:relative;font-weight:700;font-size:13px;white-space:nowrap}
 .fr.other .nm{color:var(--muted)}
-.bar .bt{height:9px;border-radius:5px;background:rgba(255,255,255,.07);overflow:hidden}
-.bar .bf{height:100%;border-radius:5px}
-.bar .bv{font-weight:700;font-variant-numeric:tabular-nums;text-align:right;min-width:76px}
 
-/* 大きな色つきの数字＋説明＋右端の小さなラベル */
-.big{display:flex;gap:18px;align-items:center;border-radius:14px;padding:14px 18px;
+/* 大きな数字＋説明。⚠ 主役にしないこと（§02）。実数と順位が主役です */
+.big{display:flex;gap:16px;align-items:center;border-radius:14px;padding:13px 16px;
   border:1px solid var(--line);background:rgba(255,255,255,.03);margin-top:14px}
-.big .n{font-size:clamp(26px,3vw,34px);font-weight:820;letter-spacing:-.03em;white-space:nowrap}
+.big .n{font-size:22px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
 .big p{margin:0;font-size:13px;color:#c7d0dc;line-height:1.7;flex:1}
 .big .tag{font-size:11.5px;color:var(--dim);white-space:nowrap}
 
-/* 上位動画 */
+/* 上位動画。⚠ 順位ごとに色を変えないこと。順位はラベルで分かります（§3） */
 .tv .cap{align-self:flex-start;font-size:11px;font-weight:750;letter-spacing:.09em;
   border:1px solid var(--line);border-radius:7px;padding:3px 9px;color:#c7d0dc;
   background:rgba(255,255,255,.05)}
-/* ⚠ min-height は2行ぶん。無いと、題名が1行の動画だけ数字の位置が上がって
-     3枚の頭がそろいません（2026-08-28 の実装確認で発見）。 */
-.tv h3{margin:12px 0 10px;font-size:14.5px;font-weight:700;line-height:1.6;min-height:calc(14.5px * 1.6 * 2)}
-.tv .v{font-size:clamp(24px,2.6vw,34px);font-weight:820;letter-spacing:-.03em}
+.tv h3{margin:12px 0 10px;font-size:14.5px;font-weight:700;line-height:1.6;
+  min-height:calc(14.5px * 1.6 * 2)}
+.tv .v{font-size:clamp(24px,2.6vw,32px);font-weight:820;letter-spacing:-.03em;color:var(--up)}
+.tv.lead .v{color:var(--warn)}
 .tv .s{font-size:12px;color:var(--muted);margin-top:3px}
-.tv .mini{display:flex;gap:6px;align-items:flex-end;height:44px;margin-top:16px}
-.tv .mini i{flex:1;border-radius:4px 4px 2px 2px;display:block}
+.tv .mini{display:flex;gap:6px;align-items:flex-end;height:40px;margin-top:16px}
+.tv .mini i{flex:1;border-radius:4px 4px 2px 2px;display:block;background:var(--up);opacity:.4}
+.tv.lead .mini i{background:var(--warn)}
 
-/* まとめ */
 .sum{display:flex;gap:16px;align-items:center;border:1px solid var(--line);border-radius:14px;
   padding:16px 18px;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.015))}
 .sum .no{flex:0 0 auto;width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
@@ -190,440 +201,327 @@ h1 .but,h2 .but{color:var(--amber);display:block}
 .sum h3{margin:0 0 3px;font-size:15px;font-weight:700}
 .sum p{margin:0;font-size:13px;color:#c1cbd8;line-height:1.75}
 .sum .pill{flex:0 0 auto;font-size:12px;font-weight:700;border-radius:9px;padding:9px 20px}
-.pill.fix{background:rgba(110,168,255,.16);color:#a9caff;border:1px solid rgba(110,168,255,.3)}
-.pill.cont{background:rgba(243,199,104,.16);color:var(--amber);border:1px solid rgba(243,199,104,.32)}
-/* NEXT CHECK: 上辺だけ色の細い罫 */
-.nc{border:1px solid var(--line);border-top:2px solid var(--c,var(--amber));
+.pill.fix{background:rgba(88,214,162,.16);color:var(--ok);border:1px solid rgba(88,214,162,.3)}
+.pill.cont{background:rgba(243,199,104,.16);color:var(--warn);border:1px solid rgba(243,199,104,.32)}
+.nc{border:1px solid var(--line);border-top:2px solid var(--up);
   border-radius:0 0 12px 12px;padding:14px 16px;background:rgba(255,255,255,.03)}
 .nc .k{font-size:10.5px;font-weight:750;letter-spacing:.11em;color:var(--dim)}
 .nc h3{margin:6px 0 4px;font-size:14px;font-weight:700;line-height:1.5}
 .nc p{margin:0;font-size:12px;color:var(--muted);line-height:1.6}
+/* ★ オーナー対応は NEXT ACTION と別の配列・別の見た目にすること（§1）。
+     混ぜたせいで「正式3件・ブリーフ4件」の食い違いが出ました。 */
+.owner{border:1px solid var(--line);border-left:3px solid var(--prev);border-radius:12px;
+  padding:14px 16px;background:rgba(255,255,255,.03)}
+.owner .k{font-size:10.5px;font-weight:750;letter-spacing:.11em;color:var(--dim)}
+.owner h3{margin:6px 0 4px;font-size:14px;font-weight:700}
+.owner p{margin:0;font-size:12px;color:var(--muted);line-height:1.6}
+.owner.confirm{border-left-color:var(--warn)} .owner.approve,.owner.unset{border-left-color:var(--down)}
+
 .pgfoot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   margin-top:26px;padding-top:14px;border-top:1px solid var(--line-2);
   font-size:11.5px;color:var(--dim);letter-spacing:.04em}
-
 .stack{display:grid;gap:12px}
 .mt{margin-top:16px} .mt2{margin-top:22px}
 .err{max-width:640px;margin:16vh auto;padding:22px;border:1px solid var(--line);border-radius:16px}
 
-/* ── 狭い画面 ─────────────────────────────
-   ⚠ 900px 以下ではスクロール送りをやめて、ふつうの縦スクロールにします。
-      スナップを残すと、中身が画面より高い節で下端が読めません。 */
 @media (max-width:900px){
-  html{scroll-snap-type:none}
-  section{min-height:0;padding:40px 0;display:block}
+  html.present{scroll-snap-type:none}
+  html.present section{min-height:0;display:block;padding:36px 0}
+  section{padding:36px 0}
   .inner{padding:0 18px}
-  .g3,.g2,.g4{grid-template-columns:1fr}
-  .rail,.keys{display:none}
+  .g3,.g2{grid-template-columns:1fr}
+  .rail,.pos{display:none}
   .big{flex-direction:column;align-items:flex-start;gap:8px}
   .sum{flex-wrap:wrap}
-  .bar{--lw:104px}
-}
-/* ★ 1340px 以下（13インチのノートなど）では、節が1画面に収まらなくなります。
-     ⚠ 数字を減らして詰めないこと。**余白だけ**を詰めます。
-     実測: 02節 1280×800 で 774px（画面 800px）→ この指定で 720px 台に収まります。 */
-@media (max-width:1340px) and (min-width:901px){
-  .card{padding:17px}
-  .bars{gap:7px}
-  .big{padding:11px 14px;margin-top:11px}
-  h1,h2{margin-bottom:18px}
-  section{padding:44px 0}
-}
-/* ⚠⚠ この節は 1340px の指定より**後ろ**に置くこと。前に置くと section{padding:44px}
-      に上書きされて、1024×768 で 02節が入りきりません（2026-08-28 に実際に起きた）。 */
-@media (max-width:1100px) and (min-width:901px){
-  .g4{grid-template-columns:repeat(2,1fr)}
-  section{padding:26px 0}      /* 1024×768 で 02節が入りきらないため（実測 745px / 画面 728px） */
 }
 @media print{
-  /* ⚠ この資料は紙用ではありません。誤って刷ったときに真っ黒にならないようにするだけの保険です。
-       **A4の提出資料は report.html を使ってください。** */
+  /* ⚠ この資料は紙用ではありません。**A4の提出資料は report.html を使ってください。** */
   body{background:#fff;color:#111}
-  .rail,.keys,.topline{display:none}
+  .rail,.pos,.modes,.topline{display:none}
   section{min-height:0;padding:14px 0;display:block;break-inside:avoid}
-  .card,.callout,.note,.big,.sum,.nc{background:#fff;border-color:#ccc;box-shadow:none}
-  .kpi .blob{display:none}
+  .card,.callout,.note,.big,.sum,.nc,.owner{background:#fff;border-color:#ccc;box-shadow:none}
+  .kpi::after{display:none}
 }
 </style>
 </head>
 <body>
 <div class="topline"><span id="prog"></span></div>
-<nav class="rail" id="rail" aria-label="ページ移動"></nav>
-<div class="keys"><kbd>↑</kbd><kbd>↓</kbd> ページ移動</div>
+<nav class="rail" id="rail" aria-label="画面の移動"></nav>
+<div class="pos" id="pos"></div>
+<div class="modes">
+  <div class="keys"><kbd>↑</kbd><kbd>↓</kbd></div>
+  <a id="mList" href="?">一覧表示</a><a id="mPres" href="?mode=present">プレゼン表示</a>
+</div>
 <main id="app"><div class="err">読み込み中…</div></main>
 
+<script src="report_model.js"></script>
 <script>
-/* ══════════════════════════════════════════════════════════════
-   数字の作り方は report.html と同じにしてあります。
-   ⚠⚠ **片方だけ直さないこと。**同じ週の同じ指標が2つの資料で食い違うと、
-      どちらが正しいか誰にも分かりません（レビュー4回目で実際に問題になりました）。
-   ══════════════════════════════════════════════════════════════ */
-const esc = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const fmtFull = n => (n==null?0:n).toLocaleString('ja-JP');
-const fmtMan  = n => (n==null) ? '—' : (Math.abs(n)>=10000
-                    ? (n/10000).toFixed(1).replace(/\.0$/,'')+'万'
-                    : n.toLocaleString('ja-JP'));
-const sign  = v => (v>=0?'+':'−')+Math.abs(v).toFixed(1)+'%';
-const pctN  = (a,b)=> (b==null||!b) ? null : (a-b)/b*100;
-const fmtDate = s => s ? s.replace(/-/g,'/') : '';
-const md      = s => s ? String(s).slice(5).replace('-','/').replace(/^0/,'') : '';
-const median  = a => { if(!a.length) return null; const s=[...a].sort((x,y)=>x-y), m=s.length>>1;
-                       return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
+/* ⚠⚠ このファイルに計算を書かないこと。数字はすべて report_model.js（M）から取ります。
+      同じ計算を2か所に持つと必ず食い違います。実際に起きました（§1）。 */
+const M = window.CDModel;
+const { esc, fmtMan, fmtFull, fmtDate, md, pct, pctNum, stripLevel } = M;
 
-// YouTube Studio の表記に準拠。⚠ report.html の TRAFFIC_LABEL と同じ内容にすること
-const TRAFFIC_LABEL = {
-  'SUBSCRIBER':'ブラウジング機能','YT_SEARCH':'YouTube検索','SHORTS':'ショートフィード',
-  'EXT_URL':'外部','NOTIFICATION':'通知','RELATED_VIDEO':'関連動画',
-  'BROWSE':'ブラウジング機能','CHANNEL':'チャンネルページ','YT_CHANNEL':'チャンネルページ',
-  'DIRECT':'直接入力','ADVERTISING':'広告','PLAYLIST':'再生リスト','END_SCREEN':'終了画面',
-  'NO_LINK_EMBEDDED':'埋め込み','OTHER':'その他','ANNOTATION':'アノテーション',
-  'CAMPAIGN_CARD':'プロモーション','SHORTS_CONTENT_LINKS':'ショート内リンク',
-  'YT_OTHER_PAGE':'その他のYouTube機能','NO_LINK_OTHER':'直接入力または不明',
-  'SOUND_PAGE':'音源ページ','HASHTAGS':'ハッシュタグ'
-};
-const SRC = st => TRAFFIC_LABEL[st] || st;
+const PRESENT = new URLSearchParams(location.search).get('mode') === 'present';
+const sign = v => v == null ? '—' : (v >= 0 ? '+' : '−') + Math.abs(v).toFixed(1) + '%';
+const arrow= v => v == null ? '' : (v >= 0 ? '▲' : '▼') + ' ' + Math.abs(v).toFixed(1) + '%';
+const upcls= v => v == null ? '' : (v >= 0 ? 'up' : 'down');
 
-/* ── オーナー判断（report.html のレビュー5回目の実装と同じ規則） ──
-   ⚠⚠ **未設定を「判断不要」の既定値にしないこと。**入力漏れが「オーナーのやることは無い」
-      として提出される事故になります。 */
-const GATE_RANK = {none:0, confirm:1, approve:2};
-function ownerState(rep){
-  const ai = rep.ai_analysis || {};
-  const raw = (ai.owner_decision||'').trim();
-  if(raw) return {level: /要承認/.test(raw) ? 'approve' : /要確認/.test(raw) ? 'confirm' : 'none', text: raw};
-  const gates = (ai.suggestions||[]).map(s=>(s&&s.owner_gate)||'').filter(g=>g in GATE_RANK);
-  if(gates.length){
-    const lv = gates.reduce((a,b)=>GATE_RANK[b]>GATE_RANK[a]?b:a,'none');
-    return {level:lv, derived:true,
-      text: lv==='approve' ? 'アクションから集約しました。何を承認してほしいか・推奨案・費用または影響・期限を書いてください'
-          : lv==='confirm' ? 'アクションから集約しました。確認事項を1つに絞って書いてください' : '判断不要'};
-  }
-  return {level:'unset', text:'未設定'};
-}
-const stripLv = t => String(t).replace(/^(判断不要|要確認|要承認)[｜|：:\s]*/,'');
-
-/* ── 増減要因（report.html の causeSplit と同じ） ── */
-function causeSplit(rep, views, viewsPrev){
-  const all = (rep.top_videos||[]).map(v=>({t:v.title, pub:v.published_at||'',
-                                            d:(v.views_week||0)-(v.views_prev_week||0)}));
-  if(!all.length || viewsPrev==null) return null;
-  const tot = views - viewsPrev;
-  const restRaw = tot - all.reduce((s,x)=>s+x.d,0);
-  const ups = all.filter(x=>x.d>0).sort((a,b)=>b.d-a.d);
-  const dns = all.filter(x=>x.d<0).sort((a,b)=>a.d-b.d);
-  const upOther = ups.slice(3).reduce((s,x)=>s+x.d,0) + Math.max(0, restRaw);
-  const dnOther = dns.slice(3).reduce((s,x)=>s+x.d,0) + Math.min(0, restRaw);
-  // ⚠ ここで {t,d} だけに絞らないこと。published_at が落ちて見出しが化けます
-  //   （2026-08-28 に report.html で実際に起きました）。
-  const upRows = ups.slice(0,3).map(x=>({...x}));
-  const dnRows = dns.slice(0,3).map(x=>({...x}));
-  if(upOther > 0) upRows.push({t:'その他の増加要因', d:upOther, other:true});
-  if(dnOther < 0) dnRows.push({t:'その他の減少要因', d:dnOther, other:true});
-  return {tot, upRows, dnRows,
-          upSum: upRows.reduce((s,x)=>s+x.d,0),
-          dnSum: dnRows.reduce((s,x)=>s+x.d,0),
-          views, viewsPrev, top: ups[0]||null};
-}
-
-/* ── 流入（実数と順位。⚠ 構成比は出しません） ── */
-function traffic(rep){
-  const cur = (rep.traffic_sources||[]).slice().sort((a,b)=>b.views-a.views);
-  const prv = (rep.traffic_sources_prev||[]).slice().sort((a,b)=>b.views-a.views);
-  const pRank = {}, pVal = {};
-  prv.forEach((t,i)=>{ pRank[t.source_type]=i+1; pVal[t.source_type]=t.views; });
-  return cur.slice(0,5).map((t,i)=>({
-    st:t.source_type, nm:SRC(t.source_type), now:t.views,
-    prev: pVal[t.source_type] ?? null,
-    rank:i+1, prank: pRank[t.source_type] ?? null
-  }));
-}
-
-/* ══ 描画 ══════════════════════════════════════════════ */
-let DATA=null, COUPON=null;
-
-function sec(id, eyebrow, headMain, headBut, body){
-  return `<section id="${id}"><div class="inner">
+/* ═══ 画面 ═══════════════════════════════════════════
+   ★ 画面は可変です（4〜6画面。レビュー6回目 §4）。
+     ⚠ 固定するのは SCORECARD / WHAT CHANGED / SUMMARY の3つだけ。
+       CONTENT RESULTS と SIGNAL は、データがある週だけ出します。
+       中身の無い週に空の枠を出さないこと。 */
+function sec(id, nav, eyebrow, headMain, headBut, body){
+  return {id, nav, html:`<section id="${id}"><div class="inner">
 <div class="eyebrow">${esc(eyebrow)}</div>
 <h2>${esc(headMain)}${headBut?`<span class="but">${esc(headBut)}</span>`:''}</h2>
-${body}</div></section>`;
+${body}</div></section>`};
 }
 
-function render(rep, prev){
-  const c = rep.channel||{}, ai = rep.ai_analysis||{};
-  const views=c.views, vprev=c.views_prev;
-  const dAll = pctN(views, vprev);
-  const S = causeSplit(rep, views, vprev);
-  // 最大寄与1本を除いた前週比（report.html と同じ計算）
-  const base = (S && S.top) ? pctN(views - S.top.d, vprev) : null;
-  const TR = traffic(rep);
-  const os = ownerState(rep);
+function render(m){
+  const out = [];
+  const K = m.metrics, V = m.verdict, TR = m.traffic.rows, SP = m.traffic.split, F = m.first;
+  const topName = (V && V.top) ? (md(V.top.pub) + '公開動画') : 'いちばん伸びた1本';
+  const t0 = TR[0];
 
-  const first = (rep.new_videos||[]).filter(v=>v.first2d>0);
-  const medNow = median(first.map(v=>v.first2d));
-  const medPrev = prev ? median((prev.new_videos||[]).filter(v=>v.first2d>0).map(v=>v.first2d)) : null;
-  const medD = (medNow!=null && medPrev) ? pctN(medNow, medPrev) : null;
+  /* ── 表紙 ─────────────────────────────────────
+     ★ 要約は「大見出し＋3カード」の2層まで（§表紙）。
+     ⚠⚠ 長い「今週の報告要旨」の文章を戻さないこと。大見出し・要旨・3カードで
+       要約が3層になり、同じことを3回読ませていました。
+     ⚠⚠ 3枚目を「FOLLOW-UP（次週の確認点）」に戻さないこと。
+       それは最終画面の NEXT ACTION 01 と**同じ文**になり、同じタスクを2度掲載します。
+       表紙は **どうなったら何を意味するか（判断基準）**、最終画面は **実際に何を確認するか**。 */
+  const ow = m.owner;
+  const ownerChip = ow.level==='none'  ? `<span class="chip">オーナー対応なし</span>`
+                  : ow.level==='unset' && m.final ? `<span class="chip bad">オーナー判断 未設定</span>` : '';
+  // ⚠ 冒頭の通知は「要確認・要承認・未設定」の週だけ。判断不要の週に枠を出さないこと
+  const ownerBox = ow.level==='confirm' ? `<div class="callout mt"><div class="ic">!</div><div><h3 class="warn">要確認</h3><p>${esc(stripLevel(ow.text))}</p></div></div>`
+    : ow.level==='approve' ? `<div class="callout no mt"><div class="ic">!</div><div><h3 class="down">要承認</h3><p>${esc(stripLevel(ow.text))}</p></div></div>`
+    : (ow.level==='unset' && m.final) ? `<div class="callout no mt"><div class="ic">!</div><div><h3 class="down">オーナー判断が未設定です</h3><p>運用手順 §7 の基準で 判断不要／要確認／要承認 のいずれかを入れてください。<b>「判断不要」と決めつけて出さないこと。</b></p></div></div>` : '';
 
-  const hrs = c.watch_min!=null ? Math.round(c.watch_min/60) : null;
-  const hrsP= c.watch_min_prev!=null ? Math.round(c.watch_min_prev/60) : null;
-  const posted = (rep.post_plan||{}).posted, planned=(rep.post_plan||{}).planned;
-  const nNew = (rep.new_videos||[]).length;
+  const watch = t0 && t0.prank && t0.prank !== t0.rank
+      ? `${esc(t0.nm)}が首位を維持すれば構造変化の可能性。反落すれば一時的な偏り`
+      : `${esc(t0 ? t0.nm : '流入首位')}の水準が続くかどうかで、変化が続くものかが分かれます`;
 
-  /* ── 00 表紙 ─────────────────────────── */
-  const FLAT = 5;   // ⚠ ±5%。±3% にすると +3.0% が「増加」に化けます（report.html と同じ）
-  const dir = v => v==null ? '—' : v>=FLAT ? '増加' : v<=-FLAT ? '減少' : 'ほぼ横ばい';
-  // ⚠ 2行目は短く。長いと1行目より目立って、結論と留保の重みが逆になります
-  const headA = `視聴は${dir(dAll)}。`;
-  const headB = dir(dAll)===dir(base) ? `1本を除いても${dir(base)}。` : `ただし1本を除けば${dir(base)}。`;
-
-  const ownerChip = os.level==='none'  ? `<span class="chip">オーナー対応なし</span>`
-                  : os.level==='unset' && rep.final ? `<span class="chip bad">オーナー判断 未設定</span>` : '';
-  const ownerBox = os.level==='confirm' ? `<div class="callout mt" style="border-left-color:var(--amber)"><div class="ic">!</div><div><h3 class="amber">要確認</h3><p>${esc(stripLv(os.text))}</p></div></div>`
-    : os.level==='approve' ? `<div class="callout no mt"><div class="ic">!</div><div><h3 class="red">要承認</h3><p>${esc(stripLv(os.text))}</p></div></div>`
-    : (os.level==='unset' && rep.final) ? `<div class="callout no mt"><div class="ic">!</div><div><h3 class="red">オーナー判断が未設定です</h3><p>運用手順 §7 の基準で 判断不要／要確認／要承認 のいずれかを入れてください。<b>「判断不要」と決めつけて出さないこと。</b></p></div></div>` : '';
-
-  const topName = S && S.top ? (md(S.top.pub)+'公開動画') : 'いちばん伸びた1本';
-  const s0 = `<section id="s0"><div class="inner">
+  out.push({id:'s0', nav:'Overview', html:`<section id="s0"><div class="inner">
 <div class="eyebrow">Channel Desk · Weekly Brief</div>
 <div class="chips">
-  <span class="chip"><span class="dot"></span>${rep.final?'確定':'速報'} Analytics ${rep.confirmed_days||7}/7日</span>
-  <span class="chip">対象：${fmtDate(rep.week_start)}〜${fmtDate(rep.week_end).slice(5)}</span>
-  ${prev?`<span class="chip">比較：${fmtDate(prev.week_start)}〜${fmtDate(prev.week_end).slice(5)}</span>`:''}
-  ${ai.generated_at?`<span class="chip">分析：${fmtDate(ai.generated_at)}</span>`:''}
+  <span class="chip"><span class="dot"></span>${m.final?'確定':'速報'} Analytics ${m.confirmedDays}/7日</span>
+  <span class="chip">対象：${fmtDate(m.period.start)}〜${fmtDate(m.period.end).slice(5)}</span>
+  ${m.period.prevStart?`<span class="chip">比較：${fmtDate(m.period.prevStart)}〜${fmtDate(m.period.prevEnd).slice(5)}</span>`:''}
   ${ownerChip}
 </div>
-<h1>${esc(headA)}<span class="but">${esc(headB)}</span></h1>
+<h1>${esc(V ? V.dirAll==='横ばい' ? '視聴はほぼ横ばい。' : `視聴は${V.dirAll}。` : '—')}<span class="but">${esc(
+    V ? (V.dirAll===V.dirBase ? `1本を除いても${V.dirBase==='横ばい'?'ほぼ横ばい':V.dirBase}。`
+                              : `ただし1本を除けば${V.dirBase==='横ばい'?'ほぼ横ばい':V.dirBase}。`) : '')}</span></h1>
 ${ownerBox}
-<div class="callout mt"><div class="ic">i</div><div><h3>今週の報告要旨</h3>
-<p>全体の視聴は前週比 <b class="${dAll>=0?'green':'red'}">${sign(dAll)}</b>。ただし${esc(topName)}を除くと <b class="amber">${sign(base)}</b> で、土台はほとんど動いていません。
-一方で<b>流入の首位が入れ替わり</b>、${esc(TR[0].nm)}が最大の流入元になりました。こちらは1本の当たりだけでは説明できません。</p></div></div>
 <div class="g3 mt2 brief">
-  <div class="card"><div class="k">01 · Result</div><h3>全体は${dir(dAll)}</h3>
-    <p>週間 ${fmtMan(views)}回。総再生時間も ${hrs!=null&&hrsP?sign(pctN(hrs,hrsP)):'—'} で、トップラインは明確にプラス。</p></div>
-  <div class="card"><div class="k">02 · Driver</div><h3>新作が牽引</h3>
-    <p>初速2日の中央値は ${medD!=null?sign(medD):'—'}。${esc(topName)}が増加要因の最大です。</p></div>
-  <div class="card"><div class="k">03 · Follow-up</div><h3>次週の確認点</h3>
-    <p>${esc(TR[0].nm)}が首位を保つか。戻れば1本の当たり、保てば到達経路そのものの変化と読めます。</p></div>
+  <div class="card"><div class="k">01 · Result</div><h3>週間 ${fmtMan(K.views)}回</h3>
+    <p>前週比 <b class="${upcls(K.deltaPct)}">${sign(K.deltaPct)}</b>。総再生時間も <b class="${upcls(K.watchPct)}">${sign(K.watchPct)}</b> で、全体の数字はプラスです。</p></div>
+  <div class="card"><div class="k">02 · Baseline</div><h3>1本を除くと ${sign(K.baselinePct)}</h3>
+    <p>${esc(topName)}を除いた前週比です。<b>土台そのものは${esc(V?V.dirBase==='横ばい'?'ほぼ動いていません':V.dirBase+'しています':'—')}。</b></p></div>
+  <div class="card"><div class="k">03 · Watchpoint</div><h3>${esc(t0?t0.nm:'流入首位')}が続くか</h3>
+    <p>${watch}。<b class="warn">1週では確定できません。</b></p></div>
 </div>
-</div></section>`;
+</div></section>`});
 
-  /* ── 01 スコアカード ──────────────────── */
-  const kpi = (lab,val,dl,dlCls,note,blob)=>`<div class="card kpi">
-${blob?`<div class="blob" style="background:${blob}"></div>`:''}
+  /* ── 01 SCORECARD ──────────────────────────────
+     ★ 主要3つと補助3つの2層にします（§01）。全部同じ大きさだと重要度が読み取れません。 */
+  const kpi = (cls,lab,val,dl,dlc,note)=>`<div class="card kpi ${cls}">
 <div class="lab">${esc(lab)}</div><div class="val">${val}</div>
-${dl?`<div class="dl ${dlCls||''}">${dl}</div>`:''}
-${note?`<div class="nt">${note}</div>`:''}</div>`;
-  const arrow = v => v==null?'' : (v>=0?'▲':'▼')+' '+Math.abs(v).toFixed(1)+'%';
-  const cls   = v => v==null?'' : (v>=0?'green':'red');
-  const blob  = v => v==null?'' : (v>=0?'var(--green)':'var(--red)');
+${dl?`<div class="dl ${dlc||''}">${dl}</div>`:''}${note?`<div class="nt">${note}</div>`:''}</div>`;
 
-  const s1 = sec('s1','01 · Scorecard','まず見るべき、','6つの数字。', `
+  out.push(sec('s1','Scorecard','01 · Scorecard','まず見るべき、','6つの数字。', `
+<div class="tier">主要</div>
 <div class="g3">
-${kpi('週間視聴回数', fmtMan(views)+'回', arrow(dAll)+' <span>vs 前週</span>', cls(dAll),
-      '前週 '+fmtMan(vprev)+'回', blob(dAll))}
-${kpi('最大寄与1本を除いた前週比', sign(base), '<span>'+esc(topName)+'を除いた残り</span>','',
-      '土台が動いたかを見る指標です', 'var(--amber)')}
-${kpi('新作 初速2日の中央値', medNow!=null?fmtMan(medNow)+'回':'—',
-      medD!=null?arrow(medD)+' <span>vs 前週</span>':'', cls(medD),
-      '今週'+first.length+'本／前週'+(prev?(prev.new_videos||[]).filter(v=>v.first2d>0).length:'—')+'本。<b>平均ではなく中央値</b>です', blob(medD))}
-${kpi('総再生時間', hrs!=null?fmtFull(hrs)+'時間':'—',
-      hrs!=null&&hrsP?arrow(pctN(hrs,hrsP))+' <span>vs 前週</span>':'', cls(hrs!=null&&hrsP?pctN(hrs,hrsP):null),
-      hrsP?'前週 '+fmtFull(hrsP)+'時間':'', blob(hrs!=null&&hrsP?pctN(hrs,hrsP):null))}
-${kpi('登録者純増', (c.subs_net>=0?'+':'')+fmtFull(c.subs_net)+'人',
-      c.subs_net_prev!=null?'<span>前週 '+(c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+'人</span>':'','',
-      (c.subs_gained!=null?fmtFull(c.subs_gained)+'増 − '+fmtFull(c.subs_lost)+'解除':'')
-      + (c.subscribers_end!=null?'／週末 '+fmtFull(c.subscribers_end)+'人':''), 'var(--green)')}
-${kpi('公開本数', nNew+'本',
-      planned!=null?'<span>計画 '+planned+'本・投稿 '+posted+'本</span>':'','',
-      '遅延はありません','var(--blue)')}
+${kpi('main','週間視聴回数', fmtMan(K.views)+'回', arrow(K.deltaPct)+' <span>vs 前週</span>', upcls(K.deltaPct),
+      '前週 '+fmtMan(K.viewsPrev)+'回')}
+${kpi('main','最大寄与1本を除いた前週比', sign(K.baselinePct), '<span>'+esc(topName)+'を除いた残り</span>','',
+      '土台が動いたかを見る指標です')}
+${kpi('main','新作 初速2日の中央値', K.firstMedian!=null?fmtMan(K.firstMedian)+'回':'—',
+      K.firstMedianPct!=null?arrow(K.firstMedianPct)+' <span>vs 前週</span>':'', upcls(K.firstMedianPct),
+      '今週'+F.count+'本／前週'+F.prevCount+'本。<b>平均ではなく中央値</b>です')}
 </div>
-<div class="note mt"><b>数字の読み方</b>　登録者は<b>純増</b>（増えた数 − 解除された数）です。画面上の登録者数は100人単位に丸められるため、丸めた差とは一致しません。成果を見るときは純増を使ってください。</div>`);
+<div class="tier mt">補助</div>
+<div class="g3">
+${kpi('sub','総再生時間', K.watchHours!=null?fmtFull(K.watchHours)+'時間':'—',
+      K.watchPct!=null?arrow(K.watchPct)+' <span>vs 前週</span>':'', upcls(K.watchPct), '')}
+${kpi('sub','登録者純増', (K.subsNet>=0?'+':'')+fmtFull(K.subsNet)+'人',
+      K.subsNetPrev!=null?'<span>前週 '+(K.subsNetPrev>=0?'+':'')+fmtFull(K.subsNetPrev)+'人</span>':'','',
+      (K.subsGained!=null?fmtFull(K.subsGained)+'増 − '+fmtFull(K.subsLost)+'解除':''))}
+${kpi('sub','公開本数', K.newCount+'本',
+      K.planned!=null?'<span>計画 '+K.planned+'本・投稿 '+K.posted+'本</span>':'','', '遅延はありません')}
+</div>
+<div class="note mt"><b>数字の読み方</b>　登録者は<b>純増</b>（増えた数 − 解除された数）です。画面上の登録者数は100人単位に丸められるため、丸めた差とは一致しません。成果を見るときは純増を使ってください。</div>`));
 
-  /* ── 02 何が変わったか ─────────────────── */
-  const facRow = (rows, color) => {
+  /* ── 02 WHAT CHANGED ───────────────────────────
+     ⚠ 主役は**実数と順位**。伸び率を大きく出さないこと（§02）。 */
+  const fac = (rows,color)=>{
     const mx = Math.max(...rows.map(r=>Math.abs(r.d)), 1);
     return rows.map(r=>`<div class="fr${r.other?' other':''}" title="${esc(r.t)}">
 <div class="fill" style="width:${(Math.abs(r.d)/mx*100).toFixed(1)}%;background:${color}"></div>
 <span class="nm clamp2">${esc(r.t)}</span>
-<span class="vl" style="color:${color}">${r.d>=0?'+':'−'}${fmtMan(Math.abs(r.d))}回</span>
-</div>`).join('');
+<span class="vl" style="color:${color}">${r.d>=0?'+':'−'}${fmtMan(Math.abs(r.d))}回</span></div>`).join('');
   };
+  const C = m.cause;
   const trMax = Math.max(...TR.map(t=>Math.max(t.now, t.prev||0)), 1);
-  const trRow = t => {
-    const moved = t.prank && t.prank!==t.rank && (t.rank<=3 || t.prank<=3);
-    const col = t.st==='SHORTS' ? 'var(--shorts)' : t.st==='SUBSCRIBER' ? 'var(--browse)' : 'rgba(255,255,255,.34)';
-    return `<div style="margin-bottom:14px">
-<div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px">
-  <b>${esc(t.nm)}</b><b>${fmtMan(t.now)}回</b></div>
-<div class="bt" style="margin-top:6px"><div class="bf" style="width:${(t.now/trMax*100).toFixed(1)}%;background:${col}"></div></div>
+  const trRow = t => `<div style="margin-bottom:14px">
+<div style="display:flex;justify-content:space-between;gap:10px;font-size:13.5px"><b>${esc(t.nm)}</b><b>${fmtMan(t.now)}回</b></div>
+<div class="bt" style="margin-top:6px"><div class="bf" style="width:${(t.now/trMax*100).toFixed(1)}%;background:${t.rank===1?'var(--up)':'var(--prev)'}"></div></div>
 <div class="bt" style="margin-top:4px;background:transparent"><div class="bf" style="width:${((t.prev||0)/trMax*100).toFixed(1)}%;background:rgba(255,255,255,.14)"></div></div>
-<div style="font-size:12px;color:var(--muted);margin-top:5px">前週 ${t.prev!=null?fmtMan(t.prev)+'回':'—'}${moved?` ／ <b style="color:${t.rank<t.prank?'var(--green)':'var(--red)'}">${t.prank}位→${t.rank}位</b>`:''}</div>
-</div>`;
-  };
-  // ★ ここが参照ページの「大きな色つきの数字」。⚠ 87.3% は使いません（構成比・寄与率は出さない）
-  const t0 = TR[0];
-  const s2 = sec('s2','02 · What changed','新作が伸びた。','土台は動いていない。', `
+<div style="font-size:12px;color:var(--muted);margin-top:5px">前週 ${t.prev!=null?fmtMan(t.prev)+'回':'—'}${t.moved?` ／ <b style="color:${t.rank<t.prank?'var(--up)':'var(--down)'}">${t.prank}位→${t.rank}位</b>`:''}</div></div>`;
+
+  if(C) out.push(sec('s2','What changed','02 · What changed','新作が伸びた。','土台は動いていない。', `
 <div class="g2">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:14px">
       <b style="font-size:15px">増減の内訳</b><span style="font-size:12px;color:var(--muted)">上位3件＋その他</span></div>
     <div style="font-size:13px;color:#c7d0dc;margin-bottom:16px;line-height:1.9">
-      前週 <b>${fmtMan(vprev)}回</b> <span class="muted">＋</span> 増加要因 <b class="green">${fmtMan(S.upSum)}回</b>
-      <span class="muted">−</span> 減少要因 <b class="red">${fmtMan(Math.abs(S.dnSum))}回</b>
-      <span class="muted">＝</span> 今週 <b>${fmtMan(views)}回</b></div>
-    <div style="font-size:12px;font-weight:750;letter-spacing:.09em;color:var(--dim);margin-bottom:8px">増えた要因</div>
-    ${facRow(S.upRows,'var(--green)')}
-    <div style="font-size:12px;font-weight:750;letter-spacing:.09em;color:var(--dim);margin:16px 0 8px">減った要因</div>
-    ${facRow(S.dnRows,'var(--red)')}
+      前週 <b>${fmtMan(C.viewsPrev)}回</b> <span class="muted">＋</span> 増加要因 <b class="up">${fmtMan(C.upSum)}回</b>
+      <span class="muted">−</span> 減少要因 <b class="down">${fmtMan(Math.abs(C.dnSum))}回</b>
+      <span class="muted">＝</span> 今週 <b>${fmtMan(C.views)}回</b></div>
+    <div class="tier">増えた要因</div>${fac(C.upRows,'var(--up)')}
+    <div class="tier mt">減った要因</div>${fac(C.dnRows,'var(--down)')}
   </div>
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:16px">
       <b style="font-size:15px">流入経路が入れ替わった</b><span style="font-size:12px;color:var(--muted)">実数（上位4経路）</span></div>
     ${TR.slice(0,4).map(trRow).join('')}
-    <div class="foot">濃い棒が今週、薄い棒が前週です。
-      <b>割合ではなく実数で並べています</b>（構成比は出さない方針のため）。</div>
-    ${/* ★ 参照ページの「大きな色つきの数字」。⚠ ここに 87.3%（寄与率）は入れません。
-          代わりに、順位が入れ替わった経路そのものの伸びを出しています。
-          ⚠ この箱は右のカードの中に置くこと。節の下に全幅で置くと、
-            1440×900 で画面からはみ出します（2026-08-28 に実際に起きた）。 */''}
+    <div class="foot">濃い棒が今週、薄い棒が前週です。<b>割合ではなく実数で並べています</b>（構成比は出さない方針のため）。</div>
+    ${/* ⚠ ここの伸び率を大きく出さないこと。主役は上の実数と順位です（§02）。
+          ⚠⚠ 「増加分の◯%」（寄与率）は絶対に入れないこと。 */''}
     <div class="big push">
-      <div class="n green">${sign(pctN(t0.now, t0.prev))}</div>
-      <p>${esc(t0.nm)}は今週 <b>${fmtMan(t0.now)}回</b>（前週 ${fmtMan(t0.prev)}回）。${t0.prank&&t0.prank!==t0.rank?`<b class="amber">${t0.prank}位から${t0.rank}位へ。</b>`:''}
-      全体の伸び（${sign(dAll)}）を上回っており、<b>1本の当たりだけでは説明できません。</b>ただし<b class="amber">1週では確定できません。</b></p>
-      <div class="tag">流入首位</div>
+      <div class="n up">${sign(pctNum(t0.now, t0.prev))}</div>
+      <p>${esc(t0.nm)}は今週 <b>${fmtMan(t0.now)}回</b>（前週 ${fmtMan(t0.prev)}回）。${t0.moved?`<b class="warn">${t0.prank}位から${t0.rank}位へ。</b>`:''}
+      全体の伸び（${sign(K.deltaPct)}）を上回っており、<b>1本の当たりだけでは説明できません。</b></p>
+      <div class="tag">流入首位の伸び</div>
     </div>
   </div>
-</div>`);
+</div>`));
 
-  /* ── 03 上位動画 ─────────────────────── */
-  const fs = first.slice().sort((a,b)=>b.first2d-a.first2d);
-  const tvCard = (v,i)=>{
-    const r = medNow ? v.first2d/medNow : null;
-    const col = i===0?'var(--green)':i===1?'var(--blue)':'var(--amber)';
-    // 3本の小さな棒 = 初速の形。⚠ 日別データが無いので「中央値との比」を段で示すだけの図です
-    const seg = [1,.62,.44].map(k=>Math.max(6, Math.min(100, (v.first2d/(fs[0].first2d||1))*100*k)));
-    return `<div class="card tv">
-<span class="cap">TOP ${i+1}</span>
-<h3>${esc(v.title)}</h3>
-<div class="v" style="color:${col}">${fmtFull(v.first2d)}回</div>
+  /* ── 03 CONTENT RESULTS（新作がある週だけ）───────
+     ⚠ 数値は万に丸めます（§03）。要約資料に 79,298回 は精密すぎます。
+     ⚠ 順位ごとに色を変えないこと。順位はラベルで分かります。 */
+  if(F.list.length){
+    const tv = (v,i)=>{
+      const r = K.firstMedian ? v.first2d/K.firstMedian : null;
+      const seg = [1,.62,.44].map(k=>Math.max(6, Math.min(100, (v.first2d/(F.list[0].first2d||1))*100*k)));
+      return `<div class="card tv${i===0?' lead':''}">
+<span class="cap">TOP ${i+1}</span><h3>${esc(v.title)}</h3>
+<div class="v">${fmtMan(v.first2d)}回</div>
 <div class="s">初速2日・${md(v.published_at)}公開${r?` ／ 中央値の${r.toFixed(1)}倍`:''}</div>
-<div class="mini push">${seg.map(h=>`<i style="height:${h}%;background:${col};opacity:.55"></i>`).join('')}</div>
-</div>`;
-  };
-  const lo = fs[fs.length-1];
-  const s3 = sec('s3','03 · Content results','新作'+nNew+'本の中で、','初速に大きな差が出た。', `
-<div class="g3">${fs.slice(0,3).map(tvCard).join('')}</div>
-${/* ⚠ 図の説明は3枚それぞれに書かないこと。同じ文が3回並んで、
-      カードの中で図より説明のほうが長くなります（2026-08-28 の実装確認で発見）。 */''}
+<div class="mini push">${seg.map(h=>`<i style="height:${h}%"></i>`).join('')}</div></div>`;
+    };
+    const lo = F.list[F.list.length-1];
+    out.push(sec('s3','Content','03 · Content results',`新作${K.newCount}本の中で、`,'初速に大きな差が出た。', `
+<div class="g3">${F.list.slice(0,3).map(tv).join('')}</div>
 <div class="foot" style="margin-top:9px">カード下端の棒は、上位1本を100としたときの相対的な大きさです（日別の推移ではありません）。</div>
-${lo && medNow ? `<div class="callout mt" style="border-left-color:var(--amber)">
-<div class="ic">?</div><div><h3 class="amber">要確認：${md(lo.published_at)}「${esc(lo.title.slice(0,26))}${lo.title.length>26?'…':''}」</h3>
-<p>初速 <b>${fmtFull(lo.first2d)}回</b>で、中央値の <b>${(lo.first2d/medNow).toFixed(2)}倍</b>。
-<b>いま持っている項目だけでは、低い初速の理由を説明できません。</b>
-「露出が足りなかった」のか「冒頭で離脱された」のかを分けるには、YouTube Studio でショートフィードの表示回数と冒頭の維持率を見る必要があります。</p></div></div>`:''}
-<div class="note mt"><b>平均を使っていません</b>　1本だけ突出しているため、平均は実態より高く出ます。中央値（${medNow!=null?fmtMan(medNow)+'回':'—'}）と最大値（${fs.length?fmtMan(fs[0].first2d)+'回':'—'}）を分けて見てください。${nNew}本では結論は出ませんが、次に何を貯めるかは決められます。</div>`);
+${lo && K.firstMedian ? `<div class="callout mt"><div class="ic">?</div><div><h3 class="warn">要確認：${md(lo.published_at)}「${esc(lo.title.slice(0,26))}${lo.title.length>26?'…':''}」</h3>
+<p>初速 <b>${fmtMan(lo.first2d)}回</b>で、中央値の <b>${(lo.first2d/K.firstMedian).toFixed(2)}倍</b>。
+<b>いま持っている項目だけでは、低い初速の理由を説明できません。</b>「露出が足りなかった」のか「冒頭で離脱された」のかを分けるには、YouTube Studio でショートフィードの表示回数と冒頭の維持率を見る必要があります。</p></div></div>`:''}
+<div class="note mt"><b>平均を使っていません</b>　1本だけ突出しているため、平均は実態より高く出ます。中央値（${K.firstMedian!=null?fmtMan(K.firstMedian)+'回':'—'}）と最大値（${F.max!=null?fmtMan(F.max)+'回':'—'}）を分けて見てください。${K.newCount}本では結論は出ませんが、次に何を貯めるかは決められます。</div>`));
+  }
 
-  /* ── 04 クーポン ─────────────────────── */
-  let s4 = '';
-  const cw = COUPON && !COUPON.error ? (COUPON.weekly||[]).find(x=>x.week_start===rep.week_start) : null;
-  if(cw){
-    const st=new Date(rep.week_start+'T00:00:00Z'), en=new Date(rep.week_start+'T00:00:00Z');
-    en.setUTCDate(en.getUTCDate()+6);
-    const days=(COUPON.daily||[]).filter(r=>{const t=new Date(r.date+'T00:00:00Z');return t>=st&&t<=en&&r.entries>0;});
-    const mx=Math.max(...days.map(r=>r.entries),1);
-    const peak=days.slice().sort((a,b)=>b.entries-a.entries)[0];
-    s4 = sec('s4','04 · Coupon signal', peak?md(peak.date)+'に、':'クーポンは', peak?'クーポン入力が集中。':'記録が揃っていない。', `
+  /* ── 04 SIGNAL & LIMITS（兆候がある週だけ）───────
+     ⚠⚠ クーポン固定の画面に戻さないこと（§4）。クーポンは運用詳細の話題で、
+       毎週1画面を与えると「オーナーの主要テーマ」に見えます。
+       その週いちばん意思決定に関わる未確定事項を1つだけ出し、無い週は画面ごと省きます。 */
+  const S = m.signal;
+  if(S){
+    const cp = S.detail;
+    const mx = cp && cp.daily.length ? Math.max(...cp.daily.map(r=>r.entries),1) : 1;
+    out.push(sec('s4','Signal', S.eyebrow, S.headMain, S.headBut, `
 <div class="g2">
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:16px">
-      <b style="font-size:15px">日別のコード入力</b><span style="font-size:12px;color:var(--muted)">入力のあった${days.length}日ぶん</span></div>
-    ${days.map(r=>`<div class="bar" style="--lw:56px;margin-bottom:9px">
-      <div class="bn" style="color:${peak&&r.date===peak.date?'var(--green)':'var(--muted)'}">${md(r.date)}</div>
-      <div class="bt"><div class="bf" style="width:${(r.entries/mx*100).toFixed(1)}%;background:${peak&&r.date===peak.date?'var(--green)':'var(--browse)'}"></div></div>
-      <div class="bv">${r.entries}件</div></div>`).join('')}
-    <div class="big push" style="margin-top:16px">
-      <div class="n red">${cw.entries}件</div>
-      <p>今週の入力は合計 ${cw.entries}件、うち使用済み ${cw.used}件、実人数 ${cw.people}人。
-      対象コードは ${(cw.codes||[]).map(esc).join('、')||'—'} です。</p>
-      <div class="tag">今週の入力</div></div>
+      <b style="font-size:15px">日別のコード入力</b><span style="font-size:12px;color:var(--muted)">入力のあった${cp.days}日ぶん</span></div>
+    ${cp.daily.map(r=>`<div style="display:grid;grid-template-columns:56px 1fr auto;gap:12px;align-items:center;margin-bottom:9px;font-size:13px">
+      <div style="color:${cp.peak&&r.date===cp.peak.date?'var(--up)':'var(--muted)'}">${md(r.date)}</div>
+      <div class="bt"><div class="bf" style="width:${(r.entries/mx*100).toFixed(1)}%;background:${cp.peak&&r.date===cp.peak.date?'var(--up)':'var(--prev)'}"></div></div>
+      <div style="font-weight:700;min-width:52px;text-align:right">${r.entries}件</div></div>`).join('')}
+    <div class="foot push">対象コード ${cp.codes.map(esc).join('、')||'—'}　／　シート取得日 ${fmtDate(cp.snapshot)}</div>
   </div>
   <div class="stack">
-    <div class="callout ok"><div class="ic">✓</div><div><h3 class="green">確認できた事実</h3>
-      <p>${peak?`${md(peak.date)}のコード入力が ${peak.entries}件で、この週のいちばん多い日でした。`:''}
-      同じ週の日次再生1位は ${esc((rep.top_videos||[])[0]?.title||'—').slice(0,30)} です。</p></div></div>
-    <div class="callout"><div class="ic">〜</div><div><h3 class="amber">観測された関係</h3>
-      <p>公開日と入力の増えた日が近い、という<b>時期の重なり</b>までは見えています。</p></div></div>
-    <div class="callout no"><div class="ic">!</div><div><h3 class="red">判断上の制約</h3>
-      <p><b>コード・動画・掲出日が結び付いていません。</b>動画アーカイブの掲出日列が空のままなので、
-      これは日付が近いという相関であって、<b>どの動画が入力を連れてきたかは判定できません。</b></p></div></div>
-    <div class="callout nu"><div class="ic">＝</div><div><h3>報告上の扱い</h3>
-      <p>今週は「${peak?md(peak.date):'ある日'}に入力が集中した」という<b>事実だけ</b>を報告します。
-      要因は特定しません。判定できる状態にすることを、次週のアクションに入れてあります。</p></div></div>
+    <div class="callout ok"><div class="ic">✓</div><div><h3 class="ok">確認できた事実</h3><p>${esc(S.fact)}</p></div></div>
+    <div class="callout"><div class="ic">〜</div><div><h3 class="warn">示唆</h3><p>${esc(S.implication)}</p></div></div>
+    <div class="callout no"><div class="ic">!</div><div><h3 class="down">このデータからは言えないこと</h3><p>${esc(S.cannotSay)}</p></div></div>
+    ${/* ⚠ 「報告上の扱い」に戻さないこと。オーナーには内部的すぎる言い方です（§4） */''}
+    <div class="callout nu"><div class="ic">→</div><div><h3 class="up">次の対応</h3><p>${esc(S.nextStep)}</p></div></div>
   </div>
-</div>`);
+</div>`));
   }
 
-  /* ── 05 まとめ ──────────────────────── */
-  const COLS=['var(--red)','var(--amber)','var(--blue)','var(--green)'];
-  const sug=(ai.suggestions||[]).slice(0,3);
-  const nc = sug.map((s,i)=>`<div class="nc" style="--c:${COLS[i]}">
-<div class="k">Next check 0${i+1}</div><h3>${esc(s.title)}</h3>
-<p>${esc((s.actions||[])[0]||'')}</p></div>`).join('')
-  + `<div class="nc" style="--c:${COLS[3]}"><div class="k">Next check 04</div>
-<h3>オーナー判断</h3><p>${esc(os.level==='none'?'今週は判断不要です':stripLv(os.text))}</p></div>`;
+  /* ── 05 SUMMARY ───────────────────────────────
+     ⚠⚠ NEXT ACTION は m.actions だけ。オーナー判断を混ぜないこと（§1・§05）。
+       混ぜたせいで「正式レポート3件 / ブリーフ4件」という食い違いが出ました。 */
+  const acts = m.actions;
+  const nc = acts.map((a,i)=>`<div class="nc">
+<div class="k">Next action 0${i+1}${a.kind?' · '+esc(a.kind):''}</div>
+<h3>${esc(a.title)}</h3><p>${esc(a.lead)}</p></div>`).join('');
+  const ownerCard = `<div class="owner ${ow.level}">
+<div class="k">Owner status</div>
+<h3>${ow.level==='none'?'対応なし':ow.level==='confirm'?'要確認':ow.level==='approve'?'要承認':'未設定'}</h3>
+<p>${esc(ow.level==='none'?'今週はオーナーの判断が必要な事項はありません':stripLevel(ow.text))}</p></div>`;
 
-  const s5 = sec('s5','05 · Weekly summary','今週の報告まとめ','', `
+  out.push(sec('s5','Summary','05 · Weekly summary','今週の報告まとめ','', `
 <div class="stack">
-  <div class="sum"><div class="no">01</div><div style="flex:1"><h3>今週、確認できたこと</h3>
-    <p>週間視聴は ${sign(dAll)}、新作の初速中央値は ${medD!=null?sign(medD):'—'}。${esc(TR[0].nm)}が最大の流入元になり、${esc(topName)}が増加要因の最大でした。</p></div>
+  <div class="sum"><div class="no">01</div><div style="flex:1"><h3>確定したこと</h3>
+    <p>週間視聴は ${sign(K.deltaPct)}、新作の初速中央値は ${K.firstMedianPct!=null?sign(K.firstMedianPct):'—'}。${esc(t0?t0.nm:'—')}が最大の流入元になり、${esc(topName)}が増加要因の最大でした。</p></div>
     <div class="pill fix">確定</div></div>
-  <div class="sum"><div class="no">02</div><div style="flex:1"><h3>現時点で未確定なこと</h3>
-    <p>${esc(TR[0].nm)}の首位が続くか、${lo?'初速の低かった1本の原因、':''}クーポン入力と動画の関係は、<b>いまのデータでは確定できません。</b>いずれも1週では判断できないものです。</p></div>
+  <div class="sum"><div class="no">02</div><div style="flex:1"><h3>未確定のこと</h3>
+    <p>${esc(t0?t0.nm:'流入首位')}の首位が続くか${F.list.length?'、初速の低かった1本の原因':''}${S?'、'+esc(S.cannotSay.split('。')[0]):''}は、<b>いまのデータでは確定できません。</b></p></div>
     <div class="pill cont">継続確認</div></div>
 </div>
-<div class="g4 mt2">${nc}</div>
+<div class="tier mt2">次のアクション（${acts.length}件）</div>
+<div style="display:grid;grid-template-columns:repeat(${Math.min(acts.length,3)},1fr);gap:14px">${nc}</div>
+<div class="tier mt">オーナー対応</div>
+${ownerCard}
 <div class="pgfoot">
   <span>CHANNEL DESK · LIGHTTHREE WEEKLY BRIEF</span>
-  <span>Source: data.json（analytics_daily / video_daily / weekly_reports / coupon）</span>
+  <span><code>${esc(m.report_id)}</code> ／ model v${m.model_version} ／ data ${esc(String(m.data_version).slice(0,16).replace('T',' '))}</span>
 </div>
-<div class="note mt"><b>この資料について</b>　画面で読むための要約版です。<b>提出用の完全な資料と印刷（PDF）は <a href="report.html" style="color:var(--blue)">report.html</a> を使ってください。</b>数字はどちらも同じ data.json から作っています。</div>`);
+<div class="note mt"><b>この資料について</b>　画面で読むための要約版です。<b>正式な記録と印刷（PDF）は <a href="report.html" style="color:var(--up)">report.html</a> を使ってください。</b>数字はどちらも同じ <code>report_model.js</code> から作っています（model v${m.model_version}）。</div>`));
 
-  return s0+s1+s2+s3+s4+s5;
+  return out;
 }
 
-/* ══ 起動 ══════════════════════════════════════════════ */
-function nav(){
-  const secs=[...document.querySelectorAll('section')];
-  document.getElementById('rail').innerHTML =
-    secs.map(s=>`<a href="#${s.id}" aria-label="${s.id}"></a>`).join('');
-  const dots=[...document.querySelectorAll('.rail a')];
-  const upd=()=>{
+/* ═══ 起動と移動 ═════════════════════════════════ */
+function wire(secs){
+  const rail = document.getElementById('rail');
+  rail.innerHTML = secs.map(s=>`<a href="#${s.id}"><i></i><span>${esc(s.nav)}</span></a>`).join('');
+  const links = [...rail.querySelectorAll('a')];
+  const els   = secs.map(s=>document.getElementById(s.id));
+  const pos   = document.getElementById('pos');
+  const upd = ()=>{
     const y=window.scrollY, h=document.body.scrollHeight-innerHeight;
     document.getElementById('prog').style.width=(h>0?(y/h*100):0)+'%';
-    let k=0; secs.forEach((s,i)=>{ if(s.offsetTop <= y+innerHeight*0.4) k=i; });
-    dots.forEach((d,i)=>d.classList.toggle('on', i===k));
+    let k=0; els.forEach((e,i)=>{ if(e && e.offsetTop <= y+innerHeight*0.4) k=i; });
+    links.forEach((a,i)=>a.classList.toggle('on', i===k));
+    pos.innerHTML = `<b>${k+1}</b> / ${els.length}`;
   };
   addEventListener('scroll', upd, {passive:true}); addEventListener('resize', upd); upd();
-  // ↑↓ で節送り。⚠ 入力欄が無いページなので無条件で拾ってよい
+  // ⚠ 矢印キーの横取りはプレゼン表示のときだけ。一覧表示でふつうのスクロールを奪わないこと
   addEventListener('keydown', e=>{
-    if(e.key!=='ArrowDown' && e.key!=='ArrowUp') return;
+    if(!PRESENT || (e.key!=='ArrowDown' && e.key!=='ArrowUp' && e.key!=='PageDown' && e.key!=='PageUp')) return;
     e.preventDefault();
-    const y=window.scrollY+ (e.key==='ArrowDown'?4:-4);
-    const t = e.key==='ArrowDown' ? secs.find(s=>s.offsetTop>y)
-                                  : [...secs].reverse().find(s=>s.offsetTop<y-10);
-    (t||secs[e.key==='ArrowDown'?secs.length-1:0]).scrollIntoView({behavior:'smooth'});
+    const dn = e.key==='ArrowDown'||e.key==='PageDown';
+    const y = window.scrollY + (dn?4:-4);
+    const t = dn ? els.find(s=>s && s.offsetTop>y) : [...els].reverse().find(s=>s && s.offsetTop<y-10);
+    (t||els[dn?els.length-1:0]).scrollIntoView({behavior:'smooth'});
   });
 }
 
+if(PRESENT) document.documentElement.classList.add('present');
+document.getElementById(PRESENT?'mPres':'mList').classList.add('on');
+
 fetch('data.json?'+Date.now()).then(r=>r.json()).then(d=>{
-  DATA=d; COUPON=d.coupon||null;
-  const weeks=(d.weekly_reports||[]).slice().sort((a,b)=>a.week_start<b.week_start?1:-1);
-  const want=new URLSearchParams(location.search).get('w');
-  const rep = want ? weeks.find(w=>w.week_start===want) : (weeks.find(w=>w.final && w.ai_analysis) || weeks[0]);
-  if(!rep){ document.getElementById('app').innerHTML='<div class="err">週次データが見つかりません。</div>'; return; }
-  const i = weeks.indexOf(rep);
-  document.getElementById('app').innerHTML = render(rep, weeks[i+1]||null);
-  document.title = `週次ブリーフ ${rep.week_start}〜${rep.week_end}｜CHANNEL DESK`;
-  nav();
+  const want = new URLSearchParams(location.search).get('week');
+  const m = M.build(d, want);
+  if(!m){ document.getElementById('app').innerHTML='<div class="err">週次データが見つかりません。</div>'; return; }
+  const secs = render(m);
+  document.getElementById('app').innerHTML = secs.map(s=>s.html).join('');
+  document.title = `週次ブリーフ ${m.period.start}〜${m.period.end}｜CHANNEL DESK`;
+  wire(secs);
 }).catch(e=>{
   document.getElementById('app').innerHTML =
     `<div class="err"><b>data.json を読めませんでした。</b><div class="foot">${esc(e.message)}</div></div>`;
