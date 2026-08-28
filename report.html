@@ -856,34 +856,15 @@ function verdictBlock(rep, views, viewsPrev){
     }
   }
 
-  // 次週の確認 … 打ち手の1つめ（無ければ流入の継続確認）
-  const ai = rep.ai_analysis || {};
-  const s0 = (ai.suggestions||[])[0];
-  const nextCheck = ai.next_check || (s0 ? (typeof s0==='string'? s0 : (s0.title||'')) : '')
-                    || (t3v!=='—' ? `${t3v}が首位を保つかを見る` : '');
-  // ════════════════════════════════
-  // オーナー判断（2026-08-28 レビュー4回目 §3）
-  // ⚠ **既定値を「判断不要」にしないこと。**判定漏れがそのまま「判断不要」として
-  //   オーナーに提出される事故になります。**未設定は未設定と出します。**
-  //   確定週（final）で未設定なら、赤字で警告を出し、`check_report_format.py` が LINE に通知します。
-  // 判定基準（運用手順 §7 と同じ。ここを緩めないこと）:
-  //   判断不要 … 既存方針・承認済み予算内／外部への新しい約束なし／取り返しがつく
-  //   要確認   … 意見が欲しいが、回答を待たずに現行運用は継続できる（確認事項は1つに絞る）
-  //   要承認   … 未承認の費用・契約・体制変更・対外発表など、承認が出るまで実行してはいけない
-  // 集約: 要承認が1件でもあれば要承認 ＞ 要確認が1件以上なら要確認 ＞ それ以外は判断不要
-  // ════════════════════════════════
-  const odRaw = (ai.owner_decision||'').trim();
-  const odSet = !!odRaw;
-  const od    = odSet ? odRaw : '未設定';
-  const odC   = !odSet ? C_DOWN : /要承認/.test(od) ? C_DOWN : /要確認/.test(od) ? C_NOW : 'var(--ink)';
-  const odWarn = (!odSet && rep.final)
-    ? '<div class="note" style="color:'+C_DOWN+';margin-top:2px">⚠ 確定週なのにオーナー判断が入っていません。運用手順 §7 の基準で 判断不要／要確認／要承認 のいずれかを入れてください。</div>' : '';
-
-  // 「実行」の打ち手が1件も無い週は、それが意図的であることを明示する（同 §2）。
-  // ⚠ この行を消さないこと。無いと「分析ばかりで何もしないのか」と読まれます。
-  const kinds = (ai.suggestions||[]).map(s=>(s&&s.kind)||'');
-  const opsRow = (kinds.length && !kinds.includes('実行'))
-    ? `<div class="hrow"><span class="hk">運用変更</span><span class="hv">${esc(ai.ops_change||'なし。今週は分析と検証を優先します')}</span></div>` : '';
+  // ⚠⚠ 2026-08-28 運営者の指示で **「次週の確認」「運用変更」「オーナー判断」の3行を削除**しました。
+  //   ★ 復活させないこと。理由:
+  //     ① 「次週の確認」は **04 次週のアクションの1件目と同じ文が並んでいました**
+  //        （実データで「ショートフィード首位が次週も続くか確認」が冒頭と 04 に二重掲載）。
+  //     ② 「運用変更」「オーナー判断」も 04 のアクションを見れば分かる内容で、
+  //        冒頭に3行足すぶん、結論と数字が下へ押し下げられていました。
+  //   ⚠ `ai_analysis` の `owner_decision` / `ops_change` / `next_check` は**データには残っています**が、
+  //     **どこにも表示していません。**必要になったら復活させられるように残しているだけです。
+  //     `check_report_format.py` も「あれば形を検査する」だけにしてあり、**必須ではありません**。
 
   return `<div class="verdict"><span class="lv">${esc(head)}</span></div>
 <div class="tiles">
@@ -895,13 +876,7 @@ ${tile((base>=0?'+':'')+base.toFixed(1)+'%', '最大寄与1本を除いた前週
 ${tile(esc(String(t3v)), t3l, t3s)}
 </div>
 <div class="subline">${subLine(rep)}</div>
-<div class="headrows">
-<div class="hrow"><span class="hk">次週の確認</span><span class="hv">${esc(nextCheck)}</span></div>
-${opsRow}
-<div class="hrow"><span class="hk">オーナー判断</span><span class="hv od" style="color:${odC}">${esc(od)}</span></div>
-${odWarn}
-${ref?`<div class="hrow noprint"><span class="hk">参考</span><span class="hv" style="color:var(--muted);font-size:11.5px">${ref}</span></div>`:''}
-</div>`;
+${ref?`<div class="headrows noprint"><div class="hrow"><span class="hk">参考</span><span class="hv" style="color:var(--muted);font-size:11.5px">${ref}</span></div></div>`:''}`;
 }
 
 // ════════════════════════════════
