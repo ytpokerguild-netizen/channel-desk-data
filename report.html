@@ -43,8 +43,15 @@
   .sub{color:var(--muted);font-size:11.5px;margin:0 0 26px}
   h2{font-size:15px;line-height:1.5;margin:34px 0 3px;font-weight:700;color:var(--ink)}
   h2 .eyebrow{display:block;font-size:11.5px;font-weight:600;color:var(--accent);letter-spacing:.09em;margin-bottom:2px}
+  /* 節の通し番号（2026-08-28 レビュー指摘 B-4）。長い1ページなので現在地の手がかりを置く */
+  h2 .eyebrow .secn{color:var(--muted);margin-right:9px;letter-spacing:.02em}
   .lede{color:var(--ink-2);margin:0 0 12px}     /* 見出しの下の1行 */
+  /* ★ 補足文は2階層（2026-08-28 レビュー指摘 B-7）。
+     .note      … 出典・条件・注意書き（薄く小さく）
+     .note.key  … 分析上の意味がある補足（本文に近い濃さ）
+     ⚠ 「重要な分析結果」と「データ条件」を同じ薄さにしないこと。 */
   .note{color:var(--muted);font-size:11.5px;line-height:1.65;margin-top:7px}
+  .note.key{color:var(--ink-2);font-size:13px;line-height:1.75}
 
   /* ── 表: 縦罫線なし・データ行の横罫なし・地色なし ───────────── */
   table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
@@ -57,33 +64,86 @@
   tbody tr>td{border-bottom:1px solid #f0eee7}   /* ほぼ見えない区切り。消しても可 */
   tbody tr:last-child>td{border-bottom:none}
 
-  /* ── 強調するのは1か所だけ（結論）。他に囲み枠を作らない ────── */
+  /* ── 強調は2か所まで（ページの結論 = verdict / 節の結論 = finding）───── */
   .verdict{border-left:3px solid var(--accent);padding:2px 0 2px 15px;margin:0 0 26px}
   .verdict .lv{font-size:19px;font-weight:700;line-height:1.45}
   .verdict .why{display:block;color:var(--ink-2);font-size:14px;margin-top:5px}
 
+  /* ★ 節の結論（2026-08-28 レビュー指摘 A-1）。
+     ⚠ 「囲み枠は1つだけ」の原則をここだけ緩めています。理由:
+        いちばん重要な発見（1本を除いても前週を上回る）が薄いグレーの注記に置かれていて、
+        視覚上は「注釈」扱いになっていたためです。**注釈ではなく節の結論として見せます。**
+     ⚠ 3つめを作らないこと。verdict 19px > finding 16px > 本文 14px の3段階を守ります。
+     ⚠ 背景色は付けないこと（地色を敷かない原則）。強さは罫線・文字サイズ・余白で出します。 */
+  .finding{border-left:3px solid var(--accent);padding:11px 0 11px 15px;margin:15px 0 0}
+  .finding .ft{font-size:16px;font-weight:700;line-height:1.5}
+  .finding .fb{font-size:14px;color:var(--ink);margin-top:4px;line-height:1.85}
+  .finding .fn{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+
   .badge{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:10px;margin-left:10px;
          vertical-align:4px;font-weight:600;border:1px solid var(--rule);color:var(--muted)}
 
-  /* 表の中の横棒（長さで大小を見せる。色相で量を表さない） */
-  .minibar{display:flex;justify-content:flex-end;height:3px;background:#efece3;border-radius:2px;margin-top:4px}
-  .minibar>i{display:block;height:3px;background:#b3ada0;border-radius:2px}
+  /* ★ 打ち手（2026-08-28 レビュー指摘 A-4）。3つを一目で数えられることが目的。
+     ⚠ カードの背景・影は付けないこと。数えられれば十分です。 */
+  .acts2{margin:9px 0 0}
+  .act{display:flex;gap:14px;align-items:baseline;padding:15px 0;border-top:1px solid var(--rule)}
+  .act:first-child{border-top:none;padding-top:5px}
+  .act .an{flex:0 0 auto;min-width:22px;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em}
+  .act .at{font-size:15px;font-weight:700;line-height:1.5}
+  .act .aa{color:var(--ink-2);font-size:12.5px;line-height:1.75;margin-top:3px}
 
-  ol.acts{margin:6px 0 0;padding-left:20px}
-  ol.acts>li{margin-bottom:9px}
-  ol.acts ul{margin:2px 0 0;padding-left:17px;color:var(--ink-2)}
+  /* ★ グラフ・広い表は横スクロール枠に入れる（2026-08-28 レビュー指摘 D）。
+     ⚠ viewBox のまま縮めると、390px幅では 10px の文字が 4px になって読めません。
+        狭い画面では縮めずに横へ流します。 */
+  .scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* 横に続きがあるときだけ、その側の端に影が出る（CSS の shadow-scroll）。
+     ⚠ これは地色ではなく「まだ右に続く」という操作の合図です。データの背景は敷きません。
+     ⚠ 白の2枚は background-attachment:local（中身と一緒に動く＝端に着いたら影を隠す）、
+        影の2枚は scroll（枠に固定）。この組み合わせを崩すと影が出っぱなしになります。 */
+  .scrollx{
+    background:
+      linear-gradient(to right, #fff 32%, rgba(255,255,255,0)) left center,
+      linear-gradient(to left,  #fff 32%, rgba(255,255,255,0)) right center,
+      radial-gradient(farthest-side at 0 50%,   rgba(0,0,0,.13), rgba(0,0,0,0)) left center,
+      radial-gradient(farthest-side at 100% 50%,rgba(0,0,0,.13), rgba(0,0,0,0)) right center;
+    background-repeat:no-repeat;
+    background-size:34px 100%, 34px 100%, 13px 100%, 13px 100%;
+    background-attachment:local, local, scroll, scroll;
+  }
 
   .foot{margin-top:38px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--rule);padding-top:8px}
   .toolbar{max-width:860px;margin:0 auto;padding:14px 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .toolbar select,.toolbar button,.toolbar a{font-family:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid #cbc5b4;background:#fff;color:#333;cursor:pointer;text-decoration:none}
   .toolbar button:hover,.toolbar a:hover{background:#f5f1e6}
   .msg{max-width:860px;margin:40px auto;text-align:center;color:#666}
+  /* ── 狭い画面（2026-08-28 レビュー指摘 D）───────────────────
+     ⚠ ページ全体を縮小して PC 版をそのまま見せないこと。文字が読めなくなります。
+     ⚠ 本文は 14px 未満にしないこと。 */
+  @media (max-width:640px){
+    .sheet{padding:24px 16px 30px}
+    h1{font-size:20px;line-height:1.45}
+    .verdict .lv{font-size:17px}
+    .finding .ft{font-size:15px}
+    th,td{padding:7px 10px}
+  }
+  @media (max-width:760px){
+    /* 縮めずに横へ流す。SVG は viewBox を保ったまま実寸で描く */
+    .scrollx>svg{min-width:700px}
+    .scrollx>table{min-width:600px}
+  }
+
   @media print{
     body{background:#fff}
     .sheet{box-shadow:none;padding:0;max-width:none;min-height:auto}
     h2,.lede{break-after:avoid;break-inside:avoid}
     table,svg{break-inside:avoid}
     .verdict{break-inside:avoid}
+    /* ★ 見出しだけがページ下端に取り残されないように（2026-08-28 レビュー指摘 B-8）。
+       ⚠ 特に「流入グラフ＋その結論」は必ず同じページに載せること。 */
+    .finding{break-inside:avoid;break-before:avoid}
+    .act,.acts2{break-inside:avoid}
+    .scrollx{overflow-x:visible;background:none}
+    .scrollx>svg,.scrollx>table{min-width:0}
     /* ⚠ !important は消さないこと。JS が toolbar に style.display='flex' を
        インラインで当てるため、!important が無いと印刷・PDF にツールバーが写り込みます
        （2026-08-17 に実際に混入した PDF を出しかけました）。 */
@@ -134,9 +194,10 @@ ${zero}<path d="${d}" fill="none" stroke="${color}" stroke-width="1.3" stroke-li
 const fmtMan  = n => (n==null) ? '—' : (Math.abs(n)>=10000
                     ? (n/10000).toFixed(1).replace(/\.0$/,'')+'万'
                     : n.toLocaleString('ja-JP'));
-// 棒（表の中）。max に対する割合で幅を出す
-const miniBar = (v,max) => (!max||v==null) ? '' :
-  `<div class="minibar"><i style="width:${Math.max(1,Math.round(v/max*100))}%"></i></div>`;
+// ⚠ 表の中の細い棒（miniBar）は 2026-08-28 に削除しました。
+//   数値の下に3pxの短い線が出るだけで、下線・読み込み表示・装飾のどれとも見分けがつかず、
+//   一覧はもともと視聴回数順なので順位の情報も足していませんでした（レビュー指摘 B-2）。
+//   復活させるなら中途半端な下線ではなく、セル全体に敷く比例バーにしてください。
 const fmtDate = s => s ? s.replace(/-/g,'/') : '';
 const fmtMin  = m => m >= 60 ? Math.round(m/60).toLocaleString()+'時間' : (m||0).toLocaleString()+'分';
 const esc     = s => String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -238,11 +299,18 @@ function trafficSplitBlock(rep){
   const shareOfNow = Math.round(top.v/t0.views*100);
   const restBeatsPrev = rest > p0;
 
-  return `<div class="note" style="margin-top:9px;line-height:1.9">
-<b>${esc(nm)} ${fmtMan(t0.views)}回の内訳</b>（前週 ${fmtMan(p0)}回）<br>
-・いちばん多い1本「${esc(cut(titles[top.vid]||top.vid,22))}」… <b>${fmtMan(top.v)}回</b>（この経路の${shareOfNow}%）<br>
-・<b>この1本を除くと ${fmtMan(rest)}回</b>で、前週の ${fmtMan(p0)}回を${restBeatsPrev?'<b>上回ります</b>':'下回ります'}<br>
-<span style="color:var(--muted-2)">※ 動画ごとの内訳は上位5本ぶんだけです。「除いた残り」には6本目以降と過去動画が入ります</span>
+  // ★ ここはこのレポートでいちばん重要な発見です（2026-08-28 レビュー指摘 A-1）。
+  //   ⚠ .note（薄いグレーの注記）に戻さないこと。**節の結論**として見せます。
+  //     「総視聴の増加は1本」と「流入構造の変化は1本ではない」を分けて読ませるのが目的で、
+  //     ここが注釈の見た目だと、読み手は前者だけを持ち帰ります。
+  const title = restBeatsPrev
+    ? `この1本を除いても${esc(nm)}は前週を上回ります`
+    : `${esc(nm)}の増加は、この1本によるものです`;
+  return `<div class="finding">
+<div class="ft">${title}</div>
+<div class="fb">いちばん多い1本「${esc(cut(titles[top.vid]||top.vid,22))}」は <b>${fmtMan(top.v)}回</b>（この経路の${shareOfNow}%）。
+除いた残りは <b>${fmtMan(rest)}回</b>で、前週の <b>${fmtMan(p0)}回</b>を${restBeatsPrev?'<b>上回ります</b>':'<b>下回ります</b>'}。</div>
+<div class="fn">${esc(nm)}は今週 ${fmtMan(t0.views)}回（前週 ${fmtMan(p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「除いた残り」には6本目以降と過去動画が入ります</div>
 </div>`;
 }
 
@@ -256,13 +324,16 @@ function trafficChart(){
     const st = String(t.source_type), pv = prev.get(st);
     const pr = prevRank.get(st), cr = i+1;
     const moved = pr && pr!==cr && (pr<=3 || cr<=3);   // 上位3位に絡む入れ替わりだけ出す
+    // ⚠ 前週の実数を全経路に出すと混みます。順位が動いた経路だけにします（2026-08-28 レビュー指摘 B-1）
+    const sub = moved ? `前週 ${fmtMan(pv)}回 ／ ${pr}位→${cr}位` : '';
     return {label: esc(TRAFFIC_LABEL[st]||t.source_type),
-            bars: [{v:t.views,color:C_NOW}, ...(pv!=null?[{v:pv,color:C_PREV}]:[])],
-            right: fmtMan(t.views),
-            sub: moved ? `${pr}位→${cr}位` : '',
-            subFill: moved ? (cr<pr ? C_UP : C_DOWN) : ''};
-  }),{labelW:170,rightW:72,rowH:32})
-  + `<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週　／ 上位6経路　／ 右下の「2位→1位」は前週からの順位の動きです（上位3位に絡んだときだけ表示）</div>`;
+            // ⚠ 今週と前週を「色だけ」で区別しないこと（2026-08-28 レビュー指摘 A-6）。
+            //   前週は薄い塗り＋枠線にしてあります。モノクロ印刷でも別物と分かります。
+            bars: [{v:t.views,color:C_NOW}, ...(pv!=null?[{v:pv,color:C_PREV,fill:C_PREV_FILL}]:[])],
+            right: fmtMan(t.views)+'回',
+            sub, subFill: moved ? (cr<pr ? C_UP : C_DOWN) : ''};
+  }),{labelW:168,rightW:142,rowH:33})
+  + `<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV_FILL};border:1px solid ${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週（薄い塗り＋枠線）　／ 上位6経路　／ 右下の「2位→1位」は前週からの順位の動きです（上位3位に絡んだときだけ表示）</div>`;
 }
 
 function trendBlock(rep){
@@ -270,7 +341,7 @@ function trendBlock(rep){
   if(!T || T.length < 4) return '';                 // 週が少なすぎるうちは出さない
   // 「参考」の図なので、本文より軽く見える高さにおさえる（2026-08-28 レビュー指摘）。
   // ⚠ TOP を小さくしすぎると、いちばん高い棒の上に出す注記（ann / curLab）が枠外に切れます。
-  const W = 780, H = 150, PL = 58, PR = 8, TOP = 24, BASE = 108;
+  const W = 780, H = 156, PL = 58, PR = 8, TOP = 32, BASE = 112;
   const plotW = W - PL - PR;
   const band  = plotW / T.length;
   const bw    = Math.min(24, Math.max(3, band - 2));   // ≤24px・隣と2pxあける
@@ -303,7 +374,10 @@ function trendBlock(rep){
     const d = T[curIx], x = PL + band*curIx + band/2, y = yOf(d.views);
     const anchor = curIx > T.length-4 ? 'end' : (curIx < 3 ? 'start' : 'middle');
     const dx = anchor==='end' ? bw/2 : (anchor==='start' ? -bw/2 : 0);
-    curLab = `<text x="${(x+dx).toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="${anchor}" font-size="11" font-weight="700" fill="#1a1a1a">${fmtMan(d.views)}</text>`;
+    // ★「今週」を棒の上に直接書く（2026-08-28 レビュー指摘 B-5）。
+    //   凡例（濃い色がこの週）を下まで読まないと分からない状態をやめます。
+    curLab = `<text x="${(x+dx).toFixed(1)}" y="${(y-19).toFixed(1)}" text-anchor="${anchor}" font-size="10" fill="#6b6659">今週</text>
+<text x="${(x+dx).toFixed(1)}" y="${(y-7).toFixed(1)}" text-anchor="${anchor}" font-size="11" font-weight="700" fill="#1a1a1a">${fmtMan(d.views)}回</text>`;
   }
 
   // ★ 山の理由を1つだけ注記する（2026-08-17 追加）。
@@ -325,7 +399,7 @@ function trendBlock(rep){
   const ratio = cur ? Math.round(cur.views/avg*100) : null;
 
   return `
-<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img"
+<div class="scrollx"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img"
      aria-label="直近${T.length}週の週間視聴回数。この週は${cur?fmtMan(cur.views):''}回で、${T.length}週平均の${ratio}%。">
   ${ticks}
   ${bars}
@@ -336,8 +410,7 @@ function trendBlock(rep){
   ${curLab}
   <line x1="${PL}" y1="${BASE}" x2="${W-PR}" y2="${BASE}" stroke="#ddd" stroke-width="1"/>
   ${xlab}
-</svg>
-${cur?``:''}
+</svg></div>
 <div class="note">濃い色がこの週、薄い色がそれ以外の週です。${T.length}週ぶんは <b>7日そろった週だけ</b>を並べています。</div>`;
 // ⚠ ここに「前週比だけでは〜」を書き戻さないこと。同じ文が見出し直下（sec の3つめの引数）に出ており、
 //   2026-08-28 のレビューで重複を指摘されて消しています。
@@ -354,21 +427,27 @@ ${cur?``:''}
 //   1系列 #b3ada0
 // ════════════════════════════════
 const C_UP='#1f6f9c', C_DOWN='#c0553f', C_NOW='#8a6d1a', C_PREV='#6f8f9e', C_ONE='#b3ada0';
+// 前週の棒の塗り。色を増やすのではなく「塗りつぶし / 薄い塗り＋枠線」という形の差を作るためのもの
+const C_PREV_FILL='#dde7ec';
 
-// rows: [{label, bars:[{v,color}], right, sub, subFill}]  ゼロから右に伸びる横棒
-// sub … 右の数字の下に添える小さな注記（順位変化など）。省略可。
-function hbarSVG(rows, {W=780, labelW=250, rightW=70, rowH=26, max=null}={}){
+// rows:   [{label, bars:[{v,color,fill}], right, sub, subFill}]  ゼロから右に伸びる横棒
+//   bars[].fill … 指定すると「薄い塗り＋color の枠線」になる。色を増やさずに形で区別するため
+//   sub          … 右の数字の下に添える小さな注記（前週の実数・順位変化など）。省略可
+// guides: [{v,label,dash,color}]  縦の基準線（中央値など）。省略可
+function hbarSVG(rows, {W=780, labelW=250, rightW=70, rowH=26, max=null, guides=null}={}){
   if(!rows.length) return '';
-  const H = rows.length*rowH + 6;
+  const G  = (guides||[]).filter(g=>g && g.v>0);
+  const TP = G.length ? 15 : 0;                      // 基準線のラベルぶんを上に空ける
+  const H  = TP + rows.length*rowH + 6;
   const x0 = labelW, plotW = W - labelW - rightW;
   const mx = max || Math.max(1, ...rows.flatMap(r=>r.bars.map(b=>b.v||0)));
   const body = rows.map((r,i)=>{
-    const y0 = i*rowH + 3;
+    const y0 = TP + i*rowH + 3;
     const n  = r.bars.length;
     const bh = Math.min(14, (rowH-8-2*(n-1))/n);       // 2px の隙間で区切る
     const bars = r.bars.map((b,j)=>{
       const w = Math.max(1, (b.v||0)/mx*plotW), y = y0 + (rowH-8-(bh*n+2*(n-1)))/2 + j*(bh+2);
-      return `<rect x="${x0}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${b.color}"/>`;
+      return `<rect x="${x0}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${bh.toFixed(1)}" rx="3" fill="${b.fill||b.color}"${b.fill?` stroke="${b.color}" stroke-width="1"`:''}/>`;
     }).join('');
     // sub があるときは右の数字を少し上げ、その下に小さく添える（2026-08-28 追加）
     const cy = y0 + rowH/2, ry = r.sub ? cy-5 : cy-1;
@@ -377,7 +456,15 @@ function hbarSVG(rows, {W=780, labelW=250, rightW=70, rowH=26, max=null}={}){
 <text x="${W-4}" y="${ry.toFixed(1)}" text-anchor="end" font-size="11" fill="#444" font-weight="600">${r.right}</text>${r.sub?`
 <text x="${W-4}" y="${(cy+9).toFixed(1)}" text-anchor="end" font-size="10" fill="${r.subFill||'#6b6659'}" font-weight="700">${r.sub}</text>`:''}`;
   }).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${body}</svg>`;
+  // ★ 基準線は棒より後に描いて上に載せる（2026-08-28 レビュー指摘 A-5）。
+  //   見出しの文で「中央値の2倍を超えた」と書いても、図の側に判定線が無いと目で確かめられません。
+  const gl = G.map(g=>{
+    const gx = x0 + Math.min(1, g.v/mx)*plotW;
+    const end = gx > W - rightW - 96;
+    return `<line x1="${gx.toFixed(1)}" y1="${TP-4}" x2="${gx.toFixed(1)}" y2="${H-3}" stroke="${g.color||'#b0aa9c'}" stroke-width="1" stroke-dasharray="${g.dash||'3 3'}"/>
+<text x="${(end?gx-4:gx+4).toFixed(1)}" y="10" text-anchor="${end?'end':'start'}" font-size="10" fill="#6b6659">${g.label}</text>`;
+  }).join('');
+  return `<div class="scrollx"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${body}${gl}</svg></div>`;
 }
 
 // 増減（ゼロ線の左右に伸びる）。rows: [{label, v, right}]
@@ -395,10 +482,10 @@ function divSVG(rows, {W=780, labelW=250, rightW=76, rowH=26}={}){
 <text x="${labelW-8}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="#1a1a1a">${r.label}</text>
 <text x="${W-4}" y="${(y0+rowH/2-1).toFixed(1)}" text-anchor="end" font-size="11" fill="${up?C_UP:C_DOWN}" font-weight="600">${r.right}</text>`;
   }).join('');
-  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${body}
+  return `<div class="scrollx"><svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">${body}
 <line x1="${zero}" y1="0" x2="${zero}" y2="${H-13}" stroke="#ccc" stroke-width="1"/>
 <text x="${zero-5}" y="${H-2}" text-anchor="end" font-size="10" fill="#888">← 減</text>
-<text x="${zero+5}" y="${H-2}" font-size="10" fill="#888">増 →</text></svg>`;
+<text x="${zero+5}" y="${H-2}" font-size="10" fill="#888">増 →</text></svg></div>`;
 }
 // ラベル欄に入る文字数は幅から計算する（11px フォントで日本語は約12px/字）。
 // ⚠ 直に文字数を決め打ちすると、長いタイトルで左にはみ出して切れます（2026-08-17 に実際に起きた）。
@@ -412,13 +499,11 @@ function causeBlock(rep, views, viewsPrev){
   L.sort((a,b)=>Math.abs(b.d)-Math.abs(a.d));
   const head = L.slice(0,5), rest = (views-viewsPrev) - head.reduce((s,x)=>s+x.d,0);
   const LW=310, N=fitChars(LW);
-  const rows = head.map(x=>({label:cut(x.t,N), v:x.d, right:(x.d>=0?'+':'−')+fmtMan(Math.abs(x.d))}));
-  if(Math.abs(rest) > 0) rows.push({label:'その他の動画（合計）', v:rest, right:(rest>=0?'+':'−')+fmtMan(Math.abs(rest))});
+  const rows = head.map(x=>({label:cut(x.t,N), v:x.d, right:(x.d>=0?'+':'−')+fmtMan(Math.abs(x.d))+'回'}));
+  if(Math.abs(rest) > 0) rows.push({label:'その他の動画（合計）', v:rest, right:(rest>=0?'+':'−')+fmtMan(Math.abs(rest))+'回'});
   const tot = views-viewsPrev;
-  const top = head[0];
-  const share = tot ? Math.round(top.d/tot*100) : 0;
   return `<div class="lede">前週から <b style="color:${tot>=0?C_UP:C_DOWN}">${tot>=0?'+':'−'}${fmtMan(Math.abs(tot))}回</b>。</div>
-${divSVG(rows,{labelW:LW})}`;
+${divSVG(rows,{labelW:LW, rightW:88})}`;
 }
 
 // ── 新作の初速（公開2日間） ──────────────────────────────
@@ -428,10 +513,21 @@ function firstBlock(rep){
   if(!L.length) return '';
   L.sort((a,b)=>b.first2d-a.first2d);
   const LW=310, N=fitChars(LW)-6;   // 先頭に「08/12 」が付くぶん短く
-  const rows = L.map(v=>({label:`${fmtDate(v.published_at).slice(5)} ${cut(v.title,N)}`, bars:[{v:v.first2d,color:C_ONE}], right:fmtMan(v.first2d)}));
-  const ratio = L.length>1 ? (L[0].first2d/Math.max(1,L[L.length-1].first2d)) : null;
-  return `${hbarSVG(rows,{labelW:LW})}
-${wait?`<div class="note">ほか ${wait}本 は公開2日を過ぎていないため出していません。</div>`:''}`;
+  const rows = L.map(v=>({label:`${fmtDate(v.published_at).slice(5)} ${cut(v.title,N)}`, bars:[{v:v.first2d,color:C_ONE}], right:fmtMan(v.first2d)+'回'}));
+  // ★ 中央値と「その2倍」の縦線を引く（2026-08-28 レビュー指摘 A-5）。
+  //   見出しに「中央値の2倍を超えた本数」を書いているので、図でも同じ線で確かめられるようにします。
+  //   ⚠ 2倍が最大値を超える週は線が枠外になるため、そのときは引きません。
+  const S   = L.map(v=>v.first2d).slice().sort((a,b)=>a-b);
+  const med = S.length%2 ? S[(S.length-1)/2] : (S[S.length/2-1]+S[S.length/2])/2;
+  const mx  = S[S.length-1];
+  const guides = S.length>=2 ? [
+    {v:med,   label:`中央値 ${fmtMan(med)}回`,      dash:'3 3', color:'#c3bdaf'},
+    // ⚠ 2倍の線に数字を書かないこと。fmtMan が小数第1位に丸めるため
+    //   「中央値 2.2万回 / 中央値の2倍 4.3万回」のように 2倍に見えない表示になります。
+    ...(med*2<=mx ? [{v:med*2, label:'中央値の2倍', dash:'5 3', color:'#8f8878'}] : [])
+  ] : null;
+  return `${hbarSVG(rows,{labelW:LW, rightW:78, guides})}
+${wait?`<div class="note">ほか ${wait}本は公開2日を過ぎていないため出していません。</div>`:''}`;
 }
 
 // ════════════════════════════════
@@ -459,9 +555,11 @@ function couponBlock(rep){
     }).length;
   };
   const dC = daysIn(rep.week_start), dP = pw ? daysIn(pKey) : 0;
-  const perDay = (n,d)=> d ? (n/d).toFixed(2) : '—';
+  // ⚠ 小数は第1位までに揃えること（2026-08-28 レビュー指摘 B-6）。`1日16.60件` と `4.00件` が
+  //   他の数字（+13.5万回・-51.8%）と桁の刻みが違い、横に読むときのリズムが崩れていました。
+  const perDay = (n,d)=> d ? (n/d).toFixed(1) : '—';
   const rate   = (u,e)=> e ? (u/e*100).toFixed(1)+'%' : '—';
-  const cell   = (n,d)=> d ? `${fmtFull(n)}件（${d}日・1日${perDay(n,d)}件）` : '—';
+  const cell   = (n,d)=> d ? `${fmtFull(n)}件（${d}日・${perDay(n,d)}件/日）` : '—';
 
   const codeRows = (COUPON.by_code||[]).map(b=>
     `<tr><td>${esc(b.code)}</td><td class="num">${fmtFull(b.entries)}</td><td class="num">${fmtFull(b.used)}</td><td class="num">${rate(b.used,b.entries)}</td><td class="num">${fmtFull(b.people)}</td></tr>`).join('');
@@ -469,13 +567,13 @@ function couponBlock(rep){
 
   return `
 <div class="note" style="margin:0 0 7px">この週に入力のあったコード: <b>${(wk.codes||[]).map(esc).join('、')||'—'}</b>　／　シート取得日: ${fmtDate(COUPON.snapshot_date||'')}</div>
-<table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th></tr>
+<div class="scrollx"><table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th></tr>
 <tr><td>コード入力</td><td class="num">${cell(wk.entries,dC)}</td><td class="num">${pw?cell(pw.entries,dP):'—'}</td></tr>
 <tr><td>うち使用済み</td><td class="num">${fmtFull(wk.used)}件（${rate(wk.used,wk.entries)}）</td><td class="num">${pw?`${fmtFull(pw.used)}件（${rate(pw.used,pw.entries)}）`:'—'}</td></tr>
-<tr><td>実人数</td><td class="num">${fmtFull(wk.people)}人</td><td class="num">${pw?fmtFull(pw.people)+'人':'—'}</td></tr></table>
-${codeRows?`<div style="margin-top:16px;padding-top:11px;border-top:1px solid var(--line)"><b style="font-size:14px">累計（開始日〜${fmtDate(rep.week_end)}）・コード別</b>
-<div class="note" style="margin:2px 0 0">⚠ 上の表は<b>この週だけ</b>、ここから下は<b>開始日からの累計</b>です。足し合わせても上の数字にはなりません。</div></div>
-<table style="margin-top:4px"><tr><th>コード</th><th class="num">入力</th><th class="num">使用</th><th class="num">使用率</th><th class="num">実人数</th></tr>${codeRows}</table>`:''}
+<tr><td>実人数</td><td class="num">${fmtFull(wk.people)}人</td><td class="num">${pw?fmtFull(pw.people)+'人':'—'}</td></tr></table></div>
+${codeRows?`<div style="margin-top:16px;padding-top:11px;border-top:1px solid var(--rule)"><b style="font-size:14px">累計（開始日〜${fmtDate(rep.week_end)}）・コード別</b>
+<div class="note key" style="margin:2px 0 0">⚠ 上の表は<b>この週だけ</b>、ここから下は<b>開始日からの累計</b>です。足し合わせても上の数字にはなりません。</div></div>
+<div class="scrollx"><table style="margin-top:4px"><tr><th>コード</th><th class="num">入力</th><th class="num">使用</th><th class="num">使用率</th><th class="num">実人数</th></tr>${codeRows}</table></div>`:''}
 ${lag?`<div class="note" style="margin-top:7px">入力から使用までの時間（通算${fmtFull(COUPON.total||0)}件）: ${lag}</div>`:''}`;
 }
 
@@ -551,22 +649,26 @@ function renderReportPage(rep){
   const spViews = sparkline(tUpTo('views'));
   const spSubs  = sparkline(tUpTo('subs_net'));
 
+  // ⚠ 単位の前に空白を入れないこと（2026-08-28 レビュー指摘 B-6）。表・グラフ・本文で
+  //   「72.1万 回」と「35.7万回」が混在していました。`72.1万回` `+200人` `16.6件/日` に統一します。
+  // ⚠ 比較対象が無いセルは空欄にせず `—` を入れること（同 B-3）。空欄だと
+  //   「データが取れていない」のか「比べる相手がいない」のか区別できません。
   const sumRows = [
-    ['週間視聴回数', fmtMan(views)+' 回'+(partial?`（確定${rep.confirmed_days}日分のみ）`:''), fmtMan(viewsPrev)+' 回', partial?'—':pct(views,viewsPrev), spViews],
+    ['週間視聴回数', fmtMan(views)+'回'+(partial?`（確定${rep.confirmed_days}日分のみ）`:''), fmtMan(viewsPrev)+'回', partial?'—':pct(views,viewsPrev), spViews],
     ['総再生時間',   fmtMin(c.watch_min||0), fmtMin(c.watch_min_prev||0), partial?'—':pct(c.watch_min,c.watch_min_prev), ''],
-    ['登録者純増', (subsNet>=0?'+':'')+fmtFull(subsNet||0)+' 人', c.subs_net_prev!=null?(c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+' 人':'—', pct(subsNet,c.subs_net_prev), spSubs],
-    ['週内の投稿', (rep.new_videos||[]).length+' 本', '', '', ''],
-    ...(ssC2!=null ? [['視聴回数に占める登録者視聴', ssC2+' %', ssP2!=null? ssP2+' %':'—', '', '']] : []),
+    ['登録者純増', (subsNet>=0?'+':'')+fmtFull(subsNet||0)+'人', c.subs_net_prev!=null?(c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+'人':'—', pct(subsNet,c.subs_net_prev), spSubs],
+    ['週内の投稿', (rep.new_videos||[]).length+'本', '—', '—', ''],
+    // ⚠ この行だけ「増減」を前週比（%）にしないこと。もともと％の指標なので、
+    //   6%→7% を「+16.7%」と書くと桁違いに大きく見えます。差はポイントで出します。
+    ...(ssC2!=null ? [['視聴回数に占める登録者視聴', ssC2+'%', ssP2!=null? ssP2+'%':'—',
+        ssP2!=null?((ssC2-ssP2>=0?'+':'−')+Math.abs(ssC2-ssP2)+'ポイント'):'—', '']] : []),
   ];
 
   const trP = new Map((rep.traffic_sources_prev||[]).map(t=>[String(t.source_type), t.views]));
   const trList = (rep.traffic_sources||[]).slice(0,8);
-  const trMax  = Math.max(1, ...trList.map(t=>t.views));
   window._TR = {list: trList, prev: trP};
-  const trafficRows = trList.map(t=>{
-    const prev = trP.get(String(t.source_type));
-    return `<tr><td>${esc(TRAFFIC_LABEL[String(t.source_type)]||t.source_type)}</td><td class="num" title="${fmtFull(t.views)}">${fmtMan(t.views)}${miniBar(t.views,trMax)}</td><td class="num">${prev!=null?fmtMan(prev):'—'}</td><td class="num">${prev!=null?pct(t.views,prev):'—'}</td></tr>`;
-  }).join('');
+  // ⚠ ここにあった流入経路の「表」は、同じ数字を trafficChart() のグラフでも出していたため
+  //   2026-08-17 に画面から外れていました。使われないまま残っていたので削除（2026-08-28）。
 
   const pp = rep.post_plan || {planned:0,posted:0,items:[]};
   const ai = rep.ai_analysis;
@@ -615,8 +717,22 @@ function renderReportPage(rep){
     if(!wk) return '';
     return `掲出日の記録が無いため、どの動画の効果かは分けられません`;
   })();
-  const sec = (eyebrow, assertion, lede) =>
-    `<h2><span class="eyebrow">${eyebrow}</span>${assertion}</h2>${lede?`<div class="lede">${lede}</div>`:''}`;
+  // 上位8本のうち何本が今週の新作か（見出しに使う。構成比は出しません）
+  const topLead = (()=>{
+    const L=(rep.top_videos||[]).slice(0,8); if(!L.length) return '';
+    const nv=new Set((rep.new_videos||[]).map(v=>v.video_id).filter(Boolean));
+    const n=L.filter(v=>nv.has(v.video_id)).length;
+    return n ? `上位8本のうち ${n}本が今週の新作です` : `上位8本はすべて過去の動画です`;
+  })();
+  // ★ 節に通し番号を振る（2026-08-28 レビュー指摘 B-4）。長い1ページなので現在地の手がかりを置く。
+  //   ⚠ 週によって出ない節（クーポン・次にやること）があるため、**番号は出た節に順に振ります**。
+  //     固定の番号を直書きしないこと。欠番が出ます。
+  let secN = 0;
+  const sec = (eyebrow, assertion, lede) => {
+    secN++;
+    const n = String(secN).padStart(2,'0');
+    return `<h2><span class="eyebrow"><span class="secn">${n}</span>${eyebrow}</span>${assertion}</h2>${lede?`<div class="lede">${lede}</div>`:''}`;
+  };
 
   document.getElementById('sheet').innerHTML = `
 <h1>${esc(CHANNEL)} 週次レポート<span class="badge">${rep.final?'確定':`速報 ${rep.confirmed_days}/7日`}</span></h1>
@@ -624,22 +740,34 @@ function renderReportPage(rep){
 
 ${verdictBlock(rep, views, viewsPrev)}
 
-${ai&&ai.analysis?`<div>${String(ai.analysis).split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 9px">${esc(p)}</p>`).join('')}</div>`:''}
+${/* ⚠ 段落の間隔を 9px → 16px に広げてあります（2026-08-28 レビュー指摘 A-2 の一部）。
+      5段落がほぼ同じ太さで続き、最初の画面が「文章の壁」に見えていたためです。
+      ★ レビューの本題（冒頭を「前週比+23%。ただし増加分の87%は1本」に書き換える／
+        本文に 総視聴・流入・新作・クーポン・来週見ること の小見出しを付ける）は、
+        ai_analysis の作り方＝運用手順 §7 の仕様変更にあたるため**運営者の判断待ち**です。
+        A-1・A-7 と同じ扱いにしています。ここで勝手に書き換えないこと。 */''}
+${ai&&ai.analysis?`<div>${String(ai.analysis).split(/\n+/).filter(Boolean).map(p=>`<p style="margin:0 0 16px">${esc(p)}</p>`).join('')}</div>`:''}
 
 ${sec('今週の数字', partial?`確定は${rep.confirmed_days}日ぶんです`:`前週比 ${pct(views,viewsPrev)}、6か月平均比 ${trendPct(rep)}`, '')}
-<table><thead><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減</th><th class="num" style="width:96px">この6か月</th></tr></thead>
-<tbody>${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]||''}</td></tr>`).join('')}</tbody></table>
-${c.subscribers_end!=null?`<div class="note">週末時点の登録者数 ${fmtFull(Math.round(c.subscribers_end))}人。${planLine(rep, pp)}</div>`:''}
+<div class="scrollx"><table><thead><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th><th class="num">増減</th><th class="num" style="width:96px">この6か月</th></tr></thead>
+<tbody>${sumRows.map(r=>`<tr><td>${r[0]}</td><td class="num">${r[1]}</td><td class="num">${r[2]}</td><td class="num">${r[3]}</td><td class="num">${r[4]||''}</td></tr>`).join('')}</tbody></table></div>
+${c.subscribers_end!=null?`<div class="note key">週末時点の登録者数 ${fmtFull(Math.round(c.subscribers_end))}人。${planLine(rep, pp)}</div>`:''}
 
 ${causeLead?sec('増減の内訳', causeLead, ''):''}
 ${causeBlock(rep, views, viewsPrev)}
-${(rep.top_videos||[]).length?`<table><thead><tr><th>今週よく見られた動画</th><th class="num">今週</th><th class="num">前週</th></tr></thead>
-<tbody>${(()=>{const L=rep.top_videos.slice(0,8); const mx=Math.max(1,...L.map(v=>v.views_week));
-  return L.map(v=>`<tr><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${esc(v.title)}</a></td><td class="num" title="${fmtFull(v.views_week)}">${fmtMan(v.views_week)}${miniBar(v.views_week,mx)}</td><td class="num">${fmtMan(v.views_prev_week)}</td></tr>`).join('');})()}</tbody></table>`:''}
 
 ${trafficLead?sec('どこから見られたか', trafficLead, ''):''}
 ${trafficChart()}
 ${trafficSplitBlock(rep)}
+
+${/* ★ 動画の一覧は「流入の結論」の後ろに置きます（2026-08-28 レビュー指摘 A-3）。
+      理由: 8行の表が「増減の内訳」と「どこから見られたか」の間に挟まっていたため、
+      2つの分析の間にスクロールが入り、別の話に見えていました。
+      総視聴の変化 → 流入経路の変化 → 具体的な動画一覧、の順にします。
+      ⚠ 行数は8行のままです（「着手しないこと」⑨）。動かしたのは位置だけです。 */''}
+${(rep.top_videos||[]).length?`${sec('今週よく見られた動画', topLead, '')}
+<div class="scrollx"><table><thead><tr><th>動画</th><th class="num">今週</th><th class="num">前週</th></tr></thead>
+<tbody>${rep.top_videos.slice(0,8).map(v=>`<tr><td><a href="https://youtube.com/watch?v=${esc(v.video_id)}" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">${esc(v.title)}</a></td><td class="num" title="${fmtFull(v.views_week)}">${fmtMan(v.views_week)}回</td><td class="num">${v.views_prev_week!=null?fmtMan(v.views_prev_week)+'回':'—'}</td></tr>`).join('')}</tbody></table></div>`:''}
 
 ${TREND&&TREND.length>=4?sec('参考：6か月の中での位置', trendAssert(rep), '前週比だけでは「前週がどんな週だったか」で見え方が変わります。'):''}
 ${trendBlock(rep)}
@@ -650,9 +778,13 @@ ${firstBlock(rep)}
 ${cpLead?sec('クーポン', cpLead, ''):''}
 ${couponBlock(rep)}
 
-${(ai&&(ai.suggestions||[]).length)?`${sec('次にやること', '数字から出てきた打ち手です', '')}
-<ol class="acts">${ai.suggestions.map(s=>{const t=(typeof s==='string')?{title:s,actions:[]}:(s||{});
-  return `<li><b>${esc(t.title||'')}</b>${(t.actions||[]).length?`<ul>${t.actions.map(a=>`<li>${esc(a)}</li>`).join('')}</ul>`:''}</li>`;}).join('')}</ol>`:''}
+${/* ★ 打ち手は「番号＋行動＋補足」の横並びにします（2026-08-28 レビュー指摘 A-4）。
+      理由: レポートの目的は次の1週間の打ち手を決めることなのに、いちばん行動に近い部分が
+      入れ子の箇条書きで、3つの境界が弱く、読み終えた人が行動だけを拾い直せませんでした。
+      ⚠ 背景色・影・枠は付けないこと。**3つを一目で数えられる**ことだけが目的です。 */''}
+${(ai&&(ai.suggestions||[]).length)?`${sec('次にやること', `打ち手は ${ai.suggestions.length}つです`, '')}
+<div class="acts2">${ai.suggestions.map((s,i)=>{const t=(typeof s==='string')?{title:s,actions:[]}:(s||{});
+  return `<div class="act"><div class="an">${String(i+1).padStart(2,'0')}</div><div><div class="at">${esc(t.title||'')}</div>${(t.actions||[]).map(a=>`<div class="aa">${esc(a)}</div>`).join('')}</div></div>`;}).join('')}</div>`:''}
 
 <div class="foot">CHANNEL DESK 自動生成 ／ ${new Date().toLocaleString('ja-JP')} ／ ${esc(CHANNEL)}${ai&&ai.generated_at?` ／ 分析 ${fmtDate(String(ai.generated_at).slice(0,10))}`:''}</div>`;
 
