@@ -82,6 +82,15 @@
 
   .badge{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:10px;margin-left:10px;
          vertical-align:4px;font-weight:600;border:1px solid var(--rule);color:var(--muted)}
+  .badge.bad{border-color:#c0553f;color:#c0553f}
+
+  /* ★ オーナー判断の通知（2026-08-28 レビュー5回目 §1）。
+     ⚠ 判断不要の週はここに何も出さないこと。タイトル横のバッジだけで足ります。
+        毎週1行を使うと、結論と数字が下へ押し下げられます。 */
+  .onote{border-left:3px solid;padding:8px 0 8px 14px;margin:0 0 16px;font-size:14px;line-height:1.8}
+  .onote.confirm{border-color:#8a6d1a;background:none}
+  .onote.approve{border-color:#c0553f}
+  .onote.approve b{color:#c0553f}
 
   /* ★ 主要3指標（2026-08-28 レビュー3回目 §1）。オーナーが最初の30秒で見るところ。
      ⚠ 4つめを足さないこと。3つだから一目で入ります。 */
@@ -139,6 +148,13 @@
   .act:first-child{border-top:none;padding-top:5px}
   .act .an{flex:0 0 auto;min-width:22px;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em}
   .act .ak{font-weight:400;font-size:11px;color:var(--muted);margin-top:1px}
+  /* 折りたたみ（確認方法・主要指標の詳細）。⚠ 既定は閉じたまま。開いた状態で保存しないこと */
+  .more{margin-top:5px}
+  .more>summary{cursor:pointer;font-size:11.5px;color:var(--accent);letter-spacing:.03em;
+                list-style:none;display:inline-block;padding:1px 0}
+  .more>summary::-webkit-details-marker{display:none}
+  .more>summary::before{content:"＋ "}
+  .more[open]>summary::before{content:"− "}
   .act .at{font-size:15px;font-weight:700;line-height:1.5}
   .act .aa{color:var(--ink-2);font-size:12.5px;line-height:1.75;margin-top:3px}
 
@@ -263,11 +279,12 @@
     /* 運用詳細の完全版では、逆に印刷用の2行のほうを出さない */
     .detail .trafficprint{display:none!important}
     /* ★ 紙の1ページ目のアクションは **タイトル＋補足1行** まで（レビュー4回目 §4-5 の形）。
-       2行目以降の詳しい確認方法は運用詳細の完全版にあります。
-       ⚠ nth-of-type は同じタグ（div）で数えます。.at が1番目なので、最初の .aa を残すには n+3 です。
-       ⚠ 1ページに収まらなくなったら、まずここを `.aa{display:none}` に戻して
+       画面では折りたたみ（.more）にしてある詳しい確認方法は、紙では**入口ごと消し**、
+       運用詳細側の完全版（actListFull）で出します。
+       ⚠ 折りたたみの見出し（「＋ 確認方法を見る」）が紙に残ると、押せないボタンが並びます。
+       ⚠ 1ページに収まらなくなったら、まず `.main .act .aa{display:none}` を足して
           タイトルだけにしてください。**本文14pxを下げるのは最後の手段です。** */
-    .main .act .aa:nth-of-type(n+3){display:none!important}
+    .main .more{display:none!important}
     .main .act{padding:4px 0}
     .main .act .an{display:flex;gap:6px;align-items:baseline;min-width:62px}
     .main .act .ak{margin-top:0}
@@ -275,6 +292,19 @@
     .main .finding .fn{display:none!important}
     /* 分析メモは紙に出さない（本編と計算方法・方針が食い違うため） */
     .memo{display:none!important}
+
+    /* ★ 紙では節番号を振り直す（2026-08-28 レビュー5回目 §3-2）。
+       「01 主要指標」を紙で落としているため、画面の番号をそのまま出すと
+       **02 から始まる「01 が抜けた資料」**に見えます。
+       ⚠ display:none の要素はカウンタを増やしません。だから隠した節は自動で飛ばされます。
+         この性質に頼っているので、`.sumsec` の隠し方を visibility:hidden 等に変えないこと。 */
+    .secn{display:none}
+    .sheet{counter-reset:psec}
+    h2 .eyebrow::before{
+      counter-increment:psec;
+      content:counter(psec, decimal-leading-zero) "\00a0\00a0";
+      color:var(--muted);letter-spacing:.02em;
+    }
     /* ⚠ !important は消さないこと。JS が toolbar に style.display='flex' を
        インラインで当てるため、!important が無いと印刷・PDF にツールバーが写り込みます
        （2026-08-17 に実際に混入した PDF を出しかけました）。 */
@@ -295,6 +325,9 @@
 
 <script>
 const DATA_URL = 'data.json';
+// ?debug=1 のときだけ出す内部向け表示（いまは「分析メモ」だけ）。
+// ⚠ ここに機微なものを足さないこと。URL に付けるだけで誰でも見られます。
+const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
 let REPORTS = [];
 // ★ チャンネル名は data.json の meta.channel_title から入れます（2026-08-21 追加）。
 //    ここの初期値は data.json を読めなかったときの保険です。⚠ 直書きに戻さないこと。
@@ -669,7 +702,9 @@ const cut = (t,n)=> (t||'').length>n ? esc(t.slice(0,n-1))+'…' : esc(t||'');
 //   純減の週は意味が成立しません。自動レポートの見出しとして安定しません。
 // ════════════════════════════════
 function causeSplit(rep, views, viewsPrev){
-  const all = (rep.top_videos||[]).map(v=>({t:v.title, d:(v.views_week||0)-(v.views_prev_week||0)}));
+  // short … データ側の短い表示名（任意）。pub … 公開日。見出しでタイトルを切らないために使う
+  const all = (rep.top_videos||[]).map(v=>({t:v.title, short:v.short_title||'', pub:v.published_at||'',
+                                            d:(v.views_week||0)-(v.views_prev_week||0)}));
   if(!all.length || viewsPrev==null) return null;
   const tot     = views - viewsPrev;
   const restRaw = tot - all.reduce((s,x)=>s+x.d,0);      // 上位8本の外にあるぶん（正味）
@@ -677,8 +712,10 @@ function causeSplit(rep, views, viewsPrev){
   const dns = all.filter(x=>x.d<0).sort((a,b)=>a.d-b.d);
   const upOther = ups.slice(3).reduce((s,x)=>s+x.d,0) + Math.max(0, restRaw);
   const dnOther = dns.slice(3).reduce((s,x)=>s+x.d,0) + Math.min(0, restRaw);
-  const upRows = ups.slice(0,3).map(x=>({t:x.t, d:x.d}));
-  const dnRows = dns.slice(0,3).map(x=>({t:x.t, d:x.d}));
+  // ⚠ ここで {t,d} だけに絞らないこと。short_title / published_at が落ちて、
+  //   見出しが「最大の1本」に化けます（2026-08-28 に実際に起きた）。
+  const upRows = ups.slice(0,3).map(x=>({...x}));
+  const dnRows = dns.slice(0,3).map(x=>({...x}));
   // ⚠ 両側に同じ「その他の動画（合計）」を出さないこと。同じ項目が増えた側と減った側に
   //   同時にあるように見えます（2026-08-28 レビュー4回目 §4-4）。側ごとに名前を分けます。
   if(upOther > 0) upRows.push({t:'その他の増加要因', d:upOther, other:true});
@@ -700,11 +737,14 @@ function causeBlock(rep, views, viewsPrev){
   //   ずれる週だけ「約」を付けます（常に付けない。付けっぱなしだと精度の情報が伝わりません）。
   const r1 = n => Math.round(n/1000)/10;                    // 万・小数第1位
   const approx = (Math.abs(r1(S.upSum)+r1(S.dnSum)-r1(S.tot)) > 0.05) ? '約' : '';
+  // ⚠⚠ 演算子と符号を二重に書かないこと（2026-08-28 レビュー5回目 §3-1）。
+  //   「− 減少要因 −16.9万回」は −(−16.9) と読めて、**足し算に見えます。**
+  //   演算子（＋ − ＝）は式の記号、数字は**絶対値**で書きます。純増だけ符号を付けます。
   return `<div class="wf">
 <span>前週 <b>${fmtMan(S.viewsPrev)}回</b></span>
-<span class="op">＋</span><span>増加要因 <b style="color:${C_UP}">${approx}+${fmtMan(S.upSum)}回</b></span>
-<span class="op">−</span><span>減少要因 <b style="color:${C_DOWN}">${approx}−${fmtMan(Math.abs(S.dnSum))}回</b></span>
-<span class="op">＝</span><span>今週 <b>${fmtMan(S.views)}回</b>（差し引き ${S.tot>=0?'+':'−'}${fmtMan(Math.abs(S.tot))}回）</span>
+<span class="op">＋</span><span>増加要因 <b style="color:${C_UP}">${approx}${fmtMan(S.upSum)}回</b></span>
+<span class="op">−</span><span>減少要因 <b style="color:${C_DOWN}">${approx}${fmtMan(Math.abs(S.dnSum))}回</b></span>
+<span class="op">＝</span><span>今週 <b>${fmtMan(S.views)}回</b>（純増 ${S.tot>=0?'+':'−'}${fmtMan(Math.abs(S.tot))}回）</span>
 </div>
 <div class="facwrap">${list(S.upRows, C_UP, '増えた要因')}${list(S.dnRows, C_DOWN, '減った要因')}</div>
 ${/* ⚠ 本編には短い1行だけ。詳しい集計条件は運用詳細（.facnote）に置きます
@@ -804,6 +844,60 @@ function subLine(rep){
 }
 
 // ════════════════════════════════
+// オーナー判断（2026-08-28 レビュー5回目 §1 で復活）
+//
+// ★ 一度は冒頭の1行として出し、運営者の指示でいったん全部消しました。
+//   ただし **「オーナーに何をしてほしいか」は 04 のアクションからは読み取れません。**
+//   「ショート動画を週3本追加する」と書いてあっても、現行予算で運営が実行するのか／
+//   確認が欲しいのか／追加費用の承認が要るのかは、アクション名からは分かりません。
+//   そこで **重さに応じて出し方を変える** 形にしました。04 とは役割が分かれます:
+//     04 = 運営が何をするか ／ ここ = オーナーに何をしてほしいか
+//
+//   判断不要 … タイトル横の小さなバッジ「オーナー対応なし」だけ（1行を使わない）
+//   要確認   … 冒頭に控えめな通知を1行
+//   要承認   … 冒頭に強い通知（⚠ 何を・推奨案・費用または影響・期限 を添えること）
+//   未設定   … 確定週なら赤で警告。**「判断不要」に化けさせないこと。**
+//
+// ⚠⚠ 値が無いときに「判断不要」を既定にしないこと。入力漏れが
+//   「オーナーのやることは無い」としてそのまま提出される事故になります。
+// ════════════════════════════════
+const OWNER_GATE_RANK = {none:0, confirm:1, approve:2};
+function ownerState(rep){
+  const ai = rep.ai_analysis || {};
+  const raw = (ai.owner_decision||'').trim();
+  if(raw) return {level: /要承認/.test(raw) ? 'approve' : /要確認/.test(raw) ? 'confirm' : 'none',
+                  text: raw, derived:false};
+  // 明示が無くても、各アクションが owner_gate を持っていれば**いちばん重いもの**へ集約する。
+  // ⚠ これは推測ではなくデータの集約です。gate が1つも無ければ「未設定」のままにします。
+  const gates = (ai.suggestions||[]).map(s=>(s&&s.owner_gate)||'').filter(g=>g in OWNER_GATE_RANK);
+  if(gates.length){
+    const lv = gates.reduce((a,b)=>OWNER_GATE_RANK[b]>OWNER_GATE_RANK[a]?b:a, 'none');
+    // ⚠ ここに「要確認」「要承認」の語を入れないこと。表示側で見出しとして付けるので二重になります。
+    return {level: lv, derived:true,
+            text: lv==='approve' ? 'アクションから集約しました。何を承認してほしいか・推奨案・費用または影響・期限を書いてください'
+                : lv==='confirm' ? 'アクションから集約しました。確認事項を1つに絞って書いてください'
+                : '判断不要'};
+  }
+  return {level:'unset', text:'未設定', derived:false};
+}
+// タイトル横の小さなバッジ。判断不要のときだけ出す（要確認・要承認は下の通知で出す）
+function ownerBadge(rep){
+  const s = ownerState(rep);
+  if(s.level==='none')  return `<span class="badge">オーナー対応なし</span>`;
+  if(s.level==='unset' && rep.final) return `<span class="badge bad">オーナー判断 未設定</span>`;
+  return '';
+}
+// 冒頭の通知。要確認・要承認・（確定週の）未設定のときだけ1行出す
+function ownerNotice(rep){
+  const s = ownerState(rep);
+  if(s.level==='confirm') return `<div class="onote confirm"><b>要確認</b>　${esc(s.text.replace(/^要確認[｜|：:\s]*/,''))}</div>`;
+  if(s.level==='approve') return `<div class="onote approve"><b>要承認</b>　${esc(s.text.replace(/^要承認[｜|：:\s]*/,''))}</div>`;
+  if(s.level==='unset' && rep.final)
+    return `<div class="onote approve"><b>オーナー判断が未設定です</b>　運用手順 §7 の基準で 判断不要／要確認／要承認 のいずれかを入れてください。<b>「判断不要」と決めつけて出さないこと。</b></div>`;
+  return '';
+}
+
+// ════════════════════════════════
 // 今週の結論（レポートのいちばん上）
 // ⚠ 2026-08-28 全面作り直し（レビュー3回目 §1・運営者の承認済み）。
 //   旧版は「今週はやや好調。26週平均の126%（26週中7位）」がページで最も強い見出しでした。
@@ -859,17 +953,15 @@ function verdictBlock(rep, views, viewsPrev){
     }
   }
 
-  // ⚠⚠ 2026-08-28 運営者の指示で **「次週の確認」「運用変更」「オーナー判断」の3行を削除**しました。
-  //   ★ 復活させないこと。理由:
-  //     ① 「次週の確認」は **04 次週のアクションの1件目と同じ文が並んでいました**
-  //        （実データで「ショートフィード首位が次週も続くか確認」が冒頭と 04 に二重掲載）。
-  //     ② 「運用変更」「オーナー判断」も 04 のアクションを見れば分かる内容で、
-  //        冒頭に3行足すぶん、結論と数字が下へ押し下げられていました。
-  //   ⚠ `ai_analysis` の `owner_decision` / `ops_change` / `next_check` は**データには残っています**が、
-  //     **どこにも表示していません。**必要になったら復活させられるように残しているだけです。
-  //     `check_report_format.py` も「あれば形を検査する」だけにしてあり、**必須ではありません**。
+  // ⚠⚠ 2026-08-28 運営者の指示で **「次週の確認」「運用変更」の2行を削除**しました。
+  //   ★ この2つを冒頭へ戻さないこと。理由:
+  //     ① 「次週の確認」は **04 次週のアクションの1件目と同じ文**でした
+  //        （`next_check` が無いと `suggestions[0].title` を使う作りなので、構造上ほぼ毎週重複します）。
+  //     ② 「運用変更：なし」は、種別（検証/分析/計測整備）が出ているので 04 を見れば分かります。
+  //   ⚠ `ai_analysis.next_check` / `ops_change` はデータに残していますが、**表示していません。**
 
   return `<div class="verdict"><span class="lv">${esc(head)}</span></div>
+${ownerNotice(rep)}
 <div class="tiles">
 ${tile(fmtMan(views)+'回', '週間視聴回数', `前週比 ${(dp>=0?'+':'')+dp.toFixed(1)}%`)}
 ${/* ⚠ ここに動画名を出さないこと。省略されたタイトル（「ブラフレイズに「ブラ…」）は
@@ -978,14 +1070,23 @@ function renderReportPage(rep){
   // ⚠ ここに割合（「増加分の87%」）を戻さないこと（2026-08-28 レビュー3回目 §2）。
   //   分母が純増（増加要因−減少要因）なので、純増が小さい週は200%・500%になり、
   //   純減の週は意味が成立しません。自動レポートの見出しとして安定しません。実数だけで書きます。
+  // ⚠ 見出しで動画タイトルを途中省略しないこと（2026-08-28 レビュー5回目 §3-3）。
+  //   「最大の増加要因は「ブラフレイズに「ブラフオールイ…」の +11.7万回」は
+  //   **かぎ括弧が二重になり、タイトルの終わりが分からず、未完成に見えます。**
+  //   タイトルは下の一覧で確認できるので、見出しでは**公開日**で指します。どの週でも安定します。
+  //   ★ タイトルを使いたくなったら、文字数で機械的に切らず、データ側に短い表示名
+  //     （`top_videos[].short_title`）を持たせてください。対応済みです。
   const causeLead = (()=>{
     const S = causeSplit(rep, views, viewsPrev);
     if(!S) return '';
     const t = `純増は ${(S.tot>=0?'+':'−')+fmtMan(Math.abs(S.tot))}回`;
     if(!S.upRows.length) return `${t}。増えた動画はありません`;
     const u = S.upRows[0];
-    return u.other ? `${t}。特定の1本では説明できず、全体が動いています`
-                   : `${t}。最大の増加要因は「${cut(u.t,16)}」の +${fmtMan(u.d)}回`;
+    if(u.other) return `${t}。特定の1本では説明できず、全体が動いています`;
+    const label = u.short ? `「${esc(u.short)}」`
+                : u.pub   ? `${String(u.pub).slice(5).replace('-','/').replace(/^0/,'')}公開動画`
+                          : '最大の1本';
+    return `${t}。最大の増加要因は ${label}の +${fmtMan(u.d)}回`;
   })();
   const cpLead = (()=>{
     if(!COUPON||COUPON.error) return '';
@@ -1031,6 +1132,19 @@ function renderReportPage(rep){
   const actList = (ai&&(ai.suggestions||[]).length)
     ? `<div class="acts2">${ai.suggestions.map((s,i)=>{const t=(typeof s==='string')?{title:s,actions:[]}:(s||{});
         const k = KINDS.includes(t.kind) ? t.kind : '';
+        const A = t.actions || [];
+        // ★ 本編は「タイトル＋結果が分かる1行」まで。詳しい確認方法は折りたたむ
+        //   （2026-08-28 レビュー5回目 §4-1）。紙の1ページ目と同じ情報量にそろえます。
+        //   ⚠ 2行目以降を開いたまま並べないこと。04 だけでPC1画面・スマホ数画面を使います。
+        const rest = A.slice(1);
+        return `<div class="act"><div class="an">${String(i+1).padStart(2,'0')}${k?`<div class="ak">${esc(k)}</div>`:''}</div><div>
+<div class="at">${esc(t.title||'')}</div>${A.length?`<div class="aa">${esc(A[0])}</div>`:''}${rest.length?`
+<details class="more"><summary>確認方法を見る</summary>${rest.map(a=>`<div class="aa">${esc(a)}</div>`).join('')}</details>`:''}</div></div>`;}).join('')}</div>`
+    : '';
+  // 印刷の完全版（運用詳細）では、確認方法をすべて開いたまま出す
+  const actListFull = (ai&&(ai.suggestions||[]).length)
+    ? `<div class="acts2">${ai.suggestions.map((s,i)=>{const t=(typeof s==='string')?{title:s,actions:[]}:(s||{});
+        const k = KINDS.includes(t.kind) ? t.kind : '';
         return `<div class="act"><div class="an">${String(i+1).padStart(2,'0')}${k?`<div class="ak">${esc(k)}</div>`:''}</div><div><div class="at">${esc(t.title||'')}</div>${(t.actions||[]).map(a=>`<div class="aa">${esc(a)}</div>`).join('')}</div></div>`;}).join('')}</div>`
     : '';
 
@@ -1038,7 +1152,7 @@ function renderReportPage(rep){
 ${/* ★ タイトルは2段（2026-08-28 レビュー3回目 §7）。
       チャンネル名を1行目に置くと、スマホでは名前の途中で折り返し、「確定」バッジが
       タイトルの途中に見えていました。**何のページか**を先に出します。 */''}
-<h1>週次レポート<span class="badge">${rep.final?'データ確定':`速報 ${rep.confirmed_days}/7日`}</span></h1>
+<h1>週次レポート<span class="badge">${rep.final?'データ確定':`速報 ${rep.confirmed_days}/7日`}</span>${ownerBadge(rep)}</h1>
 <div class="sub">${esc(CHANNEL)}<br>${fmtDate(rep.week_start)}（土）〜 ${fmtDate(rep.week_end)}（金）${rep.final?'':'　※確定データが揃い次第、自動で更新されます'}</div>
 
 ${verdictBlock(rep, views, viewsPrev)}
@@ -1054,9 +1168,15 @@ ${/* ⚠ この節は**紙には出しません**（.sumsec を印刷で非表�
 <div class="sumsec">
 ${sec('主要指標', partial?`確定は${rep.confirmed_days}日ぶんです`
       : (subsNet!=null ? `登録者は ${(subsNet>=0?'+':'')+fmtFull(subsNet)}人（前週 ${c.subs_net_prev!=null?((c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+'人'):'—'}）` : ''), '')}
+${/* ★ 表そのものは折りたたみ（2026-08-28 レビュー5回目 §4-2）。
+      冒頭の3タイルと補助指標1行で 視聴回数・前週比・総再生時間・登録者・公開本数 は
+      すでに出ており、この表はその大部分と重複しています。
+      ⚠ 見出しの断定文（登録者は…）は畳まないこと。ここだけで足りる週が多いためです。 */''}
+<details class="more"><summary>主要指標の詳細を見る</summary>
 ${sumTable('pconly scrollx')}
 ${sumMobile}
 ${c.subscribers_end!=null?`<div class="note key">週末時点の登録者数 ${fmtFull(Math.round(c.subscribers_end))}人。${planLine(rep, pp)}</div>`:''}
+</details>
 </div>
 
 ${causeLead?sec('前週から何が変わったか', causeLead, ''):''}
@@ -1096,8 +1216,8 @@ ${causeBlock(rep, views, viewsPrev)}
 <div class="note">上の棒はすべて左端が起点で、いちばん大きい要因を100%とした長さです。片側3本までを出し、残りは「その他」にまとめています。<b>その他は上位8本の外にある動画の増減を打ち消し合った正味の値</b>なので、個々の動画の増減より小さく見えることがあります。</div>
 ${trafficChart()}
 ${window._SPLIT?`<div class="note">${esc(window._SPLIT.nm)}は今週 ${fmtMan(window._SPLIT.now)}回（前週 ${fmtMan(window._SPLIT.p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「除いた残り」には6本目以降と過去動画が入ります</div>`:''}
-${actList?`<h2><span class="eyebrow">次週のアクション（詳しい確認方法）</span></h2>
-${actList}`:''}
+${actListFull?`<h2><span class="eyebrow">次週のアクション（詳しい確認方法）</span></h2>
+${actListFull}`:''}
 </div>
 
 ${(rep.top_videos||[]).length?`${sec('今週よく見られた動画', topLead, '')}
@@ -1123,7 +1243,11 @@ ${/* ★ 冒頭にあった5段落の自由文章はここに保管していま�
       ⚠ 折りたたみ（<details>）＋印刷対象外にしてあります。**開いた状態に戻さないこと。**
       ⚠ 中身を本編と整合させて直すのは、この文章を書き直す作業です。運用手順 §7 の
         生成仕様を変えるときに、まとめて直してください。 */''}
-${ai&&(ai.analysis||ai.headline)?`<details class="memo" style="margin-top:34px">
+${/* ⚠⚠ 本番のオーナー画面には**入口ごと出しません**（2026-08-28 レビュー5回目 §3-4）。
+      折りたたんでも「なぜ計算方法の違う旧形式が同じ資料にあるのか」「どちらが正しいのか」
+      という疑問がオーナー側に生まれるためです。**履歴を残すことと、提出資料に入口を置くことは別**です。
+      読むときは URL に `?debug=1` を付けてください。 */''}
+${(DEBUG && ai && (ai.analysis||ai.headline))?`<details class="memo" style="margin-top:34px">
 <summary style="cursor:pointer;font-size:11.5px;color:var(--muted);letter-spacing:.06em">分析メモ（旧形式・本編とは計算方法が異なります／印刷対象外）</summary>
 <div class="note" style="margin-top:8px">⚠ この文章は本編より前に書かれたもので、<b>本編と数字の出し方が違います</b>（例: 本編「1本を除くと +3.0%」／メモ「+2.9%」）。<b>判断には本編の数字を使ってください。</b></div>
 ${ai.headline?`<div class="note key" style="margin-top:8px"><b>要約</b>　${esc(ai.headline)}</div>`:''}
