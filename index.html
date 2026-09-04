@@ -3096,10 +3096,11 @@ function renderPeriod(){
   }
   if(!r){ body.innerHTML = `<div class="card"><div style="color:var(--muted);font-size:13px">この期間はまだ出せません。</div></div>`; return; }
 
-  const c = r.cur;
-  const man = M.fmtMan, full = M.fmtFull;
-  const dl = r.deltaPct==null ? '—' : `${r.deltaPct>=0?'+':''}${r.deltaPct.toFixed(1)}%`;
-  // ⚠ 前期が無いときに「増加」と書かないこと（年初来は前年が手元にありません）
+  const c = r.cur, man = M.fmtMan, full = M.fmtFull, esc = M.esc;
+  const sign = v => (v>=0?'+':'') + v.toFixed(1) + '%';
+  const dl  = r.deltaPct==null ? '—' : sign(r.deltaPct);
+  const yl  = r.yoy ? sign(r.yoy.deltaPct) : '—';
+  // ⚠ 前期が無いときに「増加」と書かないこと
   const head = r.deltaPct==null
     ? `${r.label}の視聴は1日あたり ${man(c.viewsPerDay)}回です`
     : `${r.label}の視聴は1日あたり ${man(c.viewsPerDay)}回。${r.prevLabel}より ${dl} で${r.dir}です`;
@@ -3108,36 +3109,85 @@ function renderPeriod(){
   const dur = c.avgDurationSec==null ? '—'
     : (c.avgDurationSec<60 ? `${c.avgDurationSec}秒`
       : `${Math.floor(c.avgDurationSec/60)}分${String(c.avgDurationSec%60).padStart(2,'0')}秒`);
-  // ⚠⚠ 初速は月ごとの中央値をそのまま並べます。期間でならして1つにしないこと
-  //   （中央値の中央値は中央値ではありません）。本数(n)も必ず添えること。
+  // ⚠⚠ 初速は月ごとの中央値をそのまま。期間でならして1つにしないこと（中央値の中央値は中央値ではない）
   const sp = c.speedByMonth.filter(x=>x.median!=null)
-    .map(x=>`${String(x.key).replace('-','/')} ${man(x.median)}<span style="color:var(--muted-2)">(${x.n}本)</span>`).join('　');
+    .map(x=>`${String(x.key).replace('-','/')} ${man(x.median)}<span style="color:var(--muted-2)">(${x.n})</span>`).join('　');
 
-  const tile = (v,l,s2)=>`<div><div style="font-size:22px;font-weight:700;line-height:1.3">${v}</div>
+  const tile = (v,l,s2)=>`<div><div style="font-size:21px;font-weight:700;line-height:1.3">${v}</div>
     <div style="font-size:11px;color:var(--muted);margin-top:2px">${l}</div>
-    ${s2?`<div style="font-size:12px;color:var(--muted-2);margin-top:3px">${s2}</div>`:''}</div>`;
-  const row = (k,v)=>`<div style="display:flex;gap:14px;align-items:baseline;font-size:13px;line-height:1.75;margin-top:5px">
-    <span style="flex:0 0 96px;color:var(--muted);font-size:11px">${k}</span><span>${v}</span></div>`;
+    ${s2?`<div style="font-size:11.5px;color:var(--muted-2);margin-top:3px">${s2}</div>`:''}</div>`;
+  const row = (k,v)=>`<div style="display:flex;gap:14px;align-items:baseline;font-size:13px;line-height:1.8;margin-top:6px">
+    <span style="flex:0 0 104px;color:var(--muted);font-size:11px">${k}</span><span style="flex:1">${v}</span></div>`;
+
+  // 期間の中の動き。⚠ 棒は「日あたり」。合計にすると日数の違いで最終月が不当に低く見えます
+  // ⚠ 棒を画面幅いっぱいに広げないこと。3本のときスカスカに見えます。本数ぶんだけ確保します
+  const barW = r.inner.length <= 4 ? 64 : (r.inner.length <= 8 ? 52 : 42);
+  const bars = r.inner.map(x=>{
+    const h = r.peak ? Math.max(4, Math.round(x.viewsPerDay/r.peak*96)) : 4;
+    const on = r.best && x.key===r.best.key;
+    return `<div style="flex:0 0 ${barW}px;display:flex;flex-direction:column;align-items:center;gap:5px">
+      <div style="font-size:10.5px;color:${on?'var(--gold)':'var(--muted)'};white-space:nowrap">${man(x.viewsPerDay)}</div>
+      <div style="width:${Math.round(barW*0.62)}px;height:${h}px;background:${on?'var(--gold)':'rgba(255,255,255,.18)'};border-radius:3px 3px 0 0"></div>
+      <div style="font-size:9.5px;color:var(--muted-2);white-space:nowrap">${esc(x.key)}</div></div>`;
+  }).join('');
+
+  const types = r.videos.types.map(t=>`${esc(t.name)} ${t.count}`).join(' ／ ') || '—';
+  const nars  = r.videos.narrators.map(t=>`${esc(t.name)} ${t.count}`).join(' ／ ') || '—';
+  const tops  = r.videos.top.map((v,i)=>
+    `<div style="display:flex;gap:10px;align-items:baseline;margin-top:6px">
+       <span style="color:var(--muted-2);font-size:11px;flex:0 0 14px">${i+1}</span>
+       <a href="https://www.youtube.com/watch?v=${v.video_id}" target="_blank" rel="noopener"
+          style="flex:1;min-width:0;font-size:12.5px;color:var(--ink);text-decoration:none">${esc(v.title)}</a>
+       <span style="font-size:12px;color:var(--muted);white-space:nowrap">${man(v.views)}</span></div>`).join('');
+
+  const eff = r.per10k==null ? '—'
+    : `${r.per10k}人${r.per10kPrev!=null?`<span style="color:var(--muted-2)">（前期 ${r.per10kPrev}人）</span>`:''}`;
 
   body.innerHTML = `
   <div class="card">
-    <div style="border-left:3px solid var(--gold);padding:2px 0 2px 14px;margin-bottom:18px;font-size:17px;font-weight:700;line-height:1.5">${M.esc(head)}</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px 24px">
-      ${tile(man(c.views)+'回', `${M.esc(r.label)}の視聴回数`, `${c.days}日ぶん`)}
-      ${tile(dl, r.prevLabel?`${M.esc(r.prevLabel)}との比較（日あたり）`:'前期比', r.prevLabel?'':'比べられる前期がありません')}
+    <div style="border-left:3px solid var(--gold);padding:2px 0 2px 14px;margin-bottom:18px;font-size:17px;font-weight:700;line-height:1.5">${esc(head)}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:16px 22px">
+      ${tile(man(c.views)+'回', `${esc(r.label)}の視聴回数`, `${c.days}日ぶん・1日 ${man(c.viewsPerDay)}回`)}
+      ${tile(dl, r.prevLabel?`${esc(r.prevLabel)}比`:'前期比', r.prevLabel?'日あたりで比較':'比べられる前期がありません')}
+      ${tile(yl, '前年同期比', r.yoy?`昨年は1日 ${man(r.yoy.viewsPerDay)}回`:'昨年のデータがありません')}
       ${tile((c.subsNet>=0?'+':'')+full(c.subsNet)+'人', '登録者の純増', `獲得 ${full(c.subsGained)} / 解除 ${full(c.subsLost)}`)}
     </div>
-    <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:12px">
-      ${row('期間', `${M.fmtDate(c.from)} 〜 ${M.fmtDate(c.to)}（確定 ${c.days}日ぶん）`)}
-      ${row('中身の内訳', `既存の動画が1日あたり ${man(c.basePerDay)}回。この期間に公開した動画が全体の <b>${c.newRatioPct==null?'—':c.newRatioPct+'%'}</b>`)}
-      ${row('公開したもの', `${c.videoCount}本（平均 ${dur}）${hrs!=null?`　総再生時間 ${full(hrs)}時間`:''}`)}
-      ${sp?row('新作の初速', `<span style="font-size:12px">${sp}</span>`):''}
-    </div>
-    <div style="font-size:11px;color:var(--muted-2);line-height:1.7;margin-top:14px">
-      初速は公開当日＋翌日の合計の中央値。<b>2日そろっていない動画は数えていません</b>（括弧内が本数）。月ごとに並べているのは、中央値は期間をまたいで合成できないためです。
-      「既存」は期間の開始より前に公開した動画ぶん。⚠ 既存と新作の合計は上の視聴回数と一致しません（集計元が違います）。
-      ${r.span==='ytd'?'年初来は<b>比較できる前年が手元にないため、前期比を出していません</b>。':''}
-      今月は<b>確定した日数ぶんだけ</b>です。確定は ${M.fmtDate(r.confirmedThrough)} まで。
+  </div>
+
+  <div class="card">
+    <h3><span class="dot"></span>${esc(r.innerUnit)}ごとの動き（1日あたりの視聴回数）</h3>
+    <div style="display:flex;gap:8px;align-items:flex-end;padding:6px 0 2px;overflow-x:auto;justify-content:flex-start">${bars}</div>
+    ${r.best&&r.worst&&r.best.key!==r.worst.key?`<div style="font-size:12px;color:var(--muted);margin-top:10px">
+      いちばん高い${esc(r.innerUnit)}は <b style="color:var(--gold)">${esc(r.best.key)}</b>（1日 ${man(r.best.viewsPerDay)}回）、
+      低い${esc(r.innerUnit)}は ${esc(r.worst.key)}（1日 ${man(r.worst.viewsPerDay)}回）。差は ${(r.best.viewsPerDay/Math.max(1,r.worst.viewsPerDay)).toFixed(1)}倍です。</div>`:''}
+  </div>
+
+  <div class="card">
+    <h3><span class="dot"></span>中身</h3>
+    ${row('期間', `${M.fmtDate(c.from)} 〜 ${M.fmtDate(c.to)}（確定 ${c.days}日ぶん）`)}
+    ${row('既存と新作', `既存の動画が1日あたり ${man(c.basePerDay)}回。この期間に公開した動画が全体の <b>${c.newRatioPct==null?'—':c.newRatioPct+'%'}</b>`)}
+    ${row('公開したもの', `${c.videoCount}本（平均 ${dur}）${hrs!=null?`　総再生時間 ${full(hrs)}時間`:''}`)}
+    ${row('企画タイプ', types)}
+    ${row('ナレーター', nars)}
+    ${sp?row('新作の初速', `<span style="font-size:12px">${sp}</span>　<span style="color:var(--muted-2);font-size:11px">括弧は本数</span>`):''}
+    ${row('登録の効率', `1万再生あたり ${eff}`)}
+    ${row('クーポン', `${r.videos.couponCount}本にクーポンを付けています`)}
+  </div>
+
+  ${tops?`<div class="card">
+    <h3><span class="dot"></span>この期間に公開した動画（再生の多い順）</h3>
+    ${tops}
+    <div style="font-size:11px;color:var(--muted-2);margin-top:10px">⚠ 数字は<b>公開以来の累計</b>です。この期間だけの再生数ではありません。</div>
+  </div>`:''}
+
+  <div class="card">
+    <div style="font-size:11px;color:var(--muted-2);line-height:1.8">
+      ・前期比・前年同期比とも<b>1日あたりで比べています</b>。今月は確定した日数ぶんしか無いため、合計で比べると必ず今期が小さく出ます。<br>
+      ・前年同期はチャンネル全体の日次から出しています。⚠ 既存/新作の分解と初速は日次に無いため、そちらは直近12ヶ月ぶんだけです。<br>
+      ・初速は公開当日＋翌日の合計の中央値。<b>2日そろっていない動画は数えていません</b>。月ごとに並べているのは、中央値は期間をまたいで合成できないためです。<br>
+      ・「既存」は期間の開始より前に公開した動画ぶん。⚠ 既存と新作の合計は上の視聴回数と一致しません（集計元が違います）。<br>
+      ・登録の効率は<b>獲得</b>で計算しています（解除は視聴と結びつけにくいため）。<br>
+      ・確定は ${M.fmtDate(r.confirmedThrough)} まで。
     </div>
   </div>`;
 }

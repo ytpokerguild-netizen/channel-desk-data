@@ -351,35 +351,107 @@
     };
   }
 
+  /* 期間の合計を analytics_daily（チャンネル全体の日次。2022年からの4年分がある）から出す。
+     ⚠ ここでしか出せないもの: **前年同期**。period_summary は12ヶ月ぶんしか無いので、
+       年初来の比較相手が作れませんでした。日次はもっと遡れるので、そちらから取ります。
+     ⚠ 日次にあるのは views / watch_min / subs のみ。**既存/新作の分解と初速はありません**
+       （video_daily.json が要る）。分解が要る数字は period_summary から取ること。 */
+  function dailySpan(data, from, to) {
+    const ad = (data && data.analytics_daily) || [];
+    let views = 0, watch = 0, g = 0, l = 0, days = 0;
+    for (const r of ad) {
+      if (r.date < from || r.date > to) continue;
+      if (!(r.views > 0)) continue;               // 未確定日は数えない
+      views += r.views || 0; watch += r.watch_min || 0;
+      g += r.subs_gained || 0; l += r.subs_lost || 0; days++;
+    }
+    if (!days) return null;
+    return { from, to, days, views, viewsPerDay: Math.round(views / days),
+             watchMin: watch, subsGained: g, subsLost: l, subsNet: g - l };
+  }
+  const shiftYear = (d, n) => { const t = new Date(d + 'T00:00:00Z');
+    t.setUTCFullYear(t.getUTCFullYear() + n); return t.toISOString().slice(0, 10); };
+
+  /* その期間に公開した動画の顔ぶれ。videos と video_archive（企画タイプ／ナレーター／クーポン）から。
+     ⚠ `videos[].views` は**公開以来の累計**です。期間内の再生数ではありません。画面でもそう書くこと。 */
+  function periodVideos(data, from, to) {
+    const vs = (data && data.videos) || [], ar = (data && data.video_archive) || {};
+    const inRange = vs.filter(v => { const d = String(v.published_at || '').slice(0, 10);
+      return d >= from && d <= to; });
+    const tally = key => {
+      const m = new Map();
+      for (const v of inRange) { const k = (ar[v.video_id] || {})[key]; if (!k) continue;
+        m.set(k, (m.get(k) || 0) + 1); }
+      return [...m.entries()].map(([name, count]) => ({ name, count })).sort((x, y) => y.count - x.count);
+    };
+    return {
+      count: inRange.length,
+      types: tally('type'), narrators: tally('narrator'),
+      couponCount: inRange.filter(v => (ar[v.video_id] || {}).coupon).length,
+      top: inRange.slice().sort((a, b) => (b.views || 0) - (a.views || 0)).slice(0, 3)
+             .map(v => ({ video_id: v.video_id, title: v.title, views: v.views,
+                          published_at: String(v.published_at || '').slice(0, 10) }))
+    };
+  }
+
   function periodReport(data, span) {
     const ps = data && data.period_summary;
     const ms = (ps && ps.months) || [];
     if (!ms.length) return null;
     const cfg = SPANS[span]; if (!cfg) return null;
 
-    let cur, prev = null, prevLabel = null;
+    let rows, cur, prev = null, prevLabel = null;
     if (span === 'ytd') {
       const y = String(ms[ms.length - 1].key).slice(0, 4);
-      cur = aggPeriod(ms.filter(m => String(m.key).slice(0, 4) === y));
+      rows = ms.filter(m => String(m.key).slice(0, 4) === y);
+      cur = aggPeriod(rows);
     } else {
       const t = cfg.take;
       if (ms.length < t) return null;
-      cur  = aggPeriod(ms.slice(-t));
+      rows = ms.slice(-t);
+      cur  = aggPeriod(rows);
       const pr = ms.slice(-(t * 2), -t);
       if (pr.length === t) { prev = aggPeriod(pr); prevLabel = t === 1 ? '前月' : `その前の${t}ヶ月`; }
     }
     if (!cur) return null;
 
-    // ⚠ 比較は**日あたり**で。当月・当週は確定分だけなので日数が違い、
-    //   合計どうしを比べると必ず今期が小さく見えます。
+    // ⚠ 比較は**日あたり**で。当月は確定分だけなので日数が違い、合計だと必ず今期が小さく見えます。
     const dPct = (prev && prev.viewsPerDay) ? pctNum(cur.viewsPerDay, prev.viewsPerDay) : null;
-    // ⚠ 「横ばい」の帯は週次と同じ FLAT（±5%）を使うこと。別の帯にすると、
-    //   同じページの中で「増加」の意味が2つになります。
+    // ⚠ 「横ばい」の帯は週次と同じ FLAT（±5%）。画面ごとに別の帯を使わないこと。
     const dir = dPct == null ? null : (Math.abs(dPct) < FLAT ? '横ばい' : (dPct > 0 ? '増加' : '減少'));
+
+    // 前年同期（日次から。⚠ 去年まだ動画が無い期間は null になります）
+    const ly = dailySpan(data, shiftYear(cur.from, -1), shiftYear(cur.to, -1));
+    const yoy = (ly && ly.viewsPerDay) ? Object.assign({}, ly,
+      { deltaPct: pctNum(cur.viewsPerDay, ly.viewsPerDay) }) : null;
+
+    // 期間の中の動き。⚠ 1ヶ月しか無いときは週に落とす（1本の棒では推移になりません）
+    let inner = rows.map(r => ({ key: String(r.key).replace('-', '/'),
+      viewsPerDay: r.views_per_day, subsNet: r.subs_net, days: r.days }));
+    let innerUnit = '月';
+    if (rows.length === 1) {
+      const wk = ((ps && ps.weeks) || []).filter(w => w.end >= cur.from && w.start <= cur.to);
+      if (wk.length >= 2) {
+        inner = wk.map(w => ({ key: fmtDate(w.start).slice(5), viewsPerDay: w.views_per_day,
+                               subsNet: w.subs_net, days: w.days }));
+        innerUnit = '週';
+      }
+    }
+    const vals = inner.map(x => x.viewsPerDay).filter(v => v != null);
+    const peak = vals.length ? Math.max(...vals) : null;
+    const best = vals.length ? inner.find(x => x.viewsPerDay === peak) : null;
+    const worst = vals.length ? inner.find(x => x.viewsPerDay === Math.min(...vals)) : null;
+
+    // 登録者の効率。⚠ 純増ではなく**獲得**で割ること（解除は視聴と結びつけにくい）
+    const per10k  = cur.views  ? +(cur.subsGained  / cur.views  * 10000).toFixed(1) : null;
+    const per10kP = (prev && prev.views) ? +(prev.subsGained / prev.views * 10000).toFixed(1) : null;
 
     return {
       span, label: cfg.label, confirmedThrough: ps.confirmed_through || null,
-      cur, prev, prevLabel, deltaPct: dPct, dir
+      cur, prev, prevLabel, deltaPct: dPct, dir, yoy,
+      inner, innerUnit, best, worst, peak,
+      per10k, per10kPrev: per10kP,
+      videos: periodVideos(data, cur.from, cur.to)
     };
   }
 

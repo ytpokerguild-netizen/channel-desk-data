@@ -152,25 +152,6 @@
   .act .an{flex:0 0 auto;min-width:48px;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em}
   .act .ak{font-weight:400;font-size:11px;color:var(--muted);margin-top:1px}
   /* 折りたたみ（確認方法・主要指標の詳細）。⚠ 既定は閉じたまま。開いた状態で保存しないこと */
-  /* ── 期間サマリ（2026-09-04 追加）─────────────────────────
-     ⚠⚠ **この節は紙に出しません（下の @media print で非表示）。**
-       週次レポートのPDFは1ページ目で今週が完結する4ページ構成で、
-       12ヶ月＋26週の表を入れるとその構成が崩れます。
-       長期の推移は画面で見るもの、という切り分けです。
-     ⚠ 画面に出す順は**新しい順**。上に最新が来ないと、開くたびに
-       いちばん下までスクロールすることになります。 */
-  .psec{margin-top:26px;padding-top:20px;border-top:1px solid var(--rule)}
-  .ptabs{display:flex;gap:6px;margin:10px 0 2px}
-  .ptabs button{font:inherit;font-size:12px;font-weight:600;cursor:pointer;
-    padding:5px 14px;border-radius:999px;border:1px solid var(--rule);
-    background:none;color:var(--muted)}
-  .ptabs button.on{background:var(--ink);border-color:var(--ink);color:#fff}
-  .pbody[hidden]{display:none}
-  /* ⚠ 増減を色で分けないこと。このページの色は5つだけと決めてあります（:root のコメント）。
-     符号（+／−）で足ります。色を足すと、どこを見ればよいかがぼやけます。 */
-  .psec td.key{white-space:nowrap}
-  .psec .pd{color:var(--muted);font-size:12px}
-  .psec tbody tr:first-child td{font-weight:600}
   .more{margin-top:5px}
   .more>summary{cursor:pointer;font-size:11.5px;color:var(--accent);letter-spacing:.03em;
                 list-style:none;display:inline-block;padding:1px 0}
@@ -277,8 +258,6 @@
     .scrollx>svg,.scrollx>table{min-width:0}
     .mobonly{display:none!important}
     .pconly{display:block!important}
-    /* ⚠ 期間サマリは紙に出しません（4ページ構成を守るため）。外さないこと。 */
-    .psec{display:none!important}
 
     /* ══════════════════════════════════════════════════════════
        ★ 紙の1ページ目を「オーナー向け報告だけ」で完結させる（2026-08-28 レビュー4回目 §1）。
@@ -365,7 +344,6 @@ let REPORTS = [];
 // ★ チャンネル名は data.json の meta.channel_title から入れます（2026-08-21 追加）。
 //    ここの初期値は data.json を読めなかったときの保険です。⚠ 直書きに戻さないこと。
 let CHANNEL = '【LightTHREE】 -ポーカーメディア‐';
-let DATA_ALL = null; // data.json まるごと（period_summary を読むのに使う。2026-09-04 追加）
 let COUPON  = null;   // data.json の coupon（週ごとの節を出すのに使う）
 let TREND   = null;   // data.json の weekly_trend（直近26週のグラフ用）
 
@@ -959,94 +937,6 @@ function planLine(rep, pp){
 }
 
 
-/* ── 期間レポート（2026-09-04 追加。運営者の依頼「月次・3ヶ月・6ヶ月・年初来のレポートがほしい。
-     データだけの表示は要らない」）───────────────────────────────
-   ⚠⚠ **計算をここに書かないこと。**足し上げも判定も `report_model.js` の `M.periodReport()` です。
-     このファイルは表示だけを担当します（このページ全体の決まりごと）。
-   ★ 週次レポートと**同じ部品**（.verdict / .tiles / .hrow）で描いています。
-     ⚠ 期間レポートだけ別の見た目を作らないこと。同じページの中で2つの様式が混ざります。
-   ⚠ 「横ばい」の帯は週次と同じ ±5%（モデルの FLAT）。ここで別の帯を使わないこと。 */
-const PSPANS = [['month','今月'],['m3','直近3ヶ月'],['m6','直近6ヶ月'],['ytd','年初来']];
-
-function periodPane(r){
-  if(!r) return '<div class="note">この期間はまだ出せません。</div>';
-  const c = r.cur;
-  const tile = (v,l,sub)=>`<div class="tile"><div class="tv">${v}</div><div class="tl">${l}</div>${sub?`<div class="ts">${sub}</div>`:''}</div>`;
-  const dl = r.deltaPct==null ? '—' : `${r.deltaPct>=0?'+':''}${r.deltaPct.toFixed(1)}%`;
-
-  // 断定文。⚠ 前期が無いときに「増加」と書かないこと（年初来は前年が手元にありません）
-  const head = r.deltaPct==null
-    ? `${r.label}の視聴は1日あたり ${fmtMan(c.viewsPerDay)}回です`
-    : `${r.label}の視聴は1日あたり ${fmtMan(c.viewsPerDay)}回。${r.prevLabel}より ${dl} で${r.dir}です`;
-
-  const hrs = c.watchMin!=null ? Math.round(c.watchMin/60) : null;
-  // ⚠ 1分未満を「0分57秒」と出さないこと。ショートは1分未満が普通なので、毎回0分が並びます
-  const dur = c.avgDurationSec==null ? '—'
-    : (c.avgDurationSec < 60 ? `${c.avgDurationSec}秒`
-      : `${Math.floor(c.avgDurationSec/60)}分${String(c.avgDurationSec%60).padStart(2,'0')}秒`);
-  // ⚠⚠ 初速は月ごとの中央値を**そのまま並べます**。期間でならして1つの数字にしないこと
-  //   （中央値の中央値は中央値ではありません）。本数(n)も必ず添えること。
-  const sp = c.speedByMonth.filter(x=>x.median!=null)
-    .map(x=>`${String(x.key).replace('-','/')} ${fmtMan(x.median)}<span class="pd">(${x.n}本)</span>`).join('　');
-
-  return `<div class="verdict"><span class="lv">${esc(head)}</span></div>
-<div class="tiles">
-${tile(fmtMan(c.views)+'回', `${esc(r.label)}の視聴回数`, `${c.days}日ぶん`)}
-${tile(dl, r.prevLabel?`${esc(r.prevLabel)}との比較（日あたり）`:'前期比', r.prevLabel?'':'比べられる前期がありません')}
-${tile((c.subsNet>=0?'+':'')+fmtFull(c.subsNet)+'人', '登録者の純増', `獲得 ${fmtFull(c.subsGained)} / 解除 ${fmtFull(c.subsLost)}`)}
-</div>
-<div class="headrows">
-<div class="hrow"><span class="hk">期間</span><span class="hv">${fmtDate(c.from)} 〜 ${fmtDate(c.to)}（確定 ${c.days}日ぶん）</span></div>
-<div class="hrow"><span class="hk">中身の内訳</span><span class="hv">既存の動画が1日あたり ${fmtMan(c.basePerDay)}回。この期間に公開した動画が全体の <b>${c.newRatioPct==null?'—':c.newRatioPct+'%</b>'}</span></div>
-<div class="hrow"><span class="hk">公開したもの</span><span class="hv">${c.videoCount}本（平均 ${dur}）${hrs!=null?`　総再生時間 ${fmtFull(hrs)}時間`:''}</span></div>
-${sp?`<div class="hrow"><span class="hk">新作の初速</span><span class="hv" style="font-size:12.5px">${sp}</span></div>`:''}
-</div>
-<div class="note">初速は公開当日＋翌日の合計の中央値で、<b>2日そろっていない動画は数えていません</b>（括弧内が本数）。
-月ごとに並べているのは、<b>中央値は期間をまたいで合成できない</b>ためです。本数の少ない月は振れます。
-「既存」は期間の開始より前に公開した動画ぶんです。⚠ 既存と新作の合計は上の視聴回数と一致しません（集計元が違います）。
-${r.span==='ytd'?'年初来は<b>比較できる前年が手元にないため、前期比を出していません</b>。':''}
-今月の行は<b>確定した日数ぶんだけ</b>です。</div>`;
-}
-
-/* ⚠ `sec` は renderReportPage のローカル関数です（節番号の状態を持ちます）。
-     ここで作り直すと番号が二重に進みます。**必ず引数で受け取ること。**
-     この節は最後に置いてあるので、既存の節の番号は動きません。 */
-function periodBlock(sec){
- try{
-  // ⚠⚠ **この節の失敗でレポート全体を落とさないこと。**
-  //   2026-09-04 に実際に起きました: 新しい report.html と**古い report_model.js**（ブラウザの
-  //   キャッシュ）が組み合わさり、`M.periodReport is not a function` でページが真っ白になりました。
-  //   `<script src>` は data.json のように no-cache を指定できず、**新しい画面と古いモデルの
-  //   組み合わせは今後も必ず起きます。**節ひとつの不調は、その節だけで止めます。
-  if(!M || typeof M.periodReport !== 'function')
-    return `<div class="psec">${sec('期間ごとのレポート','','')}
-      <div class="note">この節を表示できません。<b>ブラウザが古い report_model.js を持っています。</b>
-      再読み込み（Mac は ⌘+Shift+R）で直ります。ほかの節は最新です。</div></div>`;
-  const packs = PSPANS.map(([k])=>M.periodReport(DATA_ALL,k));
-  if(!packs.some(Boolean)) return '';
-  const through = (packs.find(Boolean)||{}).confirmedThrough;
-  return `<div class="psec">
-${sec('期間ごとのレポート', `確定しているのは ${fmtDate(through)} までです`, '')}
-<div class="ptabs">
-${PSPANS.map(([k,l],i)=>`<button id="ptab-${k}" class="${i===1?'on':''}" onclick="switchPeriod('${k}')">${l}</button>`).join('')}
-</div>
-${PSPANS.map(([k],i)=>`<div class="pbody" id="pbody-${k}"${i===1?'':' hidden'}>${periodPane(packs[i])}</div>`).join('')}
-<div class="note">この節は画面だけで、印刷・PDFには出ません。</div>
-</div>`;
- }catch(e){
-  // 想定外でも、ここで止めてレポート本体は出す
-  return `<div class="psec">${sec('期間ごとのレポート','','')}
-    <div class="note">この節を表示できませんでした（${esc(e.message||String(e))}）。ほかの節は最新です。</div></div>`;
- }
-}
-
-function switchPeriod(u){
-  for(const [k] of PSPANS){
-    document.getElementById('pbody-'+k).hidden = (k!==u);
-    document.getElementById('ptab-'+k).classList.toggle('on', k===u);
-  }
-}
-
 function renderReportPage(rep){
   const c = rep.channel || {};
   const views     = rep.final ? c.views      : (c.views_snap      ?? c.views);
@@ -1309,8 +1199,6 @@ ${ai.analysis?`<div style="font-size:13px;color:var(--ink-2);margin-top:8px">${S
 </details>`:''}
 </div>
 
-${periodBlock(sec)}
-
 <div class="foot">CHANNEL DESK 自動生成 ／ ${new Date().toLocaleString('ja-JP')} ／ ${esc(CHANNEL)}${ai&&ai.generated_at?` ／ 分析 ${fmtDate(String(ai.generated_at).slice(0,10))}`:''}</div>`;
 
 }
@@ -1330,7 +1218,6 @@ async function loadReport(){
     const r = await fetch(DATA_URL, { cache: 'no-cache' });
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
-    DATA_ALL = data;
     REPORTS = (data.weekly_reports||[]).slice().sort((a,b)=>b.week_start.localeCompare(a.week_start));
     COUPON  = data.coupon || null;
     TREND   = data.weekly_trend || null;
