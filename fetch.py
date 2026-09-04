@@ -24,6 +24,8 @@ from urllib.error   import HTTPError
 
 CHANNEL_ID         = "UCnGhxFzP6V4TczZCs63rXgQ"
 OUTPUT_FILE        = "data.json"
+PERIOD_SUMMARY_MONTHS = 12   # 期間サマリで返す月数（年初来タブが1月まで届く必要がある）
+PERIOD_SUMMARY_WEEKS  = 26   # 同・週数（weekly_trend と同じ本数にそろえる）
 TOKEN_FILE         = "token.json"
 CLIENT_SECRET_FILE = "client_secret.json"
 SNAPSHOT_KEEP_DAYS = 90   # video_snapshots 保持日数
@@ -1322,6 +1324,119 @@ def build_weekly_trend(analytics_daily, weeks=WEEKLY_TREND_WEEKS, video_daily=No
     return out
 
 
+def build_period_summary(analytics_daily, video_daily=None, videos=None,
+                         months=PERIOD_SUMMARY_MONTHS, weeks=PERIOD_SUMMARY_WEEKS):
+    """期間別サマリ（月次・週次）を返す。2026-08-31 追加。
+
+    report.html の期間タブ（今月／直近3ヶ月／直近6ヶ月／年初来）で使います。
+    これを fetch 側で作るのは、既存/新作の分解と初速に video_daily.json（約2.6MB）が
+    要るためです。表示側で読ませるとページを開くたびに取りに行くことになります。
+
+    Returns: {"confirmed_through", "months": [row, ...], "weeks": [row, ...]}  いずれも古い順
+
+    row のキー:
+      key / start / end / days
+      views, views_per_day, watch_min          … analytics_daily（チャンネル全体）
+      base_views, base_per_day, new_views, new_ratio_pct
+                                               … video_daily を「期間開始より前の公開＝既存」で二分
+      video_count, avg_duration_sec
+      speed2_median, speed2_n                  … 初速（公開当日＋翌日）。**2日そろった動画のみ**
+      subs_gained, subs_lost, subs_net, subs_per_10k
+
+    ⚠ base_views + new_views は views と一致しません。前者は動画別日次の合計、
+      後者はチャンネル全体の Analytics で、集計元が違います。割合の分母には
+      base+new を使ってください（new_ratio_pct はそうしています）。
+    ⚠ 確定値が1日も無い期間は返しません。月末に届いていない当月も、確定分だけで出します。
+    """
+    ad = {r["date"]: r for r in analytics_daily if r.get("views", 0) > 0}
+    if not ad:
+        return {"confirmed_through": None, "months": [], "weeks": []}
+    last = date.fromisoformat(max(ad))
+    vmeta = {v["video_id"]: v for v in (videos or [])}
+    vd = video_daily or {}
+
+    def _first2d(vid, pub):
+        rows = sorted([r for r in vd.get(vid, []) if (r.get("date") or "") >= pub],
+                      key=lambda r: r.get("date", ""))[:2]
+        return sum(r.get("views", 0) for r in rows) if len(rows) >= 2 else None
+
+    def _median(xs):
+        xs = sorted(xs)
+        if not xs:
+            return None
+        h = len(xs) // 2
+        return xs[h] if len(xs) % 2 else (xs[h - 1] + xs[h]) / 2
+
+    def _row(key, ws, we):
+        days = [(ws + timedelta(days=i)).isoformat() for i in range((we - ws).days + 1)]
+        got = [ad[x] for x in days if x in ad]
+        if not got:
+            return None
+        s_, e_ = ws.isoformat(), we.isoformat()
+        base = new = 0
+        for vid, rows in vd.items():
+            v = vmeta.get(vid)
+            if not v:
+                continue
+            pub = (v.get("published_at") or "")[:10]
+            if not pub:
+                continue
+            got_v = sum(r.get("views", 0) for r in rows if s_ <= (r.get("date") or "") <= e_)
+            if pub >= s_:
+                new += got_v
+            else:
+                base += got_v
+        pubs = [v for v in (videos or []) if s_ <= (v.get("published_at") or "")[:10] <= e_]
+        sp = [x for x in (_first2d(v["video_id"], (v.get("published_at") or "")[:10]) for v in pubs)
+              if x is not None]
+        views = sum(x.get("views", 0) for x in got)
+        gained = sum(x.get("subs_gained", 0) for x in got)
+        n = len(got)
+        return {
+            "key": key, "start": s_, "end": e_, "days": n,
+            "views": views,
+            "views_per_day": round(views / n),
+            "watch_min": sum(x.get("watch_min", 0) for x in got),
+            "base_views": base,
+            "base_per_day": round(base / n),
+            "new_views": new,
+            "new_ratio_pct": round(new / (base + new) * 100, 1) if (base + new) else None,
+            "video_count": len(pubs),
+            "avg_duration_sec": round(sum(v.get("duration_sec", 0) for v in pubs) / len(pubs)) if pubs else None,
+            "speed2_median": round(_median(sp)) if sp else None,
+            "speed2_n": len(sp),
+            "subs_gained": gained,
+            "subs_lost": sum(x.get("subs_lost", 0) for x in got),
+            "subs_net": gained - sum(x.get("subs_lost", 0) for x in got),
+            "subs_per_10k": round(gained / views * 10000, 2) if views else None,
+        }
+
+    out_m = []
+    y, m = last.year, last.month
+    for _ in range(months):
+        ws = date(y, m, 1)
+        we = min(last, (date(y + (m == 12), (m % 12) + 1, 1) - timedelta(days=1)))
+        r = _row(f"{y:04d}-{m:02d}", ws, we)
+        if r:
+            out_m.append(r)
+        m -= 1
+        if m == 0:
+            y, m = y - 1, 12
+    out_m.reverse()
+
+    out_w = []
+    end = last - timedelta(days=(last.weekday() - 4) % 7)   # 直近の金曜（週は土〜金）
+    for i in range(weeks - 1, -1, -1):
+        we = end - timedelta(days=7 * i)
+        ws = we - timedelta(days=6)
+        r = _row(ws.isoformat(), ws, we)
+        if r and r["days"] == 7:                            # 7日そろった週だけ
+            out_w.append(r)
+
+    print(f"  期間サマリ: 月 {len(out_m)} / 週 {len(out_w)}（確定 {last.isoformat()} まで）")
+    return {"confirmed_through": last.isoformat(), "months": out_m, "weeks": out_w}
+
+
 def _parse_plan_date(s):
     """'2026/6/1' 形式 → date。失敗は None"""
     try:
@@ -1801,6 +1916,7 @@ def main():
         "video_archive":         video_archive,         # 動画アーカイブ（video_id→企画タイプ/ナレーター手入力）
         "weekly_reports":        weekly_reports,        # 週次レポート（土〜金、最大26週）
         "weekly_trend":          build_weekly_trend(analytics_daily, video_daily=video_daily, videos=videos),  # 直近26週の視聴回数・登録純増（グラフ用）
+        "period_summary":        build_period_summary(analytics_daily, video_daily=video_daily, videos=videos),  # 期間別サマリ（月次12・週次26）
         "coupon":                coupon,                # JOPT Games クーポンの集計（個人情報は含めない）
     }
 
