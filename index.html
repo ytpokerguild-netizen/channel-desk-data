@@ -7,6 +7,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@300;400;500;600&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<!-- ★ 期間レポートの計算は report.html と同じ report_model.js を使います（2026-09-04 追加）。
+     ⚠⚠ **ここに計算を書き写さないこと。**週次レポートで実際に分岐が起きたのと同じ理由です
+       （変更履歴 2026-08-28「外部レビュー6回目」）。数字がずれたら、直すのはモデル1か所です。 -->
+<script src="report_model.js"></script>
 <style>
 :root{
   --bg:#0E1A14;
@@ -444,6 +448,7 @@ body{
       <button onclick="switchTab('ops')"        id="tab-ops"            >📋 運営</button>
       <button onclick="switchTab('coupon')"     id="tab-coupon"         >🎟 クーポン</button>
       <button onclick="switchTab('report')"     id="tab-report"         >📈 週次レポート</button>
+      <button onclick="switchTab('period')"     id="tab-period"         >📅 期間レポート</button>
     </nav>
 
     <!-- ════════════════════════ TAB: 概要 ════════════════════════ -->
@@ -744,6 +749,17 @@ body{
 
     </div>
 
+    <!-- ════════════════════ TAB: 期間レポート ════════════════════
+         ★ 2026-09-04 追加（運営者の依頼「月次・3ヶ月・6ヶ月・年初来のレポートがほしい。
+           データだけの表示は要らない」「コンソールから見れない」）。
+         ⚠⚠ **計算をこのファイルに書かないこと。**中身は report_model.js の
+           M.periodReport() が返します。report.html と同じモデルを読んでいます。
+           片方に書き写すと、同じ期間の数字が2つの画面で食い違います。 -->
+    <div id="pane-period" style="display:none">
+      <div class="seg" id="periodSeg" style="margin-bottom:14px"></div>
+      <div id="periodBody"></div>
+    </div>
+
   </div><!-- /mainContent -->
 
   <div class="foot" id="footNote"></div>
@@ -905,13 +921,14 @@ async function loadData(bust){
 // ════════════════════════════════
 function switchTab(name){
   activeTab = name;
-  ['overview','ops','coupon','report'].forEach(t => {
+  ['overview','ops','coupon','report','period'].forEach(t => {
     document.getElementById('pane-'+t).style.display = t === name ? '' : 'none';
     document.getElementById('tab-'+t).classList.toggle('on', t === name);
   });
   if(name === 'ops'){ renderOps(); renderSchedule(); }   // 運営タブに投稿計画も統合
   if(name === 'coupon'){ renderCoupon(); }
   if(name === 'report')   renderReport();
+  if(name === 'period')   renderPeriod();
 }
 
 // ════════════════════════════════
@@ -3042,6 +3059,77 @@ function renderWeeklyTrend(rep){
     }]
   });
 }
+
+// ════════════════════════════════
+// 期間レポート（今月 / 直近3ヶ月 / 直近6ヶ月 / 年初来）
+// ════════════════════════════════
+// ⚠⚠ **足し上げも判定も report_model.js の M.periodReport() です。ここに書き写さないこと。**
+//   report.html の同じ節と数字が食い違わないための唯一の担保です。
+// ⚠ 「横ばい」の帯（±5%）もモデル側。ここで別の帯を使わないこと。
+const PERIOD_SPANS = [['month','今月'],['m3','直近3ヶ月'],['m6','直近6ヶ月'],['ytd','年初来']];
+let periodSpan = 'm3';   // 既定。今月は日数が少なく比較に使えないため
+
+function renderPeriod(){
+  const M = window.CDModel;
+  const seg = document.getElementById('periodSeg');
+  seg.innerHTML = PERIOD_SPANS.map(([k,l])=>
+    `<button class="${k===periodSpan?'on':''}" onclick="setPeriodSpan('${k}')">${l}</button>`).join('');
+
+  const body = document.getElementById('periodBody');
+  if(!M || !G || !G.period_summary){
+    body.innerHTML = `<div class="card"><div style="color:var(--muted);font-size:13px">期間サマリがまだありません。次回の自動取得で入ります。</div></div>`;
+    return;
+  }
+  const r = M.periodReport(G, periodSpan);
+  if(!r){ body.innerHTML = `<div class="card"><div style="color:var(--muted);font-size:13px">この期間はまだ出せません。</div></div>`; return; }
+
+  const c = r.cur;
+  const man = M.fmtMan, full = M.fmtFull;
+  const dl = r.deltaPct==null ? '—' : `${r.deltaPct>=0?'+':''}${r.deltaPct.toFixed(1)}%`;
+  // ⚠ 前期が無いときに「増加」と書かないこと（年初来は前年が手元にありません）
+  const head = r.deltaPct==null
+    ? `${r.label}の視聴は1日あたり ${man(c.viewsPerDay)}回です`
+    : `${r.label}の視聴は1日あたり ${man(c.viewsPerDay)}回。${r.prevLabel}より ${dl} で${r.dir}です`;
+  const hrs = c.watchMin!=null ? Math.round(c.watchMin/60) : null;
+  // ⚠ 1分未満を「0分57秒」と出さないこと（ショートは1分未満が普通です）
+  const dur = c.avgDurationSec==null ? '—'
+    : (c.avgDurationSec<60 ? `${c.avgDurationSec}秒`
+      : `${Math.floor(c.avgDurationSec/60)}分${String(c.avgDurationSec%60).padStart(2,'0')}秒`);
+  // ⚠⚠ 初速は月ごとの中央値をそのまま並べます。期間でならして1つにしないこと
+  //   （中央値の中央値は中央値ではありません）。本数(n)も必ず添えること。
+  const sp = c.speedByMonth.filter(x=>x.median!=null)
+    .map(x=>`${String(x.key).replace('-','/')} ${man(x.median)}<span style="color:var(--muted-2)">(${x.n}本)</span>`).join('　');
+
+  const tile = (v,l,s2)=>`<div><div style="font-size:22px;font-weight:700;line-height:1.3">${v}</div>
+    <div style="font-size:11px;color:var(--muted);margin-top:2px">${l}</div>
+    ${s2?`<div style="font-size:12px;color:var(--muted-2);margin-top:3px">${s2}</div>`:''}</div>`;
+  const row = (k,v)=>`<div style="display:flex;gap:14px;align-items:baseline;font-size:13px;line-height:1.75;margin-top:5px">
+    <span style="flex:0 0 96px;color:var(--muted);font-size:11px">${k}</span><span>${v}</span></div>`;
+
+  body.innerHTML = `
+  <div class="card">
+    <div style="border-left:3px solid var(--gold);padding:2px 0 2px 14px;margin-bottom:18px;font-size:17px;font-weight:700;line-height:1.5">${M.esc(head)}</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px 24px">
+      ${tile(man(c.views)+'回', `${M.esc(r.label)}の視聴回数`, `${c.days}日ぶん`)}
+      ${tile(dl, r.prevLabel?`${M.esc(r.prevLabel)}との比較（日あたり）`:'前期比', r.prevLabel?'':'比べられる前期がありません')}
+      ${tile((c.subsNet>=0?'+':'')+full(c.subsNet)+'人', '登録者の純増', `獲得 ${full(c.subsGained)} / 解除 ${full(c.subsLost)}`)}
+    </div>
+    <div style="border-top:1px solid var(--line);margin-top:18px;padding-top:12px">
+      ${row('期間', `${M.fmtDate(c.from)} 〜 ${M.fmtDate(c.to)}（確定 ${c.days}日ぶん）`)}
+      ${row('中身の内訳', `既存の動画が1日あたり ${man(c.basePerDay)}回。この期間に公開した動画が全体の <b>${c.newRatioPct==null?'—':c.newRatioPct+'%'}</b>`)}
+      ${row('公開したもの', `${c.videoCount}本（平均 ${dur}）${hrs!=null?`　総再生時間 ${full(hrs)}時間`:''}`)}
+      ${sp?row('新作の初速', `<span style="font-size:12px">${sp}</span>`):''}
+    </div>
+    <div style="font-size:11px;color:var(--muted-2);line-height:1.7;margin-top:14px">
+      初速は公開当日＋翌日の合計の中央値。<b>2日そろっていない動画は数えていません</b>（括弧内が本数）。月ごとに並べているのは、中央値は期間をまたいで合成できないためです。
+      「既存」は期間の開始より前に公開した動画ぶん。⚠ 既存と新作の合計は上の視聴回数と一致しません（集計元が違います）。
+      ${r.span==='ytd'?'年初来は<b>比較できる前年が手元にないため、前期比を出していません</b>。':''}
+      今月は<b>確定した日数ぶんだけ</b>です。確定は ${M.fmtDate(r.confirmedThrough)} まで。
+    </div>
+  </div>`;
+}
+
+function setPeriodSpan(k){ periodSpan = k; renderPeriod(); }
 
 // ════════════════════════════════
 // 週次レポート Webページ（report.html）を開く
