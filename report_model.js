@@ -310,40 +310,83 @@
     });
   }
 
-  /* ── 期間別サマリ（2026-09-04 追加）────────────────────────────
-     `data.json` の `period_summary` を読むだけです。既存/新作の分解も初速も
-     `fetch.py` 側で計算済みで、ここでは足し引きをしません。
-     ⚠⚠ **表示側で `video_daily.json` を読む形に変えないこと。**
-       分解と初速にはそれが要りますが、`report.html` は `data.json` しか読みません。
-       ここで読ませると、ページを開くたびに約2.6MB を取りに行くことになります。
-     ★ ここでやるのは2つだけ:
-       ①元データは古い順なので、画面用に新しい順へ並べ替える
-       ②1つ前の期間との比較（`views_per_day` どうし）を添える
-     ⚠ 比較に `views`（期間の合計）を使わないこと。当月・当週は確定分だけで
-       出るため日数が違い、合計どうしを比べると必ず今期が小さく見えます。
-       **日あたりで比べます。**
-     ⚠ `base_views + new_views` は `views` と一致しません（集計元が違う）。
-       割合の分母には `base+new` を使うこと。`new_ratio_pct` はそうなっています。 */
-  function periodRows(data, unit) {
+  /* ── 期間レポート（2026-09-04 追加。運営者の依頼「月次・3ヶ月・6ヶ月・年初来のレポートがほしい」）──
+     `data.json` の `period_summary.months`（fetch.py が生成）を、期間ごとに足し上げます。
+     ⚠⚠ **表示側で `video_daily.json` を読む形に変えないこと。**既存/新作の分解も初速も
+       fetch.py 側で済んでいます。約2.6MB をページを開くたびに取りに行くことになります。
+
+     足してよいもの（＝月の値をそのまま合計できるもの）:
+       views / watch_min / base_views / new_views / video_count / subs_* / days
+     ⚠ **`new_ratio_pct` は足せません。**割合なので、合計してから割り直します。
+       分母は `base+new` です（`views` ではありません。集計元が違うので一致しません）。
+     ⚠⚠ **初速の中央値は期間をまたいで合成できません。**中央値の中央値は中央値ではない
+       ためです。月ごとの中央値と本数をそのまま並べて返し、画面もそう出しています。
+       **ここで平均を取って「期間の初速」と名づけないこと。**
+
+     前期の取り方: 同じ長さの直前の期間（3ヶ月なら、その前の3ヶ月）。
+     ⚠ 年初来だけは比較しません。**前年の同じ月が手元に無いためです**（月は12ヶ月ぶんしか
+       持っていません）。無いものを「—」と出すこと。ここを埋めるために月数を増やすのは、
+       data.json が重くなるので別の判断が要ります。 */
+  const SPANS = { month:{take:1,label:'今月'}, m3:{take:3,label:'直近3ヶ月'},
+                  m6:{take:6,label:'直近6ヶ月'}, ytd:{take:0,label:'年初来'} };
+
+  function aggPeriod(rs) {
+    if (!rs || !rs.length) return null;
+    const sum  = k => rs.reduce((a, r) => a + (r[k] || 0), 0);
+    const days = sum('days'), views = sum('views');
+    const base = sum('base_views'), fresh = sum('new_views');
+    const vc   = sum('video_count');
+    // 平均尺は本数で重み付け（月ごとの単純平均にすると、本数の少ない月が同じ重みになる）
+    const durW = rs.reduce((a, r) => a + (r.avg_duration_sec || 0) * (r.video_count || 0), 0);
+    return {
+      from: rs[0].start, to: rs[rs.length - 1].end, monthCount: rs.length, days,
+      views, viewsPerDay: days ? Math.round(views / days) : null,
+      watchMin: sum('watch_min'),
+      baseViews: base, basePerDay: days ? Math.round(base / days) : null,
+      newViews: fresh,
+      newRatioPct: (base + fresh) ? +(fresh / (base + fresh) * 100).toFixed(1) : null,
+      videoCount: vc, avgDurationSec: vc ? Math.round(durW / vc) : null,
+      subsGained: sum('subs_gained'), subsLost: sum('subs_lost'), subsNet: sum('subs_net'),
+      speedByMonth: rs.map(r => ({ key: r.key, median: r.speed2_median, n: r.speed2_n }))
+    };
+  }
+
+  function periodReport(data, span) {
     const ps = data && data.period_summary;
-    if (!ps) return null;
-    const src = (unit === 'week' ? ps.weeks : ps.months) || [];
-    if (!src.length) return null;
-    const desc = src.slice().reverse();          // 新しい順
-    const rows = desc.map((r, i) => {
-      const prev = desc[i + 1] || null;          // 新しい順なので「次の要素」が1つ前の期間
-      return Object.assign({}, r, {
-        prevPerDay: prev ? prev.views_per_day : null,
-        deltaPct:   prev ? pctNum(r.views_per_day, prev.views_per_day) : null
-      });
-    });
-    return { unit, confirmedThrough: ps.confirmed_through || null, rows };
+    const ms = (ps && ps.months) || [];
+    if (!ms.length) return null;
+    const cfg = SPANS[span]; if (!cfg) return null;
+
+    let cur, prev = null, prevLabel = null;
+    if (span === 'ytd') {
+      const y = String(ms[ms.length - 1].key).slice(0, 4);
+      cur = aggPeriod(ms.filter(m => String(m.key).slice(0, 4) === y));
+    } else {
+      const t = cfg.take;
+      if (ms.length < t) return null;
+      cur  = aggPeriod(ms.slice(-t));
+      const pr = ms.slice(-(t * 2), -t);
+      if (pr.length === t) { prev = aggPeriod(pr); prevLabel = t === 1 ? '前月' : `その前の${t}ヶ月`; }
+    }
+    if (!cur) return null;
+
+    // ⚠ 比較は**日あたり**で。当月・当週は確定分だけなので日数が違い、
+    //   合計どうしを比べると必ず今期が小さく見えます。
+    const dPct = (prev && prev.viewsPerDay) ? pctNum(cur.viewsPerDay, prev.viewsPerDay) : null;
+    // ⚠ 「横ばい」の帯は週次と同じ FLAT（±5%）を使うこと。別の帯にすると、
+    //   同じページの中で「増加」の意味が2つになります。
+    const dir = dPct == null ? null : (Math.abs(dPct) < FLAT ? '横ばい' : (dPct > 0 ? '増加' : '減少'));
+
+    return {
+      span, label: cfg.label, confirmedThrough: ps.confirmed_through || null,
+      cur, prev, prevLabel, deltaPct: dPct, dir
+    };
   }
 
   global.CDModel = {
     VERSION: MODEL_VERSION, TRAFFIC_LABEL, FLAT, OWNER_GATE_RANK, ACTION_KINDS,
     SRC, fmtFull, fmtMan, fmtDate, fmtMin, md, esc, pct, pctNum, median, stripLevel,
     cause, trafficList, trafficRows, trafficSplit, verdict, ownerState, actions,
-    firstSpeed, coupon, signal, periodRows, build
+    firstSpeed, coupon, signal, periodReport, build
   };
 })(window);

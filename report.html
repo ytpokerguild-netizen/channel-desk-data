@@ -959,69 +959,74 @@ function planLine(rep, pp){
 }
 
 
-/* ── 期間サマリ（2026-09-04 追加。オーナー依頼「今週分までのタブが欲しい」）──
-   ⚠⚠ **計算をここに書かないこと。**行は `data.json` の `period_summary`（fetch.py が生成）を
-     `M.periodRows()` が並べ替えて渡してくるだけです。このファイルは表示だけを担当します。
-   ★ 月次12ヶ月・週次26週。切替は下の switchPeriod()。両方いっぺんに描いて hidden で
-     出し分けます（切り替えのたびに描き直すと、開いている位置が飛ぶため）。
-   ⚠ 当月・当週は**確定分だけ**です。日数が違うので、合計ではなく
-     「日あたり」で比べてください。表の主役が views_per_day なのはそのためです。
-   ⚠ 初速の n（本数）を消さないこと。月10〜20本で中央値は振れます。
-     本数を見ずに中央値だけ読むと、たまたま伸びた1本に引きずられます。 */
-function periodTable(pack){
-  if(!pack) return '';
-  const isW = pack.unit === 'week';
-  const rows = pack.rows.map(r=>{
-    const label = isW ? `${fmtDate(r.start)}〜${fmtDate(r.end)}` : String(r.key).replace('-','/');
-    const d  = r.deltaPct;
-    const dl = d==null ? '—' : `${d>=0?'+':''}${d.toFixed(1)}%`;
-    const sp = r.speed2_median==null ? '—' : `${fmtMan(r.speed2_median)}<span class="pd">（${r.speed2_n}本）</span>`;
-    return `<tr>
-      <td class="key">${esc(label)}<span class="pd"> ${r.days}日</span></td>
-      <td class="num">${fmtMan(r.views_per_day)}</td>
-      <td class="num"><span class="pd">${dl}</span></td>
-      <td class="num">${fmtMan(r.base_per_day)}</td>
-      <td class="num">${r.new_ratio_pct==null?'—':r.new_ratio_pct+'%'}</td>
-      <td class="num">${r.video_count}</td>
-      <td class="num">${sp}</td>
-      <td class="num">${r.subs_net>=0?'+':''}${fmtFull(r.subs_net)}</td>
-    </tr>`;
-  }).join('');
-  return `<div class="scrollx"><table>
-    <thead><tr>
-      <th>${isW?'週（土〜金）':'月'}</th>
-      <th class="num">視聴/日</th><th class="num">前${isW?'週':'月'}比</th>
-      <th class="num">既存/日</th><th class="num">新作比</th>
-      <th class="num">公開</th><th class="num">初速の中央値</th><th class="num">登録純増</th>
-    </tr></thead><tbody>${rows}</tbody></table></div>`;
+/* ── 期間レポート（2026-09-04 追加。運営者の依頼「月次・3ヶ月・6ヶ月・年初来のレポートがほしい。
+     データだけの表示は要らない」）───────────────────────────────
+   ⚠⚠ **計算をここに書かないこと。**足し上げも判定も `report_model.js` の `M.periodReport()` です。
+     このファイルは表示だけを担当します（このページ全体の決まりごと）。
+   ★ 週次レポートと**同じ部品**（.verdict / .tiles / .hrow）で描いています。
+     ⚠ 期間レポートだけ別の見た目を作らないこと。同じページの中で2つの様式が混ざります。
+   ⚠ 「横ばい」の帯は週次と同じ ±5%（モデルの FLAT）。ここで別の帯を使わないこと。 */
+const PSPANS = [['month','今月'],['m3','直近3ヶ月'],['m6','直近6ヶ月'],['ytd','年初来']];
+
+function periodPane(r){
+  if(!r) return '<div class="note">この期間はまだ出せません。</div>';
+  const c = r.cur;
+  const tile = (v,l,sub)=>`<div class="tile"><div class="tv">${v}</div><div class="tl">${l}</div>${sub?`<div class="ts">${sub}</div>`:''}</div>`;
+  const dl = r.deltaPct==null ? '—' : `${r.deltaPct>=0?'+':''}${r.deltaPct.toFixed(1)}%`;
+
+  // 断定文。⚠ 前期が無いときに「増加」と書かないこと（年初来は前年が手元にありません）
+  const head = r.deltaPct==null
+    ? `${r.label}の視聴は1日あたり ${fmtMan(c.viewsPerDay)}回です`
+    : `${r.label}の視聴は1日あたり ${fmtMan(c.viewsPerDay)}回。${r.prevLabel}より ${dl} で${r.dir}です`;
+
+  const hrs = c.watchMin!=null ? Math.round(c.watchMin/60) : null;
+  // ⚠ 1分未満を「0分57秒」と出さないこと。ショートは1分未満が普通なので、毎回0分が並びます
+  const dur = c.avgDurationSec==null ? '—'
+    : (c.avgDurationSec < 60 ? `${c.avgDurationSec}秒`
+      : `${Math.floor(c.avgDurationSec/60)}分${String(c.avgDurationSec%60).padStart(2,'0')}秒`);
+  // ⚠⚠ 初速は月ごとの中央値を**そのまま並べます**。期間でならして1つの数字にしないこと
+  //   （中央値の中央値は中央値ではありません）。本数(n)も必ず添えること。
+  const sp = c.speedByMonth.filter(x=>x.median!=null)
+    .map(x=>`${String(x.key).replace('-','/')} ${fmtMan(x.median)}<span class="pd">(${x.n}本)</span>`).join('　');
+
+  return `<div class="verdict"><span class="lv">${esc(head)}</span></div>
+<div class="tiles">
+${tile(fmtMan(c.views)+'回', `${esc(r.label)}の視聴回数`, `${c.days}日ぶん`)}
+${tile(dl, r.prevLabel?`${esc(r.prevLabel)}との比較（日あたり）`:'前期比', r.prevLabel?'':'比べられる前期がありません')}
+${tile((c.subsNet>=0?'+':'')+fmtFull(c.subsNet)+'人', '登録者の純増', `獲得 ${fmtFull(c.subsGained)} / 解除 ${fmtFull(c.subsLost)}`)}
+</div>
+<div class="headrows">
+<div class="hrow"><span class="hk">期間</span><span class="hv">${fmtDate(c.from)} 〜 ${fmtDate(c.to)}（確定 ${c.days}日ぶん）</span></div>
+<div class="hrow"><span class="hk">中身の内訳</span><span class="hv">既存の動画が1日あたり ${fmtMan(c.basePerDay)}回。この期間に公開した動画が全体の <b>${c.newRatioPct==null?'—':c.newRatioPct+'%</b>'}</span></div>
+<div class="hrow"><span class="hk">公開したもの</span><span class="hv">${c.videoCount}本（平均 ${dur}）${hrs!=null?`　総再生時間 ${fmtFull(hrs)}時間`:''}</span></div>
+${sp?`<div class="hrow"><span class="hk">新作の初速</span><span class="hv" style="font-size:12.5px">${sp}</span></div>`:''}
+</div>
+<div class="note">初速は公開当日＋翌日の合計の中央値で、<b>2日そろっていない動画は数えていません</b>（括弧内が本数）。
+月ごとに並べているのは、<b>中央値は期間をまたいで合成できない</b>ためです。本数の少ない月は振れます。
+「既存」は期間の開始より前に公開した動画ぶんです。⚠ 既存と新作の合計は上の視聴回数と一致しません（集計元が違います）。
+${r.span==='ytd'?'年初来は<b>比較できる前年が手元にないため、前期比を出していません</b>。':''}
+今月の行は<b>確定した日数ぶんだけ</b>です。</div>`;
 }
 
-/* ⚠ `sec` は renderReportPage のローカル関数です（節に通し番号を振るため、状態を持っています）。
+/* ⚠ `sec` は renderReportPage のローカル関数です（節番号の状態を持ちます）。
      ここで作り直すと番号が二重に進みます。**必ず引数で受け取ること。**
      この節は最後に置いてあるので、既存の節の番号は動きません。 */
 function periodBlock(sec){
-  const mo = M.periodRows(DATA_ALL, 'month');
-  const wk = M.periodRows(DATA_ALL, 'week');
-  if(!mo && !wk) return '';
-  const through = (mo||wk).confirmedThrough;
+  const packs = PSPANS.map(([k])=>M.periodReport(DATA_ALL,k));
+  if(!packs.some(Boolean)) return '';
+  const through = (packs.find(Boolean)||{}).confirmedThrough;
   return `<div class="psec">
-${sec('長期の推移', `確定しているのは ${fmtDate(through)} までです`, '')}
+${sec('期間ごとのレポート', `確定しているのは ${fmtDate(through)} までです`, '')}
 <div class="ptabs">
-  <button id="ptab-month" class="on" onclick="switchPeriod('month')">月次 12ヶ月</button>
-  <button id="ptab-week" onclick="switchPeriod('week')">週次 26週</button>
+${PSPANS.map(([k,l],i)=>`<button id="ptab-${k}" class="${i===1?'on':''}" onclick="switchPeriod('${k}')">${l}</button>`).join('')}
 </div>
-<div class="pbody" id="pbody-month">${periodTable(mo)}</div>
-<div class="pbody" id="pbody-week" hidden>${periodTable(wk)}</div>
-<div class="note">今月・今週の行は<b>確定した日数ぶんだけ</b>です。日数が違うので、合計ではなく「視聴/日」で比べてください。
-初速は公開当日＋翌日の合計で、<b>2日そろっていない動画は数えていません</b>（本数は括弧内）。
-「既存/日」は期間の開始より前に公開した動画ぶん、「新作比」はその期間に公開した動画の割合です。
-⚠ 既存＋新作は「視聴/日」と一致しません。前者は動画別の日次、後者はチャンネル全体の集計で、出どころが違います。
-この節は画面だけで、印刷・PDFには出ません。</div>
+${PSPANS.map(([k],i)=>`<div class="pbody" id="pbody-${k}"${i===1?'':' hidden'}>${periodPane(packs[i])}</div>`).join('')}
+<div class="note">この節は画面だけで、印刷・PDFには出ません。</div>
 </div>`;
 }
 
 function switchPeriod(u){
-  for(const k of ['month','week']){
+  for(const [k] of PSPANS){
     document.getElementById('pbody-'+k).hidden = (k!==u);
     document.getElementById('ptab-'+k).classList.toggle('on', k===u);
   }
