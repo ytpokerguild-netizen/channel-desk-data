@@ -1012,6 +1012,16 @@ ${r.span==='ytd'?'年初来は<b>比較できる前年が手元にないため�
      ここで作り直すと番号が二重に進みます。**必ず引数で受け取ること。**
      この節は最後に置いてあるので、既存の節の番号は動きません。 */
 function periodBlock(sec){
+ try{
+  // ⚠⚠ **この節の失敗でレポート全体を落とさないこと。**
+  //   2026-09-04 に実際に起きました: 新しい report.html と**古い report_model.js**（ブラウザの
+  //   キャッシュ）が組み合わさり、`M.periodReport is not a function` でページが真っ白になりました。
+  //   `<script src>` は data.json のように no-cache を指定できず、**新しい画面と古いモデルの
+  //   組み合わせは今後も必ず起きます。**節ひとつの不調は、その節だけで止めます。
+  if(!M || typeof M.periodReport !== 'function')
+    return `<div class="psec">${sec('期間ごとのレポート','','')}
+      <div class="note">この節を表示できません。<b>ブラウザが古い report_model.js を持っています。</b>
+      再読み込み（Mac は ⌘+Shift+R）で直ります。ほかの節は最新です。</div></div>`;
   const packs = PSPANS.map(([k])=>M.periodReport(DATA_ALL,k));
   if(!packs.some(Boolean)) return '';
   const through = (packs.find(Boolean)||{}).confirmedThrough;
@@ -1023,6 +1033,11 @@ ${PSPANS.map(([k,l],i)=>`<button id="ptab-${k}" class="${i===1?'on':''}" onclick
 ${PSPANS.map(([k],i)=>`<div class="pbody" id="pbody-${k}"${i===1?'':' hidden'}>${periodPane(packs[i])}</div>`).join('')}
 <div class="note">この節は画面だけで、印刷・PDFには出ません。</div>
 </div>`;
+ }catch(e){
+  // 想定外でも、ここで止めてレポート本体は出す
+  return `<div class="psec">${sec('期間ごとのレポート','','')}
+    <div class="note">この節を表示できませんでした（${esc(e.message||String(e))}）。ほかの節は最新です。</div></div>`;
+ }
 }
 
 function switchPeriod(u){

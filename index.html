@@ -3076,11 +3076,24 @@ function renderPeriod(){
     `<button class="${k===periodSpan?'on':''}" onclick="setPeriodSpan('${k}')">${l}</button>`).join('');
 
   const body = document.getElementById('periodBody');
+  // ⚠⚠ 新しい画面 × 古い report_model.js（ブラウザのキャッシュ）の組み合わせは必ず起きます。
+  //   2026-09-04 に週次レポート側で実際に起きて、ページが真っ白になりました。ここで受け止めます。
+  if(M && typeof M.periodReport !== 'function'){
+    body.innerHTML = `<div class="card"><div style="color:var(--muted);font-size:13px">
+      この節を表示できません。<b>ブラウザが古い report_model.js を持っています。</b>
+      再読み込み（Mac は ⌘+Shift+R）で直ります。ほかのタブは最新です。</div></div>`;
+    return;
+  }
   if(!M || !G || !G.period_summary){
     body.innerHTML = `<div class="card"><div style="color:var(--muted);font-size:13px">期間サマリがまだありません。次回の自動取得で入ります。</div></div>`;
     return;
   }
-  const r = M.periodReport(G, periodSpan);
+  let r = null;
+  try { r = M.periodReport(G, periodSpan); }
+  catch(e){
+    body.innerHTML = `<div class="card"><div style="color:var(--muted);font-size:13px">この期間を表示できませんでした（${M.esc(e.message||String(e))}）。</div></div>`;
+    return;
+  }
   if(!r){ body.innerHTML = `<div class="card"><div style="color:var(--muted);font-size:13px">この期間はまだ出せません。</div></div>`; return; }
 
   const c = r.cur;
