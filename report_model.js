@@ -310,10 +310,40 @@
     });
   }
 
+  /* ── 期間別サマリ（2026-09-04 追加）────────────────────────────
+     `data.json` の `period_summary` を読むだけです。既存/新作の分解も初速も
+     `fetch.py` 側で計算済みで、ここでは足し引きをしません。
+     ⚠⚠ **表示側で `video_daily.json` を読む形に変えないこと。**
+       分解と初速にはそれが要りますが、`report.html` は `data.json` しか読みません。
+       ここで読ませると、ページを開くたびに約2.6MB を取りに行くことになります。
+     ★ ここでやるのは2つだけ:
+       ①元データは古い順なので、画面用に新しい順へ並べ替える
+       ②1つ前の期間との比較（`views_per_day` どうし）を添える
+     ⚠ 比較に `views`（期間の合計）を使わないこと。当月・当週は確定分だけで
+       出るため日数が違い、合計どうしを比べると必ず今期が小さく見えます。
+       **日あたりで比べます。**
+     ⚠ `base_views + new_views` は `views` と一致しません（集計元が違う）。
+       割合の分母には `base+new` を使うこと。`new_ratio_pct` はそうなっています。 */
+  function periodRows(data, unit) {
+    const ps = data && data.period_summary;
+    if (!ps) return null;
+    const src = (unit === 'week' ? ps.weeks : ps.months) || [];
+    if (!src.length) return null;
+    const desc = src.slice().reverse();          // 新しい順
+    const rows = desc.map((r, i) => {
+      const prev = desc[i + 1] || null;          // 新しい順なので「次の要素」が1つ前の期間
+      return Object.assign({}, r, {
+        prevPerDay: prev ? prev.views_per_day : null,
+        deltaPct:   prev ? pctNum(r.views_per_day, prev.views_per_day) : null
+      });
+    });
+    return { unit, confirmedThrough: ps.confirmed_through || null, rows };
+  }
+
   global.CDModel = {
     VERSION: MODEL_VERSION, TRAFFIC_LABEL, FLAT, OWNER_GATE_RANK, ACTION_KINDS,
     SRC, fmtFull, fmtMan, fmtDate, fmtMin, md, esc, pct, pctNum, median, stripLevel,
     cause, trafficList, trafficRows, trafficSplit, verdict, ownerState, actions,
-    firstSpeed, coupon, signal, build
+    firstSpeed, coupon, signal, periodRows, build
   };
 })(window);

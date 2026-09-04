@@ -152,6 +152,25 @@
   .act .an{flex:0 0 auto;min-width:48px;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em}
   .act .ak{font-weight:400;font-size:11px;color:var(--muted);margin-top:1px}
   /* 折りたたみ（確認方法・主要指標の詳細）。⚠ 既定は閉じたまま。開いた状態で保存しないこと */
+  /* ── 期間サマリ（2026-09-04 追加）─────────────────────────
+     ⚠⚠ **この節は紙に出しません（下の @media print で非表示）。**
+       週次レポートのPDFは1ページ目で今週が完結する4ページ構成で、
+       12ヶ月＋26週の表を入れるとその構成が崩れます。
+       長期の推移は画面で見るもの、という切り分けです。
+     ⚠ 画面に出す順は**新しい順**。上に最新が来ないと、開くたびに
+       いちばん下までスクロールすることになります。 */
+  .psec{margin-top:26px;padding-top:20px;border-top:1px solid var(--rule)}
+  .ptabs{display:flex;gap:6px;margin:10px 0 2px}
+  .ptabs button{font:inherit;font-size:12px;font-weight:600;cursor:pointer;
+    padding:5px 14px;border-radius:999px;border:1px solid var(--rule);
+    background:none;color:var(--muted)}
+  .ptabs button.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .pbody[hidden]{display:none}
+  /* ⚠ 増減を色で分けないこと。このページの色は5つだけと決めてあります（:root のコメント）。
+     符号（+／−）で足ります。色を足すと、どこを見ればよいかがぼやけます。 */
+  .psec td.key{white-space:nowrap}
+  .psec .pd{color:var(--muted);font-size:12px}
+  .psec tbody tr:first-child td{font-weight:600}
   .more{margin-top:5px}
   .more>summary{cursor:pointer;font-size:11.5px;color:var(--accent);letter-spacing:.03em;
                 list-style:none;display:inline-block;padding:1px 0}
@@ -258,6 +277,8 @@
     .scrollx>svg,.scrollx>table{min-width:0}
     .mobonly{display:none!important}
     .pconly{display:block!important}
+    /* ⚠ 期間サマリは紙に出しません（4ページ構成を守るため）。外さないこと。 */
+    .psec{display:none!important}
 
     /* ══════════════════════════════════════════════════════════
        ★ 紙の1ページ目を「オーナー向け報告だけ」で完結させる（2026-08-28 レビュー4回目 §1）。
@@ -344,6 +365,7 @@ let REPORTS = [];
 // ★ チャンネル名は data.json の meta.channel_title から入れます（2026-08-21 追加）。
 //    ここの初期値は data.json を読めなかったときの保険です。⚠ 直書きに戻さないこと。
 let CHANNEL = '【LightTHREE】 -ポーカーメディア‐';
+let DATA_ALL = null; // data.json まるごと（period_summary を読むのに使う。2026-09-04 追加）
 let COUPON  = null;   // data.json の coupon（週ごとの節を出すのに使う）
 let TREND   = null;   // data.json の weekly_trend（直近26週のグラフ用）
 
@@ -937,6 +959,74 @@ function planLine(rep, pp){
 }
 
 
+/* ── 期間サマリ（2026-09-04 追加。オーナー依頼「今週分までのタブが欲しい」）──
+   ⚠⚠ **計算をここに書かないこと。**行は `data.json` の `period_summary`（fetch.py が生成）を
+     `M.periodRows()` が並べ替えて渡してくるだけです。このファイルは表示だけを担当します。
+   ★ 月次12ヶ月・週次26週。切替は下の switchPeriod()。両方いっぺんに描いて hidden で
+     出し分けます（切り替えのたびに描き直すと、開いている位置が飛ぶため）。
+   ⚠ 当月・当週は**確定分だけ**です。日数が違うので、合計ではなく
+     「日あたり」で比べてください。表の主役が views_per_day なのはそのためです。
+   ⚠ 初速の n（本数）を消さないこと。月10〜20本で中央値は振れます。
+     本数を見ずに中央値だけ読むと、たまたま伸びた1本に引きずられます。 */
+function periodTable(pack){
+  if(!pack) return '';
+  const isW = pack.unit === 'week';
+  const rows = pack.rows.map(r=>{
+    const label = isW ? `${fmtDate(r.start)}〜${fmtDate(r.end)}` : String(r.key).replace('-','/');
+    const d  = r.deltaPct;
+    const dl = d==null ? '—' : `${d>=0?'+':''}${d.toFixed(1)}%`;
+    const sp = r.speed2_median==null ? '—' : `${fmtMan(r.speed2_median)}<span class="pd">（${r.speed2_n}本）</span>`;
+    return `<tr>
+      <td class="key">${esc(label)}<span class="pd"> ${r.days}日</span></td>
+      <td class="num">${fmtMan(r.views_per_day)}</td>
+      <td class="num"><span class="pd">${dl}</span></td>
+      <td class="num">${fmtMan(r.base_per_day)}</td>
+      <td class="num">${r.new_ratio_pct==null?'—':r.new_ratio_pct+'%'}</td>
+      <td class="num">${r.video_count}</td>
+      <td class="num">${sp}</td>
+      <td class="num">${r.subs_net>=0?'+':''}${fmtFull(r.subs_net)}</td>
+    </tr>`;
+  }).join('');
+  return `<div class="scrollx"><table>
+    <thead><tr>
+      <th>${isW?'週（土〜金）':'月'}</th>
+      <th class="num">視聴/日</th><th class="num">前${isW?'週':'月'}比</th>
+      <th class="num">既存/日</th><th class="num">新作比</th>
+      <th class="num">公開</th><th class="num">初速の中央値</th><th class="num">登録純増</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+/* ⚠ `sec` は renderReportPage のローカル関数です（節に通し番号を振るため、状態を持っています）。
+     ここで作り直すと番号が二重に進みます。**必ず引数で受け取ること。**
+     この節は最後に置いてあるので、既存の節の番号は動きません。 */
+function periodBlock(sec){
+  const mo = M.periodRows(DATA_ALL, 'month');
+  const wk = M.periodRows(DATA_ALL, 'week');
+  if(!mo && !wk) return '';
+  const through = (mo||wk).confirmedThrough;
+  return `<div class="psec">
+${sec('長期の推移', `確定しているのは ${fmtDate(through)} までです`, '')}
+<div class="ptabs">
+  <button id="ptab-month" class="on" onclick="switchPeriod('month')">月次 12ヶ月</button>
+  <button id="ptab-week" onclick="switchPeriod('week')">週次 26週</button>
+</div>
+<div class="pbody" id="pbody-month">${periodTable(mo)}</div>
+<div class="pbody" id="pbody-week" hidden>${periodTable(wk)}</div>
+<div class="note">今月・今週の行は<b>確定した日数ぶんだけ</b>です。日数が違うので、合計ではなく「視聴/日」で比べてください。
+初速は公開当日＋翌日の合計で、<b>2日そろっていない動画は数えていません</b>（本数は括弧内）。
+「既存/日」は期間の開始より前に公開した動画ぶん、「新作比」はその期間に公開した動画の割合です。
+⚠ 既存＋新作は「視聴/日」と一致しません。前者は動画別の日次、後者はチャンネル全体の集計で、出どころが違います。
+この節は画面だけで、印刷・PDFには出ません。</div>
+</div>`;
+}
+
+function switchPeriod(u){
+  for(const k of ['month','week']){
+    document.getElementById('pbody-'+k).hidden = (k!==u);
+    document.getElementById('ptab-'+k).classList.toggle('on', k===u);
+  }
+}
+
 function renderReportPage(rep){
   const c = rep.channel || {};
   const views     = rep.final ? c.views      : (c.views_snap      ?? c.views);
@@ -1199,6 +1289,8 @@ ${ai.analysis?`<div style="font-size:13px;color:var(--ink-2);margin-top:8px">${S
 </details>`:''}
 </div>
 
+${periodBlock(sec)}
+
 <div class="foot">CHANNEL DESK 自動生成 ／ ${new Date().toLocaleString('ja-JP')} ／ ${esc(CHANNEL)}${ai&&ai.generated_at?` ／ 分析 ${fmtDate(String(ai.generated_at).slice(0,10))}`:''}</div>`;
 
 }
@@ -1218,6 +1310,7 @@ async function loadReport(){
     const r = await fetch(DATA_URL, { cache: 'no-cache' });
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
+    DATA_ALL = data;
     REPORTS = (data.weekly_reports||[]).slice().sort((a,b)=>b.week_start.localeCompare(a.week_start));
     COUPON  = data.coupon || null;
     TREND   = data.weekly_trend || null;
