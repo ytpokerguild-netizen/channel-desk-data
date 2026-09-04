@@ -3144,6 +3144,7 @@ function renderPeriod(){
           style="flex:1;min-width:0;font-size:12.5px;color:var(--ink);text-decoration:none">${esc(v.title)}</a>
        <span style="font-size:12px;color:var(--muted);white-space:nowrap">${man(v.views)}</span></div>`).join('');
 
+  const notes = M.periodNotes(r);
   const eff = r.per10k==null ? '—'
     : `${r.per10k}人${r.per10kPrev!=null?`<span style="color:var(--muted-2)">（前期 ${r.per10kPrev}人）</span>`:''}`;
 
@@ -3157,6 +3158,14 @@ function renderPeriod(){
       ${tile((c.subsNet>=0?'+':'')+full(c.subsNet)+'人', '登録者の純増', `獲得 ${full(c.subsGained)} / 解除 ${full(c.subsLost)}`)}
     </div>
   </div>
+
+  ${notes.length?`<div class="card">
+    <h3><span class="dot"></span>読み取れること</h3>
+    ${notes.map(n=>`<div style="font-size:13px;line-height:1.85;margin-top:6px;display:flex;gap:10px">
+      <span style="color:var(--gold);flex:0 0 auto">・</span><span>${M.noteHtml(n)}</span></div>`).join('')}
+    <div style="font-size:11px;color:var(--muted-2);margin-top:12px">
+      ⚠ ここに書けるのは<b>観測できたことだけ</b>です。「どの動画が効いたか」は、動画別の日次が必要なため出せません（週次レポートの「前週から何が変わったか」はそれを使っています）。</div>
+  </div>`:''}
 
   <div class="card">
     <h3><span class="dot"></span>${esc(r.innerUnit)}ごとの動き（1日あたりの視聴回数）</h3>

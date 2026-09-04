@@ -270,6 +270,7 @@ function render(){
   const eff = r.per10k==null ? '—'
     : `${r.per10k}人${r.per10kPrev!=null?`（${esc(r.prevLabel||'前期')} ${r.per10kPrev}人）`:''}`;
 
+  const notes = M.periodNotes(r);
   let n=0; const sec=(t)=>`<h2><span class="eyebrow"><span class="secn">${String(++n).padStart(2,'0')}</span>${t}</span></h2>`;
 
   sheet.innerHTML = `
@@ -283,6 +284,10 @@ ${tile(dl, r.prevLabel?`${esc(r.prevLabel)}比`:'前期比', r.prevLabel?'日あ
 ${tile(yl, '前年同期比', r.yoy?`昨年は1日 ${man(r.yoy.viewsPerDay)}回`:'昨年のデータがありません')}
 </div>
 <div class="subline">登録者は ${(c.subsNet>=0?'+':'')+full(c.subsNet)}人（獲得 ${full(c.subsGained)} ／ 解除 ${full(c.subsLost)}）。1万再生あたりの獲得は ${eff}。</div>
+
+${notes.length?`${sec('読み取れること')}
+<div class="headrows">${notes.map(n=>`<div class="hrow"><span class="hk">・</span><span class="hv">${M.noteHtml(n)}</span></div>`).join('')}</div>
+<div class="note">⚠ ここに書けるのは<b>観測できたことだけ</b>です。「どの動画が効いたか」は動画別の日次が必要なため出していません。</div>`:''}
 
 ${sec(`${esc(r.innerUnit)}ごとの動き`)}
 <div class="lede">棒は1日あたりの視聴回数です。⚠ 合計ではありません。${esc(r.innerUnit)}によって日数が違うためです。</div>

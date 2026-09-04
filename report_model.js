@@ -394,6 +394,61 @@
     };
   }
 
+  /* 同じ長さの期間を過去にさかのぼって並べ、いまがその中でどこかを返す。
+     ⚠ 「前期比だけでは読み違える」ため（週次の「26週の中での位置」と同じ考え方）。
+       2026-08 の週次で、前週比 -51.9% でも26週平均の106%だった例があります。
+     ⚠ 比べるのは**日あたり**。区間の日数がそろわない端は捨てます（90%未満は使わない）。
+     ⚠ 日次は2022-09からありますが、**初期は動画がほとんど無く数百回/日です。**
+       「過去最高」と出たときに誇らしく見えすぎないよう、画面では2位の値も併記すること。 */
+  function periodRank(data, from, to) {
+    const ad = (data && data.analytics_daily) || [];
+    const byDate = new Map();
+    for (const r of ad) if (r.views > 0) byDate.set(r.date, r);
+    const dates = [...byDate.keys()].sort();
+    if (!dates.length) return null;
+    const day = s => new Date(s + 'T00:00:00Z');
+    const iso = t => t.toISOString().slice(0, 10);
+    const L = Math.round((day(to) - day(from)) / 86400000) + 1;
+    if (L < 7) return null;
+
+    const avg = (s, e) => {
+      let sum = 0, n = 0;
+      for (const d of dates) { if (d < s) continue; if (d > e) break; sum += byDate.get(d).views; n++; }
+      return n >= L * 0.9 ? { perDay: Math.round(sum / n), start: s, n } : null;
+    };
+    const cur = avg(from, to);
+    if (!cur) return null;
+
+    const past = [];
+    let end = new Date(day(from) - 86400000);
+    for (let i = 0; i < 40; i++) {
+      const st = new Date(end - (L - 1) * 86400000);
+      if (iso(st) < dates[0]) break;
+      const v = avg(iso(st), iso(end));
+      if (v) past.push(v);
+      end = new Date(st - 86400000);
+    }
+    if (!past.length) return null;
+    const above = past.filter(x => x.perDay >= cur.perDay).length;
+    const runnerUp = past.slice().sort((a, b) => b.perDay - a.perDay)[0];
+    return { lengthDays: L, perDay: cur.perDay, compared: past.length,
+             rank: above + 1, best: above === 0, runnerUp };
+  }
+
+  /* 期間の中で、どの月（週）が伸びを作ったか。⚠ 動画別ではありません。
+     動画別の増減要因は video_daily.json が要るため fetch.py 側の仕事です。
+     ⚠ ここで「◯◯の動画が効いた」と書かないこと。根拠がありません。 */
+  function periodDrivers(inner) {
+    if (!inner || inner.length < 2) return null;
+    const withDelta = inner.map((x, i) => i === 0 ? null
+      : { key: x.key, delta: x.viewsPerDay - inner[i - 1].viewsPerDay,
+          from: inner[i - 1].viewsPerDay, to: x.viewsPerDay }).filter(Boolean);
+    if (!withDelta.length) return null;
+    const sorted = withDelta.slice().sort((a, b) => b.delta - a.delta);
+    return { up: sorted[0], down: sorted[sorted.length - 1],
+             first: inner[0], last: inner[inner.length - 1] };
+  }
+
   function periodReport(data, span) {
     const ps = data && data.period_summary;
     const ms = (ps && ps.months) || [];
@@ -450,15 +505,52 @@
       span, label: cfg.label, confirmedThrough: ps.confirmed_through || null,
       cur, prev, prevLabel, deltaPct: dPct, dir, yoy,
       inner, innerUnit, best, worst, peak,
+      rank: periodRank(data, cur.from, cur.to),
+      drivers: periodDrivers(inner),
       per10k, per10kPrev: per10kP,
       videos: periodVideos(data, cur.from, cur.to)
     };
+  }
+
+  /* 比較文の文言。⚠ **2つの画面で別々に組み立てないこと。**同じ期間で違う言い回しが出ます。
+     ⚠ 断定を足さないこと。ここが返すのは「観測できたこと」だけです。理由の推測は書きません
+       （動画別の増減要因が無いので、根拠を示せません）。 */
+  /* 比較文をHTMLにする。⚠ `md` はこのファイルでは**日付のフォーマッタ**です（月/日）。
+     名前が紛らわしいので、比較文の強調はこちらを使うこと。 */
+  function noteHtml(s) {
+    return esc(String(s)).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>');
+  }
+
+  function periodNotes(r) {
+    if (!r) return [];
+    const out = [];
+    const k = r.rank;
+    if (k) {
+      out.push(k.best
+        ? `${k.lengthDays}日という同じ長さで過去にさかのぼって並べると、**いまが最も高い水準**です（比べた ${k.compared}区間のうち2番目は1日 ${fmtMan(k.runnerUp.perDay)}回）`
+        : `${k.lengthDays}日という同じ長さで過去にさかのぼって並べると、比べた ${k.compared}区間のうち **${k.rank}番目**です（最も高い区間は1日 ${fmtMan(k.runnerUp.perDay)}回）`);
+    }
+    const d = r.drivers;
+    if (d) {
+      out.push(`${r.innerUnit}ごとに見ると、いちばん伸びたのは **${d.up.key}**（1日 ${fmtMan(d.up.from)}回 → ${fmtMan(d.up.to)}回、${d.up.delta >= 0 ? '+' : ''}${fmtMan(d.up.delta)}回）です`);
+      if (d.down.delta < 0)
+        out.push(`逆に落ちたのは ${d.down.key}（1日 ${fmtMan(d.down.from)}回 → ${fmtMan(d.down.to)}回、${fmtMan(d.down.delta)}回）です`);
+      out.push(`期間の最初と最後を比べると、1日あたり ${fmtMan(d.first.viewsPerDay)}回 → ${fmtMan(d.last.viewsPerDay)}回 です`);
+    }
+    if (r.per10k != null && r.per10kPrev != null) {
+      const diff = r.per10k - r.per10kPrev;
+      out.push(Math.abs(diff) < 0.15
+        ? `登録の効率（1万再生あたりの獲得）は ${r.per10k}人で、${r.prevLabel}の ${r.per10kPrev}人と**ほぼ同じ**です`
+        : `登録の効率は 1万再生あたり ${r.per10k}人。${r.prevLabel}の ${r.per10kPrev}人より${diff > 0 ? '上がっています' : '下がっています'}`);
+    }
+    // ⚠ ここに「◯◯の動画が効いた」を足さないこと。動画別の増減は fetch.py 側にしかありません。
+    return out;
   }
 
   global.CDModel = {
     VERSION: MODEL_VERSION, TRAFFIC_LABEL, FLAT, OWNER_GATE_RANK, ACTION_KINDS,
     SRC, fmtFull, fmtMan, fmtDate, fmtMin, md, esc, pct, pctNum, median, stripLevel,
     cause, trafficList, trafficRows, trafficSplit, verdict, ownerState, actions,
-    firstSpeed, coupon, signal, periodReport, build
+    firstSpeed, coupon, signal, periodReport, periodRank, periodNotes, noteHtml, build
   };
 })(window);
