@@ -449,6 +449,55 @@
              first: inner[0], last: inner[inner.length - 1] };
   }
 
+  /* 月ごとの推移を**過去にさかのぼって**返す。2026-09-04 追加
+     （運営者の依頼「月ごとの動きは過去のデータを読み込んでちゃんと比較できるように」）。
+     ⚠ period_summary の months は12ヶ月ぶんしかありません。**ここは analytics_daily（2022-09から
+       1447日ぶん）を使います。**選択期間の3ヶ月だけを並べても比較になりません。
+     ⚠ 返すのは views_per_day だけ。**既存/新作の分解は日次に無い**ので、この系列には付きません。
+     ⚠ いちばん古い月は日数が欠けることがあるので、20日未満の月は落とします
+       （当月だけは確定分だけで出すので例外）。 */
+  function monthSeries(data, n) {
+    const ad = (data && data.analytics_daily) || [];
+    const acc = new Map();
+    for (const r of ad) {
+      if (!(r.views > 0)) continue;
+      const k = String(r.date).slice(0, 7);
+      const a = acc.get(k) || { views: 0, days: 0 };
+      a.views += r.views; a.days++; acc.set(k, a);
+    }
+    const keys = [...acc.keys()].sort();
+    const last = keys[keys.length - 1];
+    const rows = keys
+      .filter(k => acc.get(k).days >= 20 || k === last)
+      .map(k => ({ key: k, viewsPerDay: Math.round(acc.get(k).views / acc.get(k).days),
+                   days: acc.get(k).days }));
+    return rows.slice(-n);
+  }
+
+  /* 今月は月が1本しか無いので、週で見せます（26週ぶん持っています）。 */
+  function weekSeries(data, n) {
+    const wk = ((data && data.period_summary && data.period_summary.weeks) || []);
+    return wk.slice(-n).map(w => ({ key: w.start, start: w.start, end: w.end,
+                                    viewsPerDay: w.views_per_day, days: w.days }));
+  }
+
+  /* 画面に出す系列。選択期間の中かどうかの印（on）を付けて返す。
+     ⚠ **選択期間だけを返さないこと。**比較にならないため過去を含めます（依頼の主旨）。
+     ⚠ 期間より前の分は「文脈」です。画面では薄く出し、**期間の分だけを濃くすること。** */
+  function buildSeries(data, span, cur, rows) {
+    if (span === 'month') {
+      const w = weekSeries(data, 13);      // 直近13週。今月ぶんだけ on にする
+      return { unit: '週', rows: w.map(x => ({ key: fmtDate(x.start).slice(5), viewsPerDay: x.viewsPerDay,
+        days: x.days, on: x.end >= cur.from && x.start <= cur.to })) };
+    }
+    // 期間の長さぶんの文脈を前後に足す。⚠ 3ヶ月なら12ヶ月、年初来なら24ヶ月まで
+    const want = Math.min(24, Math.max(12, (rows ? rows.length : 3) * 3));
+    const m = monthSeries(data, want);
+    const inSet = new Set((rows || []).map(r => String(r.key)));
+    return { unit: '月', rows: m.map(x => ({ key: x.key.replace('-', '/'), viewsPerDay: x.viewsPerDay,
+      days: x.days, on: inSet.has(x.key) })) };
+  }
+
   function periodReport(data, span) {
     const ps = data && data.period_summary;
     const ms = (ps && ps.months) || [];
@@ -505,6 +554,7 @@
       span, label: cfg.label, confirmedThrough: ps.confirmed_through || null,
       cur, prev, prevLabel, deltaPct: dPct, dir, yoy,
       inner, innerUnit, best, worst, peak,
+      series: buildSeries(data, span, cur, rows),
       rank: periodRank(data, cur.from, cur.to),
       drivers: periodDrivers(inner),
       per10k, per10kPrev: per10kP,
@@ -551,6 +601,6 @@
     VERSION: MODEL_VERSION, TRAFFIC_LABEL, FLAT, OWNER_GATE_RANK, ACTION_KINDS,
     SRC, fmtFull, fmtMan, fmtDate, fmtMin, md, esc, pct, pctNum, median, stripLevel,
     cause, trafficList, trafficRows, trafficSplit, verdict, ownerState, actions,
-    firstSpeed, coupon, signal, periodReport, periodRank, periodNotes, noteHtml, build
+    firstSpeed, coupon, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, build
   };
 })(window);

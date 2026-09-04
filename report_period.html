@@ -251,14 +251,17 @@ function render(){
   const tile=(v,l,s2)=>`<div class="tile"><div class="tv">${v}</div><div class="tl">${l}</div>${s2?`<div class="ts">${s2}</div>`:''}</div>`;
   const hrow=(k,v)=>`<div class="hrow"><span class="hk">${k}</span><span class="hv">${v}</span></div>`;
 
-  const bw = r.inner.length<=4 ? 62 : (r.inner.length<=8 ? 50 : 40);
-  const bars = r.inner.map(x=>{
-    const h = r.peak ? Math.max(4, Math.round(x.viewsPerDay/r.peak*88)) : 4;
-    const on = r.best && x.key===r.best.key;
-    return `<div class="pbar${on?' on':''}" style="width:${bw}px">
-      <div class="pv">${man(x.viewsPerDay)}</div>
+  /* ⚠⚠ **選択期間だけを並べないこと。**比較になりません。過去を含めて、期間の分だけ濃くします。 */
+  const S = r.series, sRows = S.rows, sPeak = Math.max(...sRows.map(x=>x.viewsPerDay||0), 1);
+  const bw = sRows.length<=6 ? 54 : (sRows.length<=13 ? 38 : (sRows.length<=18 ? 30 : 24));
+  const onIdx = sRows.reduce((a,x,i)=>x.on?(a<0?i:a):a, -1);
+  const bars = sRows.map((x,i)=>{
+    const h = Math.max(3, Math.round(x.viewsPerDay/sPeak*88));
+    const showKey = i%3===0 || i===sRows.length-1 || i===onIdx;
+    return `<div class="pbar${x.on?' on':''}" style="width:${bw}px">
+      <div class="pv">${x.on?man(x.viewsPerDay):'&nbsp;'}</div>
       <div class="pb" style="width:${Math.round(bw*0.6)}px;height:${h}px"></div>
-      <div class="pk">${esc(x.key)}</div></div>`;
+      <div class="pk">${showKey?esc(x.key):'&nbsp;'}</div></div>`;
   }).join('');
 
   const types = r.videos.types.map(t=>`${esc(t.name)} ${t.count}`).join(' ／ ') || '—';
@@ -289,10 +292,11 @@ ${notes.length?`${sec('読み取れること')}
 <div class="headrows">${notes.map(n=>`<div class="hrow"><span class="hk">・</span><span class="hv">${M.noteHtml(n)}</span></div>`).join('')}</div>
 <div class="note">⚠ ここに書けるのは<b>観測できたことだけ</b>です。「どの動画が効いたか」は動画別の日次が必要なため出していません。</div>`:''}
 
-${sec(`${esc(r.innerUnit)}ごとの動き`)}
-<div class="lede">棒は1日あたりの視聴回数です。⚠ 合計ではありません。${esc(r.innerUnit)}によって日数が違うためです。</div>
+${sec(`${esc(S.unit)}ごとの動き`)}
+<div class="lede">直近${sRows.length}${esc(S.unit)}ぶん。濃い色が${esc(r.label)}、薄い色は比較のための過去です。棒は1日あたりの視聴回数で、⚠ 合計ではありません（${esc(S.unit)}によって日数が違うためです）。</div>
 <div class="pbars">${bars}</div>
-${r.best&&r.worst&&r.best.key!==r.worst.key?`<div class="note key">いちばん高い${esc(r.innerUnit)}は <b>${esc(r.best.key)}</b>（1日 ${man(r.best.viewsPerDay)}回）、低い${esc(r.innerUnit)}は ${esc(r.worst.key)}（1日 ${man(r.worst.viewsPerDay)}回）。差は ${(r.best.viewsPerDay/Math.max(1,r.worst.viewsPerDay)).toFixed(1)}倍です。</div>`:''}
+${r.best&&r.worst&&r.best.key!==r.worst.key?`<div class="note key">${esc(r.label)}の中でいちばん高い${esc(r.innerUnit)}は <b>${esc(r.best.key)}</b>（1日 ${man(r.best.viewsPerDay)}回）、低い${esc(r.innerUnit)}は ${esc(r.worst.key)}（1日 ${man(r.worst.viewsPerDay)}回）。差は ${(r.best.viewsPerDay/Math.max(1,r.worst.viewsPerDay)).toFixed(1)}倍です。</div>`:''}
+<div class="note">⚠ 2024年〜2025年前半は動画がほとんど無く、1日あたり数千回の月があります。薄い棒が低いのはそのためです。</div>
 
 ${sec('中身')}
 <div class="headrows">
