@@ -756,7 +756,11 @@ body{
            M.periodReport() が返します。report.html と同じモデルを読んでいます。
            片方に書き写すと、同じ期間の数字が2つの画面で食い違います。 -->
     <div id="pane-period" style="display:none">
-      <div class="seg" id="periodSeg" style="margin-bottom:14px"></div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+        <div class="seg" id="periodSeg"></div>
+        <!-- ★ 印刷・共有用の1枚ページ（2026-09-04 追加）。中身は同じモデルから作られます -->
+        <button id="periodPageBtn" onclick="openPeriodPage()" style="margin-left:auto;background:rgba(201,162,39,.14);color:var(--gold);border:1px solid rgba(201,162,39,.4);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:'Noto Sans JP',sans-serif">🌐 レポートページを開く</button>
+      </div>
       <div id="periodBody"></div>
     </div>
 
@@ -3193,6 +3197,8 @@ function renderPeriod(){
 }
 
 function setPeriodSpan(k){ periodSpan = k; renderPeriod(); }
+// 印刷・共有用の1枚ページを、いま見ている期間で開く
+function openPeriodPage(){ window.open('report_period.html?span=' + periodSpan, '_blank'); }
 
 // ════════════════════════════════
 // 週次レポート Webページ（report.html）を開く

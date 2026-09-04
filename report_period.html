@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>期間レポート — 【LightTHREE】 -ポーカーメディア‐</title>
+<style>
+  @page{size:A4;margin:16mm}
+  *{box-sizing:border-box}
+  :root{
+    /* 色は5つだけ。増やさないこと（Few: 目立たせるのは注意を要するものだけ） */
+    --ink:#1a1a1a;       /* 本文 */
+    --ink-2:#555;        /* 副次 */
+    --muted:#8a8a8a;     /* 注記 */
+    --accent:#8a6d1a;    /* 見出しと強調（1色だけ） */
+    --rule:#d9d5c9;      /* 罫線。これ以上濃くしない */
+  }
+  body{
+    font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic",sans-serif;
+    color:var(--ink); background:#f2f0ea; margin:0;
+    font-size:14px;             /* ≒10.5pt。印刷の下限10ptを確保 */
+    line-height:1.75;           /* 和文は約1.7倍（Typotheque） */
+    font-variant-numeric:lining-nums tabular-nums;   /* 数字を等幅に。列が縦に揃う */
+  }
+  .sheet{max-width:860px;margin:0 auto;background:#fff;padding:38px 44px 44px;min-height:100vh;box-shadow:0 0 24px rgba(0,0,0,.08)}
+
+  /* ── 文字サイズは3段階（大=h1 / 中=h2 / 本文）＋ 注記 ───────── */
+  h1{font-size:23px;line-height:1.4;margin:0 0 3px;font-weight:700;letter-spacing:.01em}
+  .sub{color:var(--muted);font-size:11.5px;margin:0 0 26px}
+  h2{font-size:15px;line-height:1.5;margin:34px 0 3px;font-weight:700;color:var(--ink)}
+  h2 .eyebrow{display:block;font-size:11.5px;font-weight:600;color:var(--accent);letter-spacing:.09em;margin-bottom:2px}
+  /* 節の通し番号（2026-08-28 レビュー指摘 B-4）。長い1ページなので現在地の手がかりを置く */
+  h2 .eyebrow .secn{color:var(--muted);margin-right:9px;letter-spacing:.02em}
+  .lede{color:var(--ink-2);margin:0 0 12px}     /* 見出しの下の1行 */
+  /* ★ 補足文は2階層（2026-08-28 レビュー指摘 B-7）。
+     .note      … 出典・条件・注意書き（薄く小さく）
+     .note.key  … 分析上の意味がある補足（本文に近い濃さ）
+     ⚠ 「重要な分析結果」と「データ条件」を同じ薄さにしないこと。 */
+  .note{color:var(--muted);font-size:11.5px;line-height:1.65;margin-top:7px}
+  .note.key{color:var(--ink-2);font-size:13px;line-height:1.75}
+
+  /* ── 表: 縦罫線なし・データ行の横罫なし・地色なし ───────────── */
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:4px}
+  th,td{border:none;padding:7px 16px;text-align:left;vertical-align:baseline}
+  th:first-child,td:first-child{padding-left:0}
+  th:last-child,td:last-child{padding-right:0}
+  thead th{font-weight:600;color:var(--muted);font-size:11.5px;padding-bottom:5px;white-space:nowrap;
+           border-bottom:1px solid var(--rule)}
+  td.num,th.num{text-align:right;white-space:nowrap}   /* 「10.3万」が折り返さないように */
+  tbody tr>td{border-bottom:1px solid #f0eee7}   /* ほぼ見えない区切り。消しても可 */
+  tbody tr:last-child>td{border-bottom:none}
+
+  /* ── 強調は2か所まで（ページの結論 = verdict / 節の結論 = finding）───── */
+  .verdict{border-left:3px solid var(--accent);padding:2px 0 2px 15px;margin:0 0 26px}
+  .verdict .lv{font-size:19px;font-weight:700;line-height:1.45}
+  .verdict .why{display:block;color:var(--ink-2);font-size:14px;margin-top:5px}
+
+  /* ★ 節の結論（2026-08-28 レビュー指摘 A-1）。
+     ⚠ 「囲み枠は1つだけ」の原則をここだけ緩めています。理由:
+        いちばん重要な発見（1本を除いても前週を上回る）が薄いグレーの注記に置かれていて、
+        視覚上は「注釈」扱いになっていたためです。**注釈ではなく節の結論として見せます。**
+     ⚠ 3つめを作らないこと。verdict 19px > finding 16px > 本文 14px の3段階を守ります。
+     ⚠ 背景色は付けないこと（地色を敷かない原則）。強さは罫線・文字サイズ・余白で出します。 */
+  .finding{border-left:3px solid var(--accent);padding:11px 0 11px 15px;margin:15px 0 0}
+  .finding .ft{font-size:16px;font-weight:700;line-height:1.5}
+  .finding .fb{font-size:14px;color:var(--ink);margin-top:4px;line-height:1.85}
+  .finding .fn{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.6}
+
+  .badge{display:inline-block;font-size:11.5px;padding:1px 9px;border-radius:10px;margin-left:10px;
+         vertical-align:4px;font-weight:600;border:1px solid var(--rule);color:var(--muted)}
+  .badge.bad{border-color:#c0553f;color:#c0553f}
+
+  /* ★ オーナー判断の通知（2026-08-28 レビュー5回目 §1）。
+     ⚠ 判断不要の週はここに何も出さないこと。タイトル横のバッジだけで足ります。
+        毎週1行を使うと、結論と数字が下へ押し下げられます。 */
+  .onote{border-left:3px solid;padding:8px 0 8px 14px;margin:0 0 16px;font-size:14px;line-height:1.8}
+  .onote.confirm{border-color:#8a6d1a;background:none}
+  .onote.approve{border-color:#c0553f}
+  .onote.approve b{color:#c0553f}
+
+  /* ★ 主要3指標（2026-08-28 レビュー3回目 §1）。オーナーが最初の30秒で見るところ。
+     ⚠ 4つめを足さないこと。3つだから一目で入ります。 */
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:2px 26px;margin:14px 0 0}
+  .tile{padding:0 0 2px}
+  .tile .tv{font-size:22px;font-weight:700;line-height:1.35;letter-spacing:.01em}
+  .tile .tl{font-size:11.5px;color:var(--muted);margin-top:1px}
+  .tile .ts{font-size:12.5px;color:var(--ink-2);margin-top:2px}
+  /* 補助指標の1行（総再生時間・登録者・公開本数）。★ ここに指標を足さないこと */
+  .subline{margin:11px 0 0;font-size:12.5px;color:var(--ink-2);line-height:1.7}
+  /* 結論の下の行（次週の確認 / 運用変更 / オーナー判断） */
+  .headrows{margin:13px 0 0;border-top:1px solid var(--rule);padding-top:10px}
+  .hrow{display:flex;gap:12px;align-items:baseline;font-size:13px;line-height:1.7;margin-top:3px}
+  .hrow .hk{flex:0 0 92px;color:var(--muted);font-size:11.5px}
+  .hrow .hv{color:var(--ink)}
+  .hrow .od{font-weight:700}
+
+  /* ★ 増減の内訳（2026-08-28 レビュー3回目 §2）。
+     ⚠ 中央ゼロ線の左右分岐グラフには戻さないこと。読み手に暗算を要求し、
+        スマホでは中央線と数値が画面外に出て意味が失われていました。
+     ⚠ 棒はすべて左端起点。増加と減少は「別のリスト」に分けます。 */
+  .wf{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;font-size:14px;
+      border-left:3px solid var(--rule);padding:9px 0 9px 14px;margin:4px 0 18px}
+  .wf b{font-weight:700}
+  .wf .op{color:var(--muted);font-size:12.5px}
+  .facwrap{display:grid;grid-template-columns:1fr 1fr;gap:0 34px}
+  .facg h4{font-size:12.5px;font-weight:700;margin:0 0 6px;color:var(--ink-2)}
+  .fac{margin:0 0 11px}
+  .fac .ft2{display:flex;gap:12px;align-items:baseline;justify-content:space-between;font-size:13px;line-height:1.55}
+  .fac .fn2{flex:1 1 auto;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .fac .fv{flex:0 0 auto;font-weight:700;white-space:nowrap}
+  .fbar{height:8px;border-radius:2px;background:#efece3;margin-top:4px}
+  .fbar>i{display:block;height:8px;border-radius:2px}
+  .facnone{font-size:13px;color:var(--muted)}
+
+  /* ★ 本編と運用詳細の区切り（2026-08-28 レビュー3回目 §3）。
+     ⚠ この線より上に運用詳細を足さないこと。上はオーナーが最初の2画面で読む場所です。 */
+  .split{margin:44px 0 4px;border-top:2px solid var(--ink);padding-top:9px;
+         font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--ink-2)}
+  .split span{display:block;font-weight:400;font-size:11.5px;color:var(--muted);letter-spacing:0;margin-top:2px}
+
+  /* スマホ用の積み上げ表示。PC では隠す（同じ数字を2回描くので、必ず片方だけ出すこと） */
+  .mobonly{display:none}
+  /* ★ 印刷の1ページ目を作るための切り替え（2026-08-28 レビュー4回目 §1）。
+     Web は情報量をそのまま保ち、**印刷のときだけ本編を圧縮**します。
+     .noprint    … 画面には出すが紙には出さない
+     .printonly  … 紙にだけ出す（運用詳細に置く「完全版」）
+     ⚠ 同じ数字を画面と紙で2回描いています。**必ず同じ元データから作ること。** */
+  .printonly{display:none}
+
+  /* ★ 打ち手（2026-08-28 レビュー指摘 A-4）。3つを一目で数えられることが目的。
+     ⚠ カードの背景・影は付けないこと。数えられれば十分です。 */
+  .acts2{margin:9px 0 0}
+  .act{display:flex;gap:14px;align-items:baseline;padding:15px 0;border-top:1px solid var(--rule)}
+  .act:first-child{border-top:none;padding-top:5px}
+  /* ⚠ min-width は種別のいちばん長い「計測整備」（4文字・11px = 実測46.6px）が入る幅にすること。
+       22px のままだと種別の字数ぶんタイトルの開始位置がずれ、01・02 と 03 で頭がそろいません
+       （2026-08-28 レビュー5回目の実装確認で発見。実測 201.3px → 224.6px）。 */
+  .act .an{flex:0 0 auto;min-width:48px;font-size:13px;font-weight:700;color:var(--accent);letter-spacing:.05em}
+  .act .ak{font-weight:400;font-size:11px;color:var(--muted);margin-top:1px}
+  /* 折りたたみ（確認方法・主要指標の詳細）。⚠ 既定は閉じたまま。開いた状態で保存しないこと */
+  .more{margin-top:5px}
+  .more>summary{cursor:pointer;font-size:11.5px;color:var(--accent);letter-spacing:.03em;
+                list-style:none;display:inline-block;padding:1px 0}
+  .more>summary::-webkit-details-marker{display:none}
+  .more>summary::before{content:"＋ "}
+  .more[open]>summary::before{content:"− "}
+  .act .at{font-size:15px;font-weight:700;line-height:1.5}
+  .act .aa{color:var(--ink-2);font-size:12.5px;line-height:1.75;margin-top:3px}
+
+  /* ★ グラフ・広い表は横スクロール枠に入れる（2026-08-28 レビュー指摘 D）。
+     ⚠ viewBox のまま縮めると、390px幅では 10px の文字が 4px になって読めません。
+        狭い画面では縮めずに横へ流します。 */
+  .scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  /* 横に続きがあるときだけ、その側の端に影が出る（CSS の shadow-scroll）。
+     ⚠ これは地色ではなく「まだ右に続く」という操作の合図です。データの背景は敷きません。
+     ⚠ 白の2枚は background-attachment:local（中身と一緒に動く＝端に着いたら影を隠す）、
+        影の2枚は scroll（枠に固定）。この組み合わせを崩すと影が出っぱなしになります。 */
+  .scrollx{
+    background:
+      linear-gradient(to right, #fff 32%, rgba(255,255,255,0)) left center,
+      linear-gradient(to left,  #fff 32%, rgba(255,255,255,0)) right center,
+      radial-gradient(farthest-side at 0 50%,   rgba(0,0,0,.13), rgba(0,0,0,0)) left center,
+      radial-gradient(farthest-side at 100% 50%,rgba(0,0,0,.13), rgba(0,0,0,0)) right center;
+    background-repeat:no-repeat;
+    background-size:34px 100%, 34px 100%, 13px 100%, 13px 100%;
+    background-attachment:local, local, scroll, scroll;
+  }
+
+  .foot{margin-top:38px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--rule);padding-top:8px}
+  .toolbar{max-width:860px;margin:0 auto;padding:14px 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .toolbar select,.toolbar button,.toolbar a{font-family:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid #cbc5b4;background:#fff;color:#333;cursor:pointer;text-decoration:none}
+  .toolbar button:hover,.toolbar a:hover{background:#f5f1e6}
+
+  .msg{max-width:860px;margin:40px auto;text-align:center;color:#666}
+
+  /* ── 期間レポート専用（2026-09-04 新設）──────────────────────
+     ⚠ 見た目は週次レポート（report.html）に合わせてあります。
+       **このページだけ別の様式にしないこと。**2つ並べたときに別サービスに見えます。
+     ⚠ 色は :root の5つだけ。増減を色分けしないこと（符号で足ります）。 */
+  .ptabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 22px}
+  .ptabs a{font-size:12.5px;font-weight:600;padding:5px 14px;border-radius:999px;
+    border:1px solid var(--rule);color:var(--muted);text-decoration:none}
+  .ptabs a.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  /* 棒は「1日あたり」。⚠ 合計にすると日数の違いで当月が不当に低く見えます */
+  .pbars{display:flex;gap:10px;align-items:flex-end;margin:10px 0 6px;overflow-x:auto}
+  .pbar{display:flex;flex-direction:column;align-items:center;gap:5px;flex:0 0 auto}
+  .pbar .pv{font-size:11px;color:var(--muted);white-space:nowrap}
+  .pbar .pb{background:var(--rule);border-radius:3px 3px 0 0}
+  .pbar.on .pv{color:var(--accent);font-weight:700}
+  .pbar.on .pb{background:var(--accent)}
+  .pbar .pk{font-size:10px;color:var(--muted);white-space:nowrap}
+  .vrow{display:flex;gap:12px;align-items:baseline;margin-top:7px;font-size:13px}
+  .vrow .vn{flex:0 0 16px;color:var(--muted);font-size:11px}
+  .vrow .vt{flex:1;min-width:0}
+  .vrow .vv{color:var(--muted);white-space:nowrap;font-size:12.5px}
+  @media print{
+    .ptabs{display:none}          /* 紙では1期間だけ出す。タブは押せません */
+    .pbar .pb{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
+</style>
+</head>
+<body>
+
+<div class="toolbar" id="toolbar" style="display:none">
+  <a href="index.html">← ダッシュボード</a>
+  <a href="report.html">週次レポート</a>
+  <button class="printbtn" onclick="window.print()">🖨 印刷 / PDF保存</button>
+</div>
+
+<div class="msg" id="loadMsg">読み込み中...</div>
+<div class="sheet" id="sheet" style="display:none"></div>
+
+<!-- ⚠⚠ **計算をこのファイルに書かないこと。**足し上げも判定も report_model.js の
+     M.periodReport() です。コンソール（index.html）も同じものを読んでいます。
+     片方に書き写すと、同じ期間の数字が2つの画面で食い違います。 -->
+<script src="report_model.js"></script>
+<script>
+const M = window.CDModel;
+const DATA_URL = 'data.json';
+let DATA = null;
+let CHANNEL = '【LightTHREE】 -ポーカーメディア‐';   // data.json を読めなかったときの保険
+const SPANS = [['month','今月'],['m3','直近3ヶ月'],['m6','直近6ヶ月'],['ytd','年初来']];
+let span = 'm3';   // 既定。⚠ 今月は日数が少なく比較に使えないため
+
+const esc=s=>M.esc(s), man=n=>M.fmtMan(n), full=n=>M.fmtFull(n), fmtDate=s=>M.fmtDate(s);
+const sign = v => (v>=0?'+':'') + v.toFixed(1) + '%';
+
+function render(){
+  const r = M.periodReport(DATA, span);
+  const sheet = document.getElementById('sheet');
+  const tabs = `<div class="ptabs">${SPANS.map(([k,l])=>
+    `<a href="?span=${k}" class="${k===span?'on':''}">${l}</a>`).join('')}</div>`;
+  if(!r){ sheet.innerHTML = `<h1>期間レポート</h1>${tabs}<div class="note">この期間はまだ出せません。</div>`; return; }
+
+  const c = r.cur;
+  const dl = r.deltaPct==null ? '—' : sign(r.deltaPct);
+  const yl = r.yoy ? sign(r.yoy.deltaPct) : '—';
+  // ⚠ 前期が無いときに「増加」と書かないこと
+  const head = r.deltaPct==null
+    ? `${r.label}の視聴は1日あたり ${man(c.viewsPerDay)}回です`
+    : `${r.label}の視聴は1日あたり ${man(c.viewsPerDay)}回。${r.prevLabel}より ${dl} で${r.dir}です`;
+  const hrs = c.watchMin!=null ? Math.round(c.watchMin/60) : null;
+  // ⚠ 1分未満を「0分57秒」と出さないこと（ショートは1分未満が普通です）
+  const dur = c.avgDurationSec==null ? '—'
+    : (c.avgDurationSec<60 ? `${c.avgDurationSec}秒`
+      : `${Math.floor(c.avgDurationSec/60)}分${String(c.avgDurationSec%60).padStart(2,'0')}秒`);
+  // ⚠⚠ 初速は月ごとの中央値をそのまま。期間でならして1つにしないこと
+  const sp = c.speedByMonth.filter(x=>x.median!=null)
+    .map(x=>`${String(x.key).replace('-','/')} ${man(x.median)}<span style="color:var(--muted)">(${x.n})</span>`).join('　');
+
+  const tile=(v,l,s2)=>`<div class="tile"><div class="tv">${v}</div><div class="tl">${l}</div>${s2?`<div class="ts">${s2}</div>`:''}</div>`;
+  const hrow=(k,v)=>`<div class="hrow"><span class="hk">${k}</span><span class="hv">${v}</span></div>`;
+
+  const bw = r.inner.length<=4 ? 62 : (r.inner.length<=8 ? 50 : 40);
+  const bars = r.inner.map(x=>{
+    const h = r.peak ? Math.max(4, Math.round(x.viewsPerDay/r.peak*88)) : 4;
+    const on = r.best && x.key===r.best.key;
+    return `<div class="pbar${on?' on':''}" style="width:${bw}px">
+      <div class="pv">${man(x.viewsPerDay)}</div>
+      <div class="pb" style="width:${Math.round(bw*0.6)}px;height:${h}px"></div>
+      <div class="pk">${esc(x.key)}</div></div>`;
+  }).join('');
+
+  const types = r.videos.types.map(t=>`${esc(t.name)} ${t.count}`).join(' ／ ') || '—';
+  const nars  = r.videos.narrators.map(t=>`${esc(t.name)} ${t.count}`).join(' ／ ') || '—';
+  const tops  = r.videos.top.map((v,i)=>`<div class="vrow">
+      <span class="vn">${i+1}</span>
+      <span class="vt">${esc(v.title)}</span>
+      <span class="vv">${man(v.views)}</span></div>`).join('');
+  const eff = r.per10k==null ? '—'
+    : `${r.per10k}人${r.per10kPrev!=null?`（${esc(r.prevLabel||'前期')} ${r.per10kPrev}人）`:''}`;
+
+  let n=0; const sec=(t)=>`<h2><span class="eyebrow"><span class="secn">${String(++n).padStart(2,'0')}</span>${t}</span></h2>`;
+
+  sheet.innerHTML = `
+<h1>期間レポート<span class="badge">${esc(r.label)}</span></h1>
+<div class="sub">${esc(CHANNEL)}<br>${fmtDate(c.from)} 〜 ${fmtDate(c.to)}（確定 ${c.days}日ぶん・${fmtDate(r.confirmedThrough)} まで）</div>
+${tabs}
+<div class="verdict"><span class="lv">${esc(head)}</span></div>
+<div class="tiles">
+${tile(man(c.views)+'回', `${esc(r.label)}の視聴回数`, `1日 ${man(c.viewsPerDay)}回`)}
+${tile(dl, r.prevLabel?`${esc(r.prevLabel)}比`:'前期比', r.prevLabel?'日あたりで比較':'比べられる前期がありません')}
+${tile(yl, '前年同期比', r.yoy?`昨年は1日 ${man(r.yoy.viewsPerDay)}回`:'昨年のデータがありません')}
+</div>
+<div class="subline">登録者は ${(c.subsNet>=0?'+':'')+full(c.subsNet)}人（獲得 ${full(c.subsGained)} ／ 解除 ${full(c.subsLost)}）。1万再生あたりの獲得は ${eff}。</div>
+
+${sec(`${esc(r.innerUnit)}ごとの動き`)}
+<div class="lede">棒は1日あたりの視聴回数です。⚠ 合計ではありません。${esc(r.innerUnit)}によって日数が違うためです。</div>
+<div class="pbars">${bars}</div>
+${r.best&&r.worst&&r.best.key!==r.worst.key?`<div class="note key">いちばん高い${esc(r.innerUnit)}は <b>${esc(r.best.key)}</b>（1日 ${man(r.best.viewsPerDay)}回）、低い${esc(r.innerUnit)}は ${esc(r.worst.key)}（1日 ${man(r.worst.viewsPerDay)}回）。差は ${(r.best.viewsPerDay/Math.max(1,r.worst.viewsPerDay)).toFixed(1)}倍です。</div>`:''}
+
+${sec('中身')}
+<div class="headrows">
+${hrow('既存と新作', `既存の動画が1日あたり ${man(c.basePerDay)}回。この期間に公開した動画が全体の <b>${c.newRatioPct==null?'—':c.newRatioPct+'%'}</b>`)}
+${hrow('公開したもの', `${c.videoCount}本（平均 ${dur}）${hrs!=null?`　総再生時間 ${full(hrs)}時間`:''}`)}
+${hrow('企画タイプ', types)}
+${hrow('ナレーター', nars)}
+${sp?hrow('新作の初速', `${sp}　<span style="color:var(--muted);font-size:11.5px">括弧は本数</span>`):''}
+${hrow('クーポン', `${r.videos.couponCount}本にクーポンを付けています`)}
+</div>
+
+${tops?`${sec('この期間に公開した動画')}
+<div class="lede">再生の多い順に3本。⚠ 数字は<b>公開以来の累計</b>で、この期間だけの再生数ではありません。</div>
+${tops}`:''}
+
+<div class="note">前期比・前年同期比とも<b>1日あたり</b>で比べています。今月は確定した日数ぶんしか無いため、合計で比べると必ず今期が小さく出ます。
+前年同期はチャンネル全体の日次から出しています。⚠ 既存/新作の分解と初速は日次に無いため、そちらは直近12ヶ月ぶんだけです。
+初速は公開当日＋翌日の合計の中央値で、<b>2日そろっていない動画は数えていません</b>。月ごとに並べているのは、中央値は期間をまたいで合成できないためです。
+⚠ 既存と新作の合計は上の視聴回数と一致しません（集計元が違います）。登録の効率は<b>獲得</b>で計算しています。</div>
+
+<div class="foot">CHANNEL DESK 自動生成 ／ ${new Date().toLocaleString('ja-JP')} ／ ${esc(CHANNEL)}</div>`;
+}
+
+async function load(){
+  try{
+    // ⚠ 既定（省略）に戻さないこと。GitHub Pages のキャッシュで画面が古いままになります
+    const r = await fetch(DATA_URL, { cache: 'no-cache' });
+    if(!r.ok) throw new Error('HTTP ' + r.status);
+    DATA = await r.json();
+    if(DATA.meta && DATA.meta.channel_title){
+      CHANNEL = DATA.meta.channel_title;
+      document.title = '期間レポート — ' + CHANNEL;
+    }
+    // ⚠⚠ 新しい画面 × 古い report_model.js の組み合わせは必ず起きます（2026-09-04 に発生）
+    if(!M || typeof M.periodReport !== 'function')
+      throw new Error('report_model.js が古いようです。再読み込み（Mac は ⌘+Shift+R）で直ります');
+    const q = new URLSearchParams(location.search).get('span');
+    if(SPANS.some(([k])=>k===q)) span = q;
+    document.getElementById('loadMsg').style.display = 'none';
+    document.getElementById('toolbar').style.display = 'flex';
+    document.getElementById('sheet').style.display = 'block';
+    render();
+  }catch(e){
+    document.getElementById('loadMsg').textContent = '読み込み失敗: ' + (e.message||e);
+  }
+}
+load();
+</script>
+</body>
+</html>
