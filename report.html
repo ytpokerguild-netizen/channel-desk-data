@@ -315,6 +315,30 @@
        （2026-08-17 に実際に混入した PDF を出しかけました）。 */
     .toolbar{display:none!important}
   }
+  /* 期間レポート 2026-09-05 追加。見た目は report_period.html と同じ。
+     ⚠⚠ デザインを変えるときは両方を見ること */
+  .rtabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
+  .rtabs button{appearance:none;font-family:inherit;font-size:12.5px;font-weight:600;
+    padding:5px 14px;border-radius:999px;cursor:pointer;border:1px solid var(--rule);background:#fff;color:var(--ink)}
+  .rtabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  .ptabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 22px}
+  .ptabs a{font-size:12.5px;font-weight:600;padding:5px 14px;border-radius:999px;
+    border:1px solid var(--rule);color:var(--muted);text-decoration:none}
+  .ptabs a.on{background:var(--ink);border-color:var(--ink);color:#fff}
+  .pbars{display:flex;gap:10px;align-items:flex-end;margin:10px 0 6px;overflow-x:auto}
+  .pbar{display:flex;flex-direction:column;align-items:center;gap:5px;flex:0 0 auto}
+  .pbar .pv{font-size:11px;color:var(--muted);white-space:nowrap}
+  .pbar .pb{background:var(--rule);border-radius:3px 3px 0 0}
+  .pbar.on .pv{color:var(--accent);font-weight:700}
+  .pbar.on .pb{background:var(--accent)}
+  .pbar .pk{font-size:10px;color:var(--muted);white-space:nowrap}
+  .vrow{display:flex;gap:12px;align-items:baseline;margin-top:7px;font-size:13px}
+  .vrow .vn{flex:0 0 16px;color:var(--muted);font-size:11px}
+  .vrow .vt{flex:1;min-width:0}
+  .vrow .vv{color:var(--muted);white-space:nowrap;font-size:12.5px}
+  .ptabs{display:none}
+  .pbar .pb{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @media print{ .rtabs{display:none} }
 </style>
 </head>
 <body>
@@ -325,8 +349,11 @@
   <button class="printbtn" onclick="window.print()">🖨 印刷 / PDF保存</button>
 </div>
 
+<div class="rtabs" id="rtabs" style="display:none"></div>
+
 <div class="msg" id="loadMsg" style="display:none">読み込み中...</div>
 <div class="sheet" id="sheet" style="display:none"></div>
+<div class="sheet" id="periodSheet" style="display:none"></div>
 
 <!-- ★ 数字は report_model.js で1回だけ確定させます（2026-08-28 レビュー6回目 §1）。
      ⚠⚠ **このファイルに計算を書き戻さないこと。**ここは表示だけを担当します。
@@ -334,6 +361,7 @@
        2つの資料で食い違います（実際に「アクション3件 / NEXT CHECK 4件」の食い違いが出ました）。
      ⚠ 読み込み順を変えないこと。下の <script> はこれが定義済みである前提で書かれています。 -->
 <script src="report_model.js"></script>
+<script src="report_period_view.js"></script>
 <script>
 const DATA_URL = 'data.json';
 const M = window.CDModel;   // ⚠ 別名を増やさないこと。M.〜 で辿れることを揃えています
@@ -1203,6 +1231,35 @@ ${ai.analysis?`<div style="font-size:13px;color:var(--ink-2);margin-top:8px">${S
 
 }
 
+/* 期間タブ 2026-09-05 追加。?week= はそのまま、期間は #span=m6 で持ちます。
+   ⚠⚠ 中身をここで組み立てないこと。CDPeriodView.html() が作ります。 */
+let RAWDATA = null;
+
+function showPane(key){
+  const isWeek = (key === 'week');
+  document.getElementById('sheet').style.display       = isWeek ? 'block' : 'none';
+  document.getElementById('periodSheet').style.display = isWeek ? 'none'  : 'block';
+  document.getElementById('weekSelect').style.display  = isWeek ? '' : 'none';
+  [].forEach.call(document.querySelectorAll('#rtabs button'), b => {
+    b.setAttribute('aria-selected', b.dataset.k === key ? 'true' : 'false'); });
+  if(!isWeek) document.getElementById('periodSheet').innerHTML =
+      CDPeriodView.html(RAWDATA, key, CHANNEL, { tabs: false });
+  history.replaceState(null, '', location.pathname + location.search + (isWeek ? '' : '#span=' + key));
+  window.scrollTo(0, 0);
+}
+
+function buildPaneTabs(){
+  if(!window.CDPeriodView || !RAWDATA || typeof M.periodReport !== 'function') return;
+  if(!M.periodReport(RAWDATA, 'm3')) return;
+  const bar = document.getElementById('rtabs');
+  bar.innerHTML = [['week','週次']].concat(CDPeriodView.SPANS)
+    .map(([k,l]) => `<button data-k="${k}" aria-selected="${k==='week'}">${esc(l)}</button>`).join('');
+  [].forEach.call(bar.querySelectorAll('button'), b => b.addEventListener('click', () => showPane(b.dataset.k)));
+  bar.style.display = 'flex';
+  const h = (location.hash.match(/span=(\w+)/) || [])[1];
+  if(h && CDPeriodView.SPANS.some(([k]) => k === h)) showPane(h);
+}
+
 function onWeekChange(){
   const ws = document.getElementById('weekSelect').value;
   history.replaceState(null,'','report.html?week='+ws);
@@ -1218,6 +1275,7 @@ async function loadReport(){
     const r = await fetch(DATA_URL, { cache: 'no-cache' });
     if(!r.ok) throw new Error('HTTP ' + r.status);
     const data = await r.json();
+    RAWDATA = data;
     REPORTS = (data.weekly_reports||[]).slice().sort((a,b)=>b.week_start.localeCompare(a.week_start));
     COUPON  = data.coupon || null;
     TREND   = data.weekly_trend || null;
@@ -1240,6 +1298,7 @@ async function loadReport(){
     document.getElementById('toolbar').style.display = 'flex';
     document.getElementById('sheet').style.display = 'block';
     renderReportPage(rep);
+    buildPaneTabs();
   }catch(e){
     document.getElementById('loadMsg').style.display = 'block';
     document.getElementById('loadMsg').textContent = '読み込み失敗: ' + e.message;
