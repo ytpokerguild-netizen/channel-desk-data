@@ -197,6 +197,15 @@
     .ptabs{display:none}          /* 紙では1期間だけ出す。タブは押せません */
     .pbar .pb{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   }
+  /* 「読み取れること」の箇条書き。2026-09-05 追加。
+     ⚠ .hrow を流用しないこと。あちらは左に92pxのラベル枠があり、点だけが浮きます */
+  .pnotes{margin:13px 0 0;border-top:1px solid var(--rule);padding-top:12px}
+  .pnote{position:relative;padding-left:17px;margin-top:9px;
+    font-size:13px;line-height:1.8;color:var(--ink)}
+  .pnote:first-child{margin-top:0}
+  .pnote::before{content:"";position:absolute;left:2px;top:.68em;
+    width:5px;height:5px;border-radius:50%;background:var(--accent)}
+  .pnotes + .note{margin-top:14px;padding-top:9px;border-top:1px solid var(--rule)}
 </style>
 </head>
 <body>

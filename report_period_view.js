@@ -74,7 +74,7 @@ ${tile(yl, '前年同期比', r.yoy?`昨年は1日 ${man(r.yoy.viewsPerDay)}回`
 <div class="subline">登録者は ${(c.subsNet>=0?'+':'')+full(c.subsNet)}人（獲得 ${full(c.subsGained)} ／ 解除 ${full(c.subsLost)}）。1万再生あたりの獲得は ${eff}。</div>
 
 ${notes.length?`${sec('読み取れること')}
-<div class="headrows">${notes.map(n=>`<div class="hrow"><span class="hk">・</span><span class="hv">${M.noteHtml(n)}</span></div>`).join('')}</div>
+<div class="pnotes">${notes.map(n=>`<div class="pnote">${M.noteHtml(n)}</div>`).join('')}</div>
 <div class="note">⚠ ここに書けるのは<b>観測できたことだけ</b>です。「どの動画が効いたか」は動画別の日次が必要なため出していません。</div>`:''}
 
 ${sec(`${esc(S.unit)}ごとの動き`)}
