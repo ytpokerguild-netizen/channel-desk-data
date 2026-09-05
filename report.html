@@ -181,7 +181,7 @@
   }
 
   .foot{margin-top:38px;color:var(--muted);font-size:11.5px;border-top:1px solid var(--rule);padding-top:8px}
-  .toolbar{max-width:860px;margin:0 auto;padding:14px 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .toolbar{max-width:860px;margin:0 auto;padding:14px 8px 10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
   .toolbar select,.toolbar button,.toolbar a{font-family:inherit;font-size:13px;padding:7px 12px;border-radius:8px;border:1px solid #cbc5b4;background:#fff;color:#333;cursor:pointer;text-decoration:none}
   .toolbar button:hover,.toolbar a:hover{background:#f5f1e6}
   .msg{max-width:860px;margin:40px auto;text-align:center;color:#666}
@@ -317,10 +317,19 @@
   }
   /* 期間レポート 2026-09-05 追加。見た目は report_period.html と同じ。
      ⚠⚠ デザインを変えるときは両方を見ること */
-  .rtabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 14px}
-  .rtabs button{appearance:none;font-family:inherit;font-size:12.5px;font-weight:600;
-    padding:5px 14px;border-radius:999px;cursor:pointer;border:1px solid var(--rule);background:#fff;color:var(--ink)}
-  .rtabs button[aria-selected="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+  /* シートと同じ幅・同じ左端に揃えます。⚠ 860px と padding は .sheet と対にしてあります */
+  .rtabs{max-width:860px;margin:0 auto;padding:0 44px;display:flex;gap:24px;
+    align-items:flex-end;border-bottom:1px solid var(--rule);
+    overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+  .rtabs::-webkit-scrollbar{display:none}
+  .rtabs button{appearance:none;background:none;border:0;cursor:pointer;flex:0 0 auto;
+    font-family:inherit;font-size:13px;font-weight:600;letter-spacing:.02em;
+    color:var(--muted);padding:10px 0;margin-bottom:-1px;
+    border-bottom:2px solid transparent;transition:color .12s}
+  .rtabs button:hover{color:var(--ink-2)}
+  .rtabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+  .rtabs + .msg,.rtabs ~ .sheet{margin-top:0}
+  @media (max-width:640px){ .rtabs{padding:0 18px;gap:18px} }
   .ptabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 22px}
   .ptabs a{font-size:12.5px;font-weight:600;padding:5px 14px;border-radius:999px;
     border:1px solid var(--rule);color:var(--muted);text-decoration:none}
@@ -336,9 +345,12 @@
   .vrow .vn{flex:0 0 16px;color:var(--muted);font-size:11px}
   .vrow .vt{flex:1;min-width:0}
   .vrow .vv{color:var(--muted);white-space:nowrap;font-size:12.5px}
-  .ptabs{display:none}
-  .pbar .pb{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  @media print{ .rtabs{display:none} }
+  @media print{
+    /* ⚠ 紙ではタブを出しません（押せないため）。期間の帯も同様 */
+    .rtabs{display:none}
+    .ptabs{display:none}
+    .pbar .pb{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  }
 </style>
 </head>
 <body>
