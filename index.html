@@ -696,11 +696,11 @@ body{
     <div id="pane-report" style="display:none">
 
       <div class="card">
-        <h3><span class="dot"></span>週次レポート（土〜金）
+        <h3><span class="dot"></span>週次レポート（月〜日・9/4までは土〜金）
           <select id="wrSelect" onchange="renderReport()" style="margin-left:auto;background:var(--panel-2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:5px 8px;font-size:12px;font-family:'Noto Sans JP',sans-serif"></select>
           <button id="wrPdfBtn" onclick="openReportPage()" style="margin-left:8px;background:rgba(201,162,39,.14);color:var(--gold);border:1px solid rgba(201,162,39,.4);border-radius:8px;padding:5px 10px;font-size:12px;cursor:pointer;font-family:'Noto Sans JP',sans-serif">🌐 レポートページを開く</button>
         </h3>
-        <div id="wrEmpty" style="display:none;font-size:12px;color:var(--muted-2)">レポートはまだありません。毎週土曜の朝に自動生成されます。</div>
+        <div id="wrEmpty" style="display:none;font-size:12px;color:var(--muted-2)">レポートはまだありません。毎週月曜に自動生成されます。</div>
         <div id="wrBody">
           <div class="week-summary" id="wrSummary"></div>
           <div id="wrNote" style="font-size:11px;color:var(--muted-2);margin-top:8px"></div>
@@ -2050,6 +2050,18 @@ function renderCoupon(){
   // ── 週ごとの成績（週次レポートの再生回数と突き合わせ）──
   const reps = {};
   (G.weekly_reports||[]).forEach(r=>{ reps[r.week_start] = r; });
+  // ⚠ 2026-09-07 以降、週次レポートは月〜日。クーポンは土〜金のまま（運営者の判断）。
+  //   週次レポートに同じ週が無いときは、analytics_daily から土〜金の7日を足して再生回数を出す。
+  //   週次レポートがある週（〜9/4）は従来どおりレポートの値を使う（過去の表示を変えないため）
+  const adMap = {};
+  (G.analytics_daily||[]).forEach(r=>{ adMap[r.date] = r; });
+  const weekViews = ws => {
+    const rep = reps[ws];
+    if(rep && rep.channel) return { views: rep.channel.views, final: !!rep.final };
+    let v = 0, n = 0;
+    for(let i=0;i<7;i++){ const r = adMap[_addDaysISO(ws,i)]; if(r && r.views>0){ v += r.views; n++; } }
+    return n ? { views: v, final: n===7 } : null;
+  };
   const vidCount = ws => {
     const start = ws, end = _addDaysISO(ws, 6);
     return (G.videos||[]).filter(v=>{
@@ -2066,10 +2078,10 @@ function renderCoupon(){
       <th style="text-align:right">使用</th>
       <th style="text-align:right">使用率</th><th style="text-align:right">再生あたり入力</th>
     </tr></thead><tbody>` + weeks.map(w=>{
-      const rep = reps[w.week_start];
-      const views = rep && rep.channel ? rep.channel.views : null;
+      const wv = weekViews(w.week_start);
+      const views = wv ? wv.views : null;
       const per = (views && w.entries) ? (w.entries / views * 100) : null;
-      const fin = rep ? (rep.final ? '' : '<span style="color:var(--muted-2)">（速報）</span>') : '<span style="color:var(--muted-2)">（レポート未生成）</span>';
+      const fin = wv ? (wv.final ? '' : '<span style="color:var(--muted-2)">（速報）</span>') : '<span style="color:var(--muted-2)">（再生回数なし）</span>';
       return `<tr>
         <td>${esc(fmtDate(w.week_start))}〜${esc(fmtDate(_addDaysISO(w.week_start,6)))} ${fin}</td>
         ${c.has_code_column?`<td>${esc((w.codes||[]).join(', ')||'—')}</td>`:''}
@@ -2083,7 +2095,7 @@ function renderCoupon(){
       </tr>`;
     }).join('') + '</tbody>' : '';
   document.getElementById('cpWeeklyNote').innerHTML = weeks.length
-    ? '※ 週の区切りは週次レポートと同じ土曜開始〜金曜終了。「再生あたり入力」はその週の再生回数に対する<b>入力件数</b>の割合です（人数ではありません）。'
+    ? '※ 週の区切りは土曜開始〜金曜終了（週次レポートは2026-09-07から月曜開始に変わりましたが、クーポンは土〜金のままです。9/5以降の再生回数は同じ土〜金の7日を足したもの）。「再生あたり入力」はその週の再生回数に対する<b>入力件数</b>の割合です（人数ではありません）。'
       + '<br>※ 週の割り当ては<b>コードを入力した日</b>です。クーポンコードは動画に貼られたまま残るので、'
       + '<b>古い週のコードが後の週に入力されることがあります</b>。「その週の動画の成績」とは読めません。'
       + (c.has_code_column ? '' : '<br>※ コード列が入るまで、どのコード経由かは区別できません。')

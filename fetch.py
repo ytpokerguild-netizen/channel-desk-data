@@ -250,7 +250,8 @@ def _parse_dt(s):
 
 
 def _week_start_sat(d):
-    """その日を含む週（土曜開始）の土曜日。weekly_reports と同じ区切り"""
+    """その日を含む週（土曜開始）の土曜日。クーポンの週別集計で使う。
+    ⚠ 2026-09-07 以降、weekly_reports は月〜日に変わったが、クーポンは土〜金のまま（運営者の判断）"""
     return d - timedelta(days=(d.weekday() - 5) % 7)
 
 
@@ -1165,10 +1166,43 @@ def fetch_video_extra_analytics(access_token, top_video_ids, days=365):
     return result
 
 # ──────────────────────────────────────────────────────────
-# 週次レポート（毎週 土〜金 JST。土曜朝の実行で速報生成 → 確定値が揃い次第更新）
+# 週次レポート（毎週 月〜日 JST。2026-09-04 までの週は土〜金。確定値が揃い次第更新）
 # ──────────────────────────────────────────────────────────
 WEEKLY_REPORT_BACKFILL_WEEKS = 8    # 遡って生成する週数
 WEEKLY_REPORT_KEEP           = 26   # 保持する週数
+
+# ★ 週の区切り（2026-09-10 変更: 土〜金 → 月〜日。運営者の判断で「案A」）
+#   なぜ: 週次レポートを金曜に出すため。土〜金だと金曜時点でその週が終わっておらず、
+#         1週遅れ（前々週）の報告になっていた。月〜日なら前週が確定してから報告できる。
+#   案A: 2026-09-04（金）までの週は土〜金のまま残し、2026-09-07（月）以降だけ月〜日で作る。
+#        過去のレポートは作り直さない（過去に送った数字を変えないため）。
+#   ⚠ 2026-09-05（土）・09-06（日）の2日はどの週にも入らない。意図した隙間です
+#   ⚠ クーポンの週別集計（_week_start_sat）は土〜金のまま。こちらは変えていません
+#   ⚠ 週の割り方はこの関数1か所で決める。グラフ・期間サマリ・週次レポートで別々に計算しないこと
+WEEK_SWITCH_DATE = date(2026, 9, 7)   # 月〜日の最初の週の月曜
+
+
+def _report_weeks(upto, n):
+    """upto（その日を含む）までに終わっている週を、古い順に最大 n 本返す。[(週初め, 週末), ...]
+    2026-09-07 以降は月〜日、それより前は土〜金。"""
+    out = []
+    we = upto - timedelta(days=(upto.weekday() - 6) % 7)          # upto 以前の直近の日曜
+    while len(out) < n and we - timedelta(days=6) >= WEEK_SWITCH_DATE:
+        out.append((we - timedelta(days=6), we))
+        we -= timedelta(days=7)
+    old_end = WEEK_SWITCH_DATE - timedelta(days=3)                # 2026-09-04（土〜金の最後の週の金曜）
+    we = min(old_end, upto - timedelta(days=(upto.weekday() - 4) % 7))
+    while len(out) < n:
+        out.append((we - timedelta(days=6), we))
+        we -= timedelta(days=7)
+    return out[::-1]
+
+
+def _overlaps_new_weeks(week_start_iso):
+    """土曜始まりの週のうち、月〜日の週と期間が重なるもの（切り替え後に作られてしまった旧形式の週）"""
+    ws = date.fromisoformat(week_start_iso)
+    return ws.weekday() == 5 and ws + timedelta(days=6) >= WEEK_SWITCH_DATE
+
 
 # ★ 週ごとに「動画別の流入経路」を取る本数（2026-08-17 追加・運営者の依頼）。
 #   なぜ要るか: これまでチャンネル全体の流入経路しか無く、「ショートフィードが減った」を
@@ -1279,7 +1313,7 @@ WEEKLY_TREND_WEEKS = 26
 
 
 def build_weekly_trend(analytics_daily, weeks=WEEKLY_TREND_WEEKS, video_daily=None, videos=None):
-    """直近 weeks 週（土〜金）の視聴回数と登録者純増を返す。古い順。
+    """直近 weeks 週の視聴回数と登録者純増を返す。古い順。週の割り方は _report_weeks（2026-09-07 以降は月〜日）。
 
     Returns: [{"week_start","week_end","views","subs_net","driver"?}, ...]
     `driver` は「その週の3割以上を1本で稼いだとき」だけ入ります（{title, share}）。
@@ -1292,12 +1326,9 @@ def build_weekly_trend(analytics_daily, weeks=WEEKLY_TREND_WEEKS, video_daily=No
         return []
     last = max(ad)                                   # 確定している最後の日
     d = date.fromisoformat(last)
-    # 直近の「金曜」を探す（土=5 開始なので週末は金=4）
-    end = d - timedelta(days=(d.weekday() - 4) % 7)
+    # 週の割り方は週次レポートと同じ（_report_weeks）。レポートの週とグラフの週を一致させるため
     out = []
-    for i in range(weeks - 1, -1, -1):
-        we = end - timedelta(days=7 * i)
-        ws = we - timedelta(days=6)
+    for ws, we in _report_weeks(d, weeks):
         days = [(ws + timedelta(days=j)).isoformat() for j in range(7)]
         got = [ad[x] for x in days if x in ad]
         if len(got) < 7:                             # 7日そろっていない週は出さない
@@ -1425,10 +1456,7 @@ def build_period_summary(analytics_daily, video_daily=None, videos=None,
     out_m.reverse()
 
     out_w = []
-    end = last - timedelta(days=(last.weekday() - 4) % 7)   # 直近の金曜（週は土〜金）
-    for i in range(weeks - 1, -1, -1):
-        we = end - timedelta(days=7 * i)
-        ws = we - timedelta(days=6)
+    for ws, we in _report_weeks(last, weeks):              # 週の割り方は週次レポートと同じ
         r = _row(ws.isoformat(), ws, we)
         if r and r["days"] == 7:                            # 7日そろった週だけ
             out_w.append(r)
@@ -1522,7 +1550,7 @@ def match_post_plan(post_plan, videos):
 
 def build_weekly_report(week_start, week_end, *, daily, analytics_daily,
                         video_daily, videos, post_plan, week_extra, prev_week_extra):
-    """1週分（土〜金）のレポートを組み立てる"""
+    """1週分（2026-09-07 以降は月〜日、それより前は土〜金）のレポートを組み立てる"""
     ws, we   = week_start, week_end
     pws, pwe = ws - timedelta(days=7), we - timedelta(days=7)
     ad = {r["date"]: r for r in analytics_daily}
@@ -1641,13 +1669,14 @@ def build_weekly_report(week_start, week_end, *, daily, analytics_daily,
 
 def update_weekly_reports(weekly_reports, access_token, *, daily, analytics_daily,
                           video_daily, videos, post_plan):
-    """完了した週（土〜金）のレポートを生成・更新して返す。
+    """完了した週（2026-09-07 以降は月〜日、それより前は土〜金）のレポートを生成・更新して返す。
     確定値が揃う（週末+3日）までは速報として毎日更新し、揃ったら final=True で固定。"""
     today_j = _jst_today()
-    days_since_sat = (today_j.weekday() - 5) % 7          # 土曜=5
-    cur_week_start = today_j - timedelta(days=days_since_sat)
-    last_end       = cur_week_start - timedelta(days=1)   # 直近の完了週の金曜
     existing = {r["week_start"]: r for r in weekly_reports}
+    # 切り替えの前後で作られてしまった土曜始まりの週（月〜日の週と重なる）は捨てる。二重計上を防ぐため
+    for k in [k for k in existing if _overlaps_new_weeks(k)]:
+        print(f"  {k}: 月〜日の週と重なる旧形式の週のため削除")
+        existing.pop(k)
 
     extra_cache = {}
     def get_extra(s, e):
@@ -1666,9 +1695,7 @@ def update_weekly_reports(weekly_reports, access_token, *, daily, analytics_dail
             extra_cache[key] = {}
         return extra_cache[key]
 
-    for i in range(WEEKLY_REPORT_BACKFILL_WEEKS):
-        we = last_end - timedelta(days=7 * i)
-        ws = we - timedelta(days=6)
+    for ws, we in _report_weeks(today_j - timedelta(days=1), WEEKLY_REPORT_BACKFILL_WEEKS):
         key = ws.isoformat()
         old = existing.get(key)
         if old and old.get("final"):
@@ -1882,7 +1909,7 @@ def main():
     except Exception as e:
         print(f"  [WARN] 自動照合失敗 — 照合なしで続行: {e}")
 
-    # ── 週次レポート（土〜金、速報→確定で自動更新）──
+    # ── 週次レポート（月〜日。2026-09-04 までは土〜金。速報→確定で自動更新）──
     print("[10/10] 週次レポートを生成中...")
     try:
         weekly_reports = update_weekly_reports(
@@ -1914,7 +1941,7 @@ def main():
         "videos":                videos,                # 動画メタデータ + 現在 stats
         "post_plan":             post_plan,             # 投稿計画（Google スプレッドシート）
         "video_archive":         video_archive,         # 動画アーカイブ（video_id→企画タイプ/ナレーター手入力）
-        "weekly_reports":        weekly_reports,        # 週次レポート（土〜金、最大26週）
+        "weekly_reports":        weekly_reports,        # 週次レポート（月〜日・09-04までは土〜金、最大26週）
         "weekly_trend":          build_weekly_trend(analytics_daily, video_daily=video_daily, videos=videos),  # 直近26週の視聴回数・登録純増（グラフ用）
         "period_summary":        build_period_summary(analytics_daily, video_daily=video_daily, videos=videos),  # 期間別サマリ（月次12・週次26）
         "coupon":                coupon,                # JOPT Games クーポンの集計（個人情報は含めない）
