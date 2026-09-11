@@ -154,9 +154,12 @@
     // ⚠ 語彙は「増加／減少／横ばい」。「伸長」「土台」は抽象的で、
     //   数字が専門でない読み手にそのままは伝わりません。
     const dir  = v => v >= FLAT ? '増加' : v <= -FLAT ? '減少' : '横ばい';
+    // ★ 2026-09-11: 主語を「視聴回数」と明示し、「1本」が何かを言う（運用手順 §7
+    //   「★ 本文はオーナーがそのまま読める文章にする」の①各文に主語を置く）。
+    //   ⚠ 判定そのもの（FLAT の帯・増加/減少/横ばいの語彙）は変えていません。
     const head = dir(dp) === dir(base)
-        ? `視聴は${dir(dp)}。1本を除いても${dir(base)}`
-        : `視聴は${dir(dp)}。ただし1本を除くと${dir(base) === '横ばい' ? 'ほぼ横ばい' : dir(base)}`;
+        ? `視聴回数は${dir(dp)}。最大の1本を除いても${dir(base)}`
+        : `視聴回数は${dir(dp)}。ただし最大の1本を除くと${dir(base) === '横ばい' ? 'ほぼ横ばい' : dir(base)}`;
     return { tot, deltaPct: dp, baselinePct: base,
              dirAll: dir(dp), dirBase: dir(base), headline: head, top: S && S.top };
   }

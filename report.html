@@ -470,9 +470,9 @@ function trendAssert(rep){
   const avg=T.reduce((s,d)=>s+d.views,0)/T.length;
   const r=Math.round(T[i].views/avg*100);
   const rank=T.map(d=>d.views).slice().sort((a,b)=>b-a).indexOf(T[i].views)+1;
-  return r>=110 ? `${T.length}週の中では上位（${rank}位・平均の${r}%）です`
-       : r>=90  ? `${T.length}週の平均とほぼ同じ水準（${rank}位・${r}%）です`
-                : `${T.length}週の中では低め（${rank}位・平均の${r}%）です`;
+  return r>=110 ? `今週の視聴回数は${T.length}週の中では上位（${rank}位・平均の${r}%）です`
+       : r>=90  ? `今週の視聴回数は${T.length}週の平均とほぼ同じ水準（${rank}位・${r}%）です`
+                : `今週の視聴回数は${T.length}週の中では低め（${rank}位・平均の${r}%）です`;
 }
 
 // 流入経路（横棒・今週/前週）
@@ -1061,8 +1061,8 @@ function renderReportPage(rep){
     if(L.length<2) return '';
     const med = L.length%2 ? L[(L.length-1)/2] : (L[L.length/2-1]+L[L.length/2])/2;
     const over = L.filter(v=>v>=med*2).length;
-    return over ? `初速の中央値は ${fmtMan(med)}回、そのうち ${over}本が中央値の2倍を超えました`
-                : `初速の中央値は ${fmtMan(med)}回、大きく外れた回はありません`;
+    return over ? `新作の初速は中央値 ${fmtMan(med)}回で、そのうち ${over}本が中央値の2倍を超えました`
+                : `新作の初速は中央値 ${fmtMan(med)}回で、大きく外れた回はありません`;
   })();
   // ⚠ ここに割合（「増加分の87%」）を戻さないこと（2026-08-28 レビュー3回目 §2）。
   //   分母が純増（増加要因−減少要因）なので、純増が小さい週は200%・500%になり、
@@ -1076,7 +1076,7 @@ function renderReportPage(rep){
   const causeLead = (()=>{
     const S = causeSplit(rep, views, viewsPrev);
     if(!S) return '';
-    const t = `純増は ${(S.tot>=0?'+':'−')+fmtMan(Math.abs(S.tot))}回`;
+    const t = `視聴回数の純増は ${(S.tot>=0?'+':'−')+fmtMan(Math.abs(S.tot))}回`;
     if(!S.upRows.length) return `${t}。増えた動画はありません`;
     const u = S.upRows[0];
     if(u.other) return `${t}。特定の1本では説明できず、全体が動いています`;
@@ -1089,7 +1089,7 @@ function renderReportPage(rep){
     if(!COUPON||COUPON.error) return '';
     const wk=(COUPON.weekly||[]).find(w=>w.week_start===rep.week_start);
     if(!wk) return '';
-    return `掲出日の記録が無いため、どの動画の効果かは分けられません`;
+    return `クーポンは掲出日の記録が無いため、どの動画の効果かは分けられません`;
   })();
   // 上位8本のうち何本が今週の新作か（見出しに使う。構成比は出しません）
   const topLead = (()=>{
@@ -1097,6 +1097,25 @@ function renderReportPage(rep){
     const nv=new Set((rep.new_videos||[]).map(v=>v.video_id).filter(Boolean));
     const n=L.filter(v=>nv.has(v.video_id)).length;
     return n ? `上位8本のうち ${n}本が今週の新作です` : `上位8本はすべて過去の動画です`;
+  })();
+  // ★ 2026-09-11 追加: 週次AI分析の本文（`ai_analysis.analysis`）をオーナー向け本編に出す。
+  //   なぜ: これまで本文はここに出ておらず（下の「分析メモ」に DEBUG でだけ残していた）、
+  //   運用手順 §7 の文体を直しても、このページの見え方は何も変わりませんでした。
+  //   ⚠⚠ **2026-09-11 より前に書かれた分析は出しません。**それらは本編と計算方法・
+  //     運用方針が食い違っており（実測3件。下の「分析メモ」の注記を参照）、出すと
+  //     「どちらが正しいのか」がオーナー側に生まれます。運用手順 §7 の
+  //     「★ 本文はオーナーがそのまま読める文章にする」以降に書いた分だけが対象です。
+  //   ⚠ 過去週を出したくなったら、その週の本文を書き直してから日付を更新すること。
+  //     ここの下限だけを下げないこと。
+  const AI_BODY_FROM = '2026-09-11';
+  const aiHead = (ai && ai.headline) ? String(ai.headline) : '';
+  const aiBody = (()=>{
+    if(!ai || !ai.analysis) return '';
+    const g = String(ai.generated_at||'').slice(0,10);
+    if(!g || g < AI_BODY_FROM) return '';
+    return `<div style="font-size:13.5px;line-height:1.95;color:var(--ink)">${
+      String(ai.analysis).split(/\n+/).filter(Boolean)
+        .map(p=>`<p style="margin:0 0 12px">${esc(p)}</p>`).join('')}</div>`;
   })();
   // ★ 節に通し番号を振る（2026-08-28 レビュー指摘 B-4）。長い1ページなので現在地の手がかりを置く。
   //   ⚠ 週によって出ない節（クーポン・次にやること）があるため、**番号は出た節に順に振ります**。
@@ -1164,7 +1183,7 @@ ${/* ⚠ この節は**紙には出しません**（.sumsec を印刷で非表�
       代わりです。完全版は運用詳細の .printonly にあります（レビュー4回目 §1）。 */''}
 <div class="sumsec">
 ${sec('主要指標', partial?`確定は${rep.confirmed_days}日ぶんです`
-      : (subsNet!=null ? `登録者は ${(subsNet>=0?'+':'')+fmtFull(subsNet)}人（前週 ${c.subs_net_prev!=null?((c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+'人'):'—'}）` : ''), '')}
+      : (subsNet!=null ? `登録者は ${(subsNet>=0?'+':'')+fmtFull(subsNet)}人（前週 ${c.subs_net_prev!=null?((c.subs_net_prev>=0?'+':'')+fmtFull(c.subs_net_prev)+'人'):'—'}）${(c.subs_gained!=null&&c.subs_lost!=null)?`。内訳は新規登録 ${fmtFull(c.subs_gained)}人・解除 ${fmtFull(c.subs_lost)}人`:''}` : ''), '')}
 ${/* ★ 表そのものは折りたたみ（2026-08-28 レビュー5回目 §4-2）。
       冒頭の3タイルと補助指標1行で 視聴回数・前週比・総再生時間・登録者・公開本数 は
       すでに出ており、この表はその大部分と重複しています。
@@ -1190,6 +1209,12 @@ ${/* ★ アクションは「運用詳細」より前（2026-08-28 レビュー
         すべてが施策ではありません。
       ⚠ 件数は見出しの中に入れること。別行にすると「3件」が見出しのように浮きます
         （2026-08-28 レビュー4回目 §4-6）。 */''}
+${/* ★ 2026-09-11 追加。アクション（04）の直前に置きます。
+      理由: 本文は「だから何が言えるか」で、アクションはその結論から出るものだからです。
+      ⚠ 運用詳細（区切りより下）へ移さないこと。オーナー向けの結論です。 */''}
+${aiBody?`${sec('今週の分析', '', esc(aiHead))}
+${aiBody}`:''}
+
 ${actList?`${sec(`次週のアクション（${ai.suggestions.length}件）`, '', '')}
 ${actList}`:''}
 
@@ -1244,7 +1269,7 @@ ${/* ⚠⚠ 本番のオーナー画面には**入口ごと出しません**（2
       折りたたんでも「なぜ計算方法の違う旧形式が同じ資料にあるのか」「どちらが正しいのか」
       という疑問がオーナー側に生まれるためです。**履歴を残すことと、提出資料に入口を置くことは別**です。
       読むときは URL に `?debug=1` を付けてください。 */''}
-${(DEBUG && ai && (ai.analysis||ai.headline))?`<details class="memo" style="margin-top:34px">
+${(DEBUG && !aiBody && ai && (ai.analysis||ai.headline))?`<details class="memo" style="margin-top:34px">
 <summary style="cursor:pointer;font-size:11.5px;color:var(--muted);letter-spacing:.06em">分析メモ（旧形式・本編とは計算方法が異なります／印刷対象外）</summary>
 <div class="note" style="margin-top:8px">⚠ この文章は本編より前に書かれたもので、<b>本編と数字の出し方が違います</b>（例: 本編「1本を除くと +3.0%」／メモ「+2.9%」）。<b>判断には本編の数字を使ってください。</b></div>
 ${ai.headline?`<div class="note key" style="margin-top:8px"><b>要約</b>　${esc(ai.headline)}</div>`:''}
