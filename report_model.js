@@ -597,10 +597,16 @@
     return out;
   }
 
+  /* この画面が動くのに要る関数の名前。⚠⚠ **期間レポートに新しい関数を足したら、ここにも足すこと。**
+     2026-09-04 に実際に起きた事故: ガードが `periodReport` の有無しか見ておらず、
+     **中間バージョンのモデル**（periodNotes はあるが monthSeries が無い）がすり抜けて画面が真っ白になりました。
+     1つずつ確かめるのではなく、**この配列で丸ごと確かめること。** */
+  const PERIOD_API = ['periodReport', 'periodNotes', 'noteHtml', 'periodRank', 'monthSeries'];
+
   global.CDModel = {
     VERSION: MODEL_VERSION, TRAFFIC_LABEL, FLAT, OWNER_GATE_RANK, ACTION_KINDS,
     SRC, fmtFull, fmtMan, fmtDate, fmtMin, md, esc, pct, pctNum, median, stripLevel,
     cause, trafficList, trafficRows, trafficSplit, verdict, ownerState, actions,
-    firstSpeed, coupon, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, build
+    firstSpeed, coupon, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, PERIOD_API, build
   };
 })(window);
