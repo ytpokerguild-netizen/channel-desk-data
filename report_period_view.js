@@ -37,7 +37,9 @@ function html(DATA, span, CHANNEL, opt){
   const hrow=(k,v)=>`<div class="hrow"><span class="hk">${k}</span><span class="hv">${v}</span></div>`;
 
   /* ⚠⚠ **選択期間だけを並べないこと。**比較になりません。過去を含めて、期間の分だけ濃くします。 */
-  const S = r.series, sRows = S.rows, sPeak = Math.max(...sRows.map(x=>x.viewsPerDay||0), 1);
+  // ⚠ series が無い版のモデルでも落とさない。期間内だけの表示に落とします
+  const S = r.series || { unit: r.innerUnit, rows: (r.inner||[]).map(x=>({...x, on:true})) };
+  const sRows = S.rows, sPeak = Math.max(...sRows.map(x=>x.viewsPerDay||0), 1);
   const bw = sRows.length<=6 ? 54 : (sRows.length<=13 ? 38 : (sRows.length<=18 ? 30 : 24));
   const onIdx = sRows.reduce((a,x,i)=>x.on?(a<0?i:a):a, -1);
   const bars = sRows.map((x,i)=>{

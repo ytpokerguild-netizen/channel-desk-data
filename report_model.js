@@ -191,13 +191,20 @@
        正式レポート3件・ブリーフ4件という食い違いが出ました。**別の配列・別の表示にすること。** */
   function actions(rep) {
     const sug = (rep.ai_analysis || {}).suggestions || [];
-    return sug.map((s, i) => ({
-      n: i + 1,
-      kind: s.kind || '',
-      title: s.title || '',
-      lead: (s.actions || [])[0] || '',            // 何が分かるか（1行）
-      details: (s.actions || []).slice(1)          // 詳しい確認方法
-    }));
+    // ⚠ suggestions は**文字列の週とオブジェクトの週が混在します**（2026-08-22 / 08-29 は文字列）。
+    //   `report.html` は昔から両方を受けていましたが、ここが `s.title` しか見ておらず、
+    //   その週だけ title が空になって `check_consistency.js` が落ちていました（2026-09-11 に発見）。
+    //   ⚠⚠ **片方だけの形を前提にしないこと。**入り口はここ1か所です。
+    return sug.map((s, i) => {
+      const o = (typeof s === 'string') ? { title: s } : (s || {});
+      return {
+        n: i + 1,
+        kind: o.kind || '',
+        title: o.title || '',
+        lead: (o.actions || [])[0] || '',          // 何が分かるか（1行）
+        details: (o.actions || []).slice(1)        // 詳しい確認方法
+      };
+    });
   }
 
   /* ── 新作の初速 ────────────────────────────────────
