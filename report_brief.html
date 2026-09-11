@@ -292,12 +292,13 @@ function render(m){
        それは最終画面の NEXT ACTION 01 と**同じ文**になり、同じタスクを2度掲載します。
        表紙は **どうなったら何を意味するか（判断基準）**、最終画面は **実際に何を確認するか**。 */
   const ow = m.owner;
-  const ownerChip = ow.level==='none'  ? `<span class="chip">オーナー対応なし</span>`
-                  : ow.level==='unset' && m.final ? `<span class="chip bad">オーナー判断 未設定</span>` : '';
-  // ⚠ 冒頭の通知は「要確認・要承認・未設定」の週だけ。判断不要の週に枠を出さないこと
+  // ★ 2026-09-11 変更: owner_decision の入力必須ルールを廃止したため、
+  //   「未設定」をチップ・通知とも出さなくしました（report.html と同じ扱い。片方だけ直さないこと）。
+  const ownerChip = ow.level==='none'  ? `<span class="chip">オーナー対応なし</span>` : '';
+  // ⚠ 冒頭の通知は「要確認・要承認」の週だけ。判断不要・未設定の週に枠を出さないこと
   const ownerBox = ow.level==='confirm' ? `<div class="callout mt"><div class="ic">!</div><div><h3 class="warn">要確認</h3><p>${esc(stripLevel(ow.text))}</p></div></div>`
     : ow.level==='approve' ? `<div class="callout no mt"><div class="ic">!</div><div><h3 class="down">要承認</h3><p>${esc(stripLevel(ow.text))}</p></div></div>`
-    : (ow.level==='unset' && m.final) ? `<div class="callout no mt"><div class="ic">!</div><div><h3 class="down">オーナー判断が未設定です</h3><p>運用手順 §7 の基準で 判断不要／要確認／要承認 のいずれかを入れてください。<b>「判断不要」と決めつけて出さないこと。</b></p></div></div>` : '';
+    : '';
 
   const watch = t0 && t0.prank && t0.prank !== t0.rank
       ? `${esc(t0.nm)}が首位を維持すれば構造変化の可能性。反落すれば一時的な偏り`
@@ -458,10 +459,14 @@ ${lo && K.firstMedian ? `<div class="callout mt"><div class="ic">?</div><div><h3
   const nc = acts.map((a,i)=>`<div class="nc">
 <div class="k">Next action 0${i+1}${a.kind?' · '+esc(a.kind):''}</div>
 <h3>${esc(a.title)}</h3><p>${esc(a.lead)}</p></div>`).join('');
-  const ownerCard = `<div class="owner ${ow.level}">
+  // ★ 2026-09-11 変更: 未設定は必須違反ではなくなったので、表示は「対応なし」と同じ
+  //   扱い（赤枠にしない）にしています。実際の level は 'unset' のまま持たせているので、
+  //   将来また表示を分けたくなったら ow.level を見れば区別できます。
+  const ownerCardLevel = ow.level==='unset' ? 'none' : ow.level;
+  const ownerCard = `<div class="owner ${ownerCardLevel}">
 <div class="k">Owner status</div>
-<h3>${ow.level==='none'?'対応なし':ow.level==='confirm'?'要確認':ow.level==='approve'?'要承認':'未設定'}</h3>
-<p>${esc(ow.level==='none'?'今週はオーナーの判断が必要な事項はありません':stripLevel(ow.text))}</p></div>`;
+<h3>${ownerCardLevel==='none'?'対応なし':ownerCardLevel==='confirm'?'要確認':'要承認'}</h3>
+<p>${esc(ownerCardLevel==='none'?'今週はオーナーの判断が必要な事項はありません':stripLevel(ow.text))}</p></div>`;
 
   out.push(sec('s5','Summary','05 · Weekly summary','今週の報告まとめ','', `
 <div class="stack">
