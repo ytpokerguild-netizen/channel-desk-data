@@ -195,15 +195,27 @@
     });
 
     const l2 = [];
+    // ★ 2026-09-12 追記（部長の指摘「『何が』最大の1本なの？」）。
+    //   見出しが「最大の1本を除いても増加」と言うのに、**どの動画かがどこにも無く**、
+    //   読み手が 02 まで下りないと分かりませんでした。**まず動画を名指しします。**
+    //   ⚠⚠ タイトルは**省略せず全部出すこと。**途中で切るとタイトル自身の「」が閉じず、
+    //     未完成の表示になります（2026-08-28 レビュー5回目 §3-3 と同じ理由）。
+    //     入りきらないときは公開日だけにして、切り詰めた題名を出さないこと。
+    if (topV) {
+      const nm  = topV.title || topV.short_title || '';
+      const day = topV.published_at ? String(topV.published_at).slice(5).replace('-', '/').replace(/^0/, '') : '';
+      l2.push(`最大の1本は${day ? ` ${day}公開の` : ''}${nm}`
+            + (topV.views_week ? `（${fmtMan(topV.views_week)}回）` : ''));
+    }
     if (topV && newAvg && newRows.length >= 2 && newIds.has(topV.video_id)) {
-      l2.push(`今週公開した ${newRows.length}本の1本あたり平均は ${fmtMan(newAvg)}回。`
-            + `最大の1本は ${fmtMan(topV.views_week)}回で、その平均の ${Math.round(topV.views_week / newAvg * 100)}%`);
+      l2.push(`今週公開した ${newRows.length}本の1本あたり平均は ${fmtMan(newAvg)}回で、`
+            + `この1本はその ${Math.round(topV.views_week / newAvg * 100)}%`);
     }
     if (topV && views) {
-      l2.push(`最大の1本は今週の視聴 ${fmtMan(views)}回のうち ${(topV.views_week / views * 100).toFixed(1)}%。`
+      l2.push(`この1本は今週の視聴 ${fmtMan(views)}回のうち ${(topV.views_week / views * 100).toFixed(1)}%。`
             + (newSum ? `今週公開したぶんを合わせると ${(newSum / views * 100).toFixed(1)}%` : ''));
     }
-    l2.push(`その1本を除いた前週比は ${(V.baselinePct >= 0 ? '+' : '') + V.baselinePct.toFixed(1)}%`);
+    l2.push(`この1本を除いた前週比は ${(V.baselinePct >= 0 ? '+' : '') + V.baselinePct.toFixed(1)}%`);
     rows.push({ head: `最大の1本を除いても${V.dirBase}`, lines: l2 });
     return rows;
   }

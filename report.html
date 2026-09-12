@@ -510,15 +510,21 @@ function trafficSplitBlock(rep){
   //   ⚠ 「この経路の19%」という構成比は出しません（構成比を出さない方針・レビュー3回目 §8）。
   //     実数だけで結論は伝わります。
   //   ⚠ 1週の結果だけで「流入構造が変わった」と断定しないこと。書けるのは「兆候」までです。
+  //   ★ 2026-09-12 書き直し（部長の指摘「今週再生数が一番多い1本のブラウジングを除いても、じゃないの？」）。
+  //     旧文は「いちばん多い1本『…』は 8.2万回」でした。⚠⚠ **2か所が誤読されます**:
+  //       ① 「いちばん多い1本」が**何でいちばんなのか**（再生数なのか、この経路の流入なのか）が無い
+  //       ② 8.2万回は**その動画のこの経路からの流入**で、その動画の再生回数（10.7万回）ではない
+  //     **何の数字かを毎回書くこと。**「除いた」だけで済ませないこと。
+  //   ⚠⚠ タイトルを cut() で切らないこと。切るとタイトル自身の「」が閉じません（2026-09-12 に直した）。
   const title = S.restBeatsPrev
-    ? `この1本を除いても${esc(S.nm)}は前週を上回ります`
+    ? `この1本ぶんを除いても${esc(S.nm)}は前週を上回ります`
     : `${esc(S.nm)}の増加は、この1本によるものです`;
   return `<div class="finding">
 <div class="ft">${title}</div>
-<div class="fb">いちばん多い1本「${esc(cut(S.title,22))}」は <b>${fmtMan(S.top.v)}回</b>。
-除いた残りは <b>${fmtMan(S.rest)}回</b>で、前週の <b>${fmtMan(S.p0)}回</b>を${S.restBeatsPrev?'<b>上回ります</b>':'<b>下回ります</b>'}。
+<div class="fb">${esc(S.nm)}からの流入がいちばん多い1本は ${esc(S.title)}で、この経路から <b>${fmtMan(S.top.v)}回</b>。
+この1本ぶんを除いた残りは <b>${fmtMan(S.rest)}回</b>で、前週の <b>${fmtMan(S.p0)}回</b>を${S.restBeatsPrev?'<b>上回ります</b>':'<b>下回ります</b>'}。
 ${S.restBeatsPrev?'1本だけでは説明できない増加で、<b>構造変化の兆候</b>があります（1週では確定できません）。':''}</div>
-<div class="fn">${esc(S.nm)}は今週 ${fmtMan(S.now)}回（前週 ${fmtMan(S.p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「除いた残り」には6本目以降と過去動画が入ります</div>
+<div class="fn">${esc(S.nm)}は今週 ${fmtMan(S.now)}回（前週 ${fmtMan(S.p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「この1本ぶんを除いた残り」には6本目以降と過去動画が入ります</div>
 </div>`;
 }
 
@@ -832,6 +838,7 @@ function couponBlock(rep){
   const lag = (COUPON.lag_buckets||[]).map(b=>`${esc(b.label)} ${b.count}`).join(' ／ ');
 
   return `
+<div class="note key" style="margin:0 0 7px">掲出日の記録が無いため、この増減がどの動画によるものかは分けられません。動画ごとに評価するには、運営ログの施策シートに発行日と掲出日を入れる必要があります。</div>
 <div class="note" style="margin:0 0 7px">この週に入力のあったコード: <b>${(wk.codes||[]).map(esc).join('、')||'—'}</b>　／　シート取得日: ${fmtDate(COUPON.snapshot_date||'')}</div>
 <div class="scrollx"><table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th></tr>
 <tr><td>コード入力</td><td class="num">${cell(wk.entries,dC)}</td><td class="num">${pw?cell(pw.entries,dP):'—'}</td></tr>
@@ -937,7 +944,7 @@ function verdictBlock(rep, views, viewsPrev){
     const t0 = window._TR.list[0];
     t3v = TRAFFIC_LABEL[String(t0.source_type)] || t0.source_type;
     const sp = window._SPLIT;                      // trafficSplitBlock が置く
-    if(sp) t3s = sp.restBeatsPrev ? '当該動画を除いても前週超え' : '当該動画1本による増加';
+    if(sp) t3s = sp.restBeatsPrev ? 'この1本ぶんを除いても前週超え' : 'この1本ぶんによる増加';
     else {
       const p0 = window._TR.prev.get(String(t0.source_type));
       t3s = p0!=null ? `前週比 ${pct(t0.views,p0)}` : '';
@@ -1101,18 +1108,46 @@ function renderReportPage(rep){
                           : '最大の1本';
     return `${t}。最大の増加要因は ${label}の +${fmtMan(u.d)}回`;
   })();
+  // ★ 2026-09-12 書き直し（部長の指摘「クーポンのセクションのタイトルがこれだと、ただ漏れてた人に
+  //   なりますよ。ここにはデータに基づいた分析結果を書くべきです」）。
+  //   旧文は「掲出日の記録が無いため、どの動画の効果かは分けられません」で、**節の見出しが言い訳**でした。
+  //   ⚠ 見出しは**数字の結論**にします。掲出日が無いという但し書きは節の中の注記に移しました（消していません）。
+  //   ⚠ 割合には必ず分母を書くこと（運用手順 §2-1）。使用率は「◯件中◯件」を添えます。
   const cpLead = (()=>{
     if(!COUPON||COUPON.error) return '';
     const wk=(COUPON.weekly||[]).find(w=>w.week_start===rep.week_start);
     if(!wk) return '';
-    return `クーポンは掲出日の記録が無いため、どの動画の効果かは分けられません`;
+    const ps=new Date(rep.week_start+'T00:00:00Z'); ps.setUTCDate(ps.getUTCDate()-7);
+    const pw=(COUPON.weekly||[]).find(w=>w.week_start===ps.toISOString().slice(0,10))||null;
+    const rt=e=>(e&&e.entries)?Math.round(e.used/e.entries*1000)/10:null;
+    const rc=rt(wk), rp=rt(pw);
+    const useTxt = rc==null ? ''
+      : (rp!=null && Math.abs(rc-rp)<=3)
+        ? `使用率は ${rc}%（${fmtFull(wk.entries)}件中${fmtFull(wk.used)}件）で前週並みです`
+        : `使用率は ${rc}%（${fmtFull(wk.entries)}件中${fmtFull(wk.used)}件）${rp!=null?`・前週は ${rp}%`:''}`;
+    if(!pw || !pw.entries) return `クーポンのコード入力は ${fmtFull(wk.entries)}件。${useTxt}`;
+    const d=Math.round((wk.entries/pw.entries-1)*100);
+    const move = d===0 ? '前週と同じです'
+               : `前週の ${fmtFull(pw.entries)}件から ${Math.abs(d)}%${d<0?'減りました':'増えました'}`;
+    return `クーポンのコード入力は ${fmtFull(wk.entries)}件で、${move}。${useTxt}`;
   })();
   // 上位8本のうち何本が今週の新作か（見出しに使う。構成比は出しません）
+  // ★ 2026-09-12 書き直し（部長の指摘「他の3本は？」）。
+  //   旧文は「上位8本のうち 5本が今週の新作です」で止まっており、**残り3本に触れていませんでした。**
+  //   ⚠ 数を出したら、**残りが何なのかまで書くこと。**引き算を読み手にさせないこと。
   const topLead = (()=>{
     const L=(rep.top_videos||[]).slice(0,8); if(!L.length) return '';
     const nv=new Set((rep.new_videos||[]).map(v=>v.video_id).filter(Boolean));
-    const n=L.filter(v=>nv.has(v.video_id)).length;
-    return n ? `上位8本のうち ${n}本が今週の新作です` : `上位8本はすべて過去の動画です`;
+    const news=L.filter(v=>nv.has(v.video_id));
+    const olds=L.filter(v=>!nv.has(v.video_id));
+    if(!news.length) return `上位${L.length}本はすべて過去の動画です`;
+    if(!olds.length) return `上位${L.length}本はすべて今週の新作です`;
+    const up=olds.filter(v=>v.views_prev_week!=null && v.views_week>v.views_prev_week).length;
+    const dn=olds.length-up;
+    const tail = (up&&dn) ? `うち${up}本は前週より伸び、${dn}本は前週を下回っています`
+               : up       ? `${olds.length}本とも前週より伸びています`
+                          : `${olds.length}本とも前週を下回っています`;
+    return `上位${L.length}本のうち ${news.length}本が今週の新作です。残る${olds.length}本は過去の動画で、${tail}`;
   })();
   // ★ 2026-09-11 追加: 週次AI分析の本文（`ai_analysis.analysis`）をオーナー向け本編に出す。
   //   なぜ: これまで本文はここに出ておらず（下の「分析メモ」に DEBUG でだけ残していた）、
@@ -1238,7 +1273,10 @@ ${actList}`:''}
 
 ${/* ══ ここから下は運用詳細。⚠ この区切りより上に詳細を足さないこと ══ */''}
 <div class="detail">
-<div class="split">以下は運用詳細です<span>オーナー向けの報告はここまでです。ここから下は、上の結論の裏づけと、日々の運用で使う数字です。</span></div>
+${/* ⚠⚠ 2026-09-12 部長の指摘で書き換え: **オーナーに出す資料に「オーナー向けの報告はここまでです」
+      と書かないこと。**読み手に向かって「あなたの分はここで終わり」と言う文になっていました。
+      区切りの役割（ここから先は裏づけ）は、読み手を名指ししなくても伝わります。 */''}
+<div class="split">ここから先は詳細データです<span>上の結論の裏づけと、日々の運用で使う数字です。</span></div>
 
 ${/* ★ 印刷のときだけ出る「本編から落としたものの完全版」（2026-08-28 レビュー4回目 §1）。
       画面ではすでに本編に出ているので隠しています。⚠ 画面用と印刷用で数字がずれないよう、
@@ -1253,7 +1291,7 @@ ${c.subscribers_end!=null?`<div class="note key">週末時点の登録者数 ${f
 ${causeBlock(rep, views, viewsPrev)}
 <div class="note">上の棒はすべて左端が起点で、いちばん大きい要因を100%とした長さです。片側6本までを出し、残りは「その他」にまとめています（2026-09-12 にオーナーの指示で3本から増やしました）。<b>その他は上位10本の外にある動画の増減を打ち消し合った正味の値</b>なので、個々の動画の増減より小さく見えることがあります。<b>ここをさらに細かくするには、データ側で取る動画の本数を増やす必要があります。</b></div>
 ${trafficChart()}
-${window._SPLIT?`<div class="note">${esc(window._SPLIT.nm)}は今週 ${fmtMan(window._SPLIT.now)}回（前週 ${fmtMan(window._SPLIT.p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「除いた残り」には6本目以降と過去動画が入ります</div>`:''}
+${window._SPLIT?`<div class="note">${esc(window._SPLIT.nm)}は今週 ${fmtMan(window._SPLIT.now)}回（前週 ${fmtMan(window._SPLIT.p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「この1本ぶんを除いた残り」には6本目以降と過去動画が入ります</div>`:''}
 ${actListFull?`<h2><span class="eyebrow">次週のアクション（詳しい確認方法）</span></h2>
 ${actListFull}`:''}
 </div>
