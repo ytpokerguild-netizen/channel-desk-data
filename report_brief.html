@@ -337,7 +337,7 @@ ${dl?`<div class="dl ${dlc||''}">${dl}</div>`:''}${note?`<div class="nt">${note}
 <div class="g3">
 ${kpi('main','週間視聴回数', fmtMan(K.views)+'回', arrow(K.deltaPct)+' <span>vs 前週</span>', upcls(K.deltaPct),
       '前週 '+fmtMan(K.viewsPrev)+'回')}
-${kpi('main','最大の1本を除いた前週比', sign(K.baselinePct), '<span>'+esc(topName)+'を除いた残り</span>','',
+${kpi('main','視聴回数が上振れた1本を除いた前週比', sign(K.baselinePct), '<span>'+esc(topName)+'を除いた残り</span>','',
       '土台が動いたかを見る指標です')}
 ${kpi('main','新作 初速2日の中央値', K.firstMedian!=null?fmtMan(K.firstMedian)+'回':'—',
       K.firstMedianPct!=null?arrow(K.firstMedianPct)+' <span>vs 前週</span>':'', upcls(K.firstMedianPct),

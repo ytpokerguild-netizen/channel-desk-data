@@ -851,7 +851,6 @@ function couponBlock(rep){
   const lag = (COUPON.lag_buckets||[]).map(b=>`${esc(b.label)} ${b.count}`).join(' ／ ');
 
   return `
-<div class="note key" style="margin:0 0 7px">掲出日の記録が無いため、この増減がどの動画によるものかは分けられません。動画ごとに評価するには、運営ログの施策シートに発行日と掲出日を入れる必要があります。</div>
 <div class="note" style="margin:0 0 7px">この週に入力のあったコード: <b>${(wk.codes||[]).map(esc).join('、')||'—'}</b>　／　シート取得日: ${fmtDate(COUPON.snapshot_date||'')}</div>
 <div class="scrollx"><table><tr><th>指標</th><th class="num">今週</th><th class="num">前週</th></tr>
 <tr><td>コード入力</td><td class="num">${cell(wk.entries,dC)}</td><td class="num">${pw?cell(pw.entries,dP):'—'}</td></tr>
@@ -1003,7 +1002,7 @@ ${/* ⚠ ここに動画名を出さないこと。省略されたタイトル�
 ${/* ⚠ 2026-09-12: ラベルを「最大寄与1本」→「最大の1本」に。寄与は分析者の言葉で、
         オーナーにそのままは通じません（運用手順 §7 の言い換え表）。
         ⚠ report_brief.html の同じラベルも一緒に直すこと。片方だけだと2資料で食い違います。 */''}
-${tile((base>=0?'+':'')+base.toFixed(1)+'%', '最大の1本を除いた前週比', '')}
+${tile((base>=0?'+':'')+base.toFixed(1)+'%', '視聴回数が上振れた1本を除いた前週比', '')}
 ${tile(esc(String(t3v)), t3l, t3s)}
 </div>
 <div class="subline">${subLine(rep)}</div>
@@ -1124,6 +1123,10 @@ function renderReportPage(rep){
                           : '最大の1本';
     return `${t}。最大の増加要因は ${label}の +${fmtMan(u.d)}回`;
   })();
+  // ⚠⚠ 2026-09-12 運営者の指示で、節の中にあった「掲出日の記録が無いため、この増減がどの動画に
+  //   よるものかは分けられません…」の注記は**削除しました。足し直さないこと。**
+  //   （分析する側が知っておくことは `チャンネル分析AI_運用手順.md` §3 の⑥に残っています。
+  //     レポートに出す／出さないの話であって、ルールが消えたわけではありません。）
   // ★ 2026-09-12 書き直し（部長の指摘「クーポンのセクションのタイトルがこれだと、ただ漏れてた人に
   //   なりますよ。ここにはデータに基づいた分析結果を書くべきです」）。
   //   旧文は「掲出日の記録が無いため、どの動画の効果かは分けられません」で、**節の見出しが言い訳**でした。

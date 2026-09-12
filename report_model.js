@@ -161,12 +161,22 @@
     // ⚠ 語彙は「増加／減少／横ばい」。「伸長」「土台」は抽象的で、
     //   数字が専門でない読み手にそのままは伝わりません。
     const dir  = v => v >= FLAT ? '増加' : v <= -FLAT ? '減少' : '横ばい';
-    // ★ 2026-09-11: 主語を「視聴回数」と明示し、「1本」が何かを言う（運用手順 §7
-    //   「★ 本文はオーナーがそのまま読める文章にする」の①各文に主語を置く）。
-    //   ⚠ 判定そのもの（FLAT の帯・増加/減少/横ばいの語彙）は変えていません。
-    const head = dir(dp) === dir(base)
-        ? `視聴回数は${dir(dp)}。最大の1本を除いても${dir(base)}`
-        : `視聴回数は${dir(dp)}。ただし最大の1本を除くと${dir(base) === '横ばい' ? 'ほぼ横ばい' : dir(base)}`;
+    // ★ 2026-09-12 全面書き直し（部長の指摘「この見出しは意味が伝わりにくい」）。
+    //   旧文「視聴回数は増加。最大の1本を除いても増加」の何が伝わらなかったか:
+    //     ① 体言止めが2つ並ぶだけで、**文になっていない**
+    //     ② 「最大の1本」が**何で最大なのか**が無い（再生数か、伸びた幅か）
+    //     ③ **なぜ除くのか**（1本のヒットだけで説明がつく週かどうかを見るため）が読み取れない
+    //   ⚠⚠ ここで言う1本は「**伸びがいちばん大きい1本**」です。再生数の1位とは限りません
+    //     （`cause()` の増加要因1位）。**「最大の1本」という呼び方に戻さないこと。**
+    //   ⚠ 判定そのもの（FLAT の帯・増加/減少/横ばいの線引き）は変えていません。語だけです。
+    const V1 = { '増加': '増えました',   '減少': '減りました',   '横ばい': 'ほぼ横ばいです' };
+    const V2 = { '増加': '増えています', '減少': '減っています', '横ばい': 'ほぼ横ばいです' };
+    //   ★ 2026-09-12 運営者の指定で「視聴回数が上振れた1本」という言い方に統一しました。
+    //     ⚠ 「1本のヒットだけによる増加ではありません」という言い回しは**使いません**（同日に一度入れて取りやめ）。
+    const da = dir(dp), db = dir(base);
+    const head = da !== db
+        ? `視聴回数は${V1[da]}。ただし、視聴回数が上振れた1本を除くと${V2[db]}`
+        : `視聴回数は${V1[da]}。視聴回数が上振れた1本を除いても${V2[db]}`;
     return { tot, deltaPct: dp, baselinePct: base,
              dirAll: dir(dp), dirBase: dir(base), headline: head, top: S && S.top };
   }
@@ -185,12 +195,16 @@
     const newRows = (rep.top_videos || []).filter(v => newIds.has(v.video_id) && v.views_week > 0);
     const newSum = newRows.reduce((s, v) => s + (v.views_week || 0), 0);
     const newAvg = newRows.length ? newSum / newRows.length : null;
+    // ⚠⚠ 2026-09-12: ここで名指しするのは「**伸びがいちばん大きい1本**」です。
+    //   見出しの「視聴回数が上振れた1本を除いた前週比」と**同じ1本**でなければ、
+    //   名前と数字が別の動画の話になります。**再生数の1位に戻さないこと。**
+    const gain = v => (v.views_week || 0) - (v.views_prev_week || 0);
     const topV = (rep.top_videos || []).slice()
-                   .sort((a, b) => (b.views_week || 0) - (a.views_week || 0))[0] || null;
+                   .sort((a, b) => gain(b) - gain(a))[0] || null;
 
     const rows = [];
     rows.push({
-      head: `視聴回数は${V.dirAll}`,
+      head: `視聴回数は${V.dirAll === '増加' ? '増えました' : V.dirAll === '減少' ? '減りました' : 'ほぼ横ばいです'}`,
       lines: [`前週比 ${pct(views, viewsPrev)}（今週 ${fmtMan(views)}回 ／ 前週 ${fmtMan(viewsPrev)}回）`]
     });
 
@@ -204,8 +218,13 @@
     if (topV) {
       const nm  = topV.title || topV.short_title || '';
       const day = topV.published_at ? String(topV.published_at).slice(5).replace('-', '/').replace(/^0/, '') : '';
-      l2.push(`最大の1本は${day ? ` ${day}公開の` : ''}${nm}`
-            + (topV.views_week ? `（${fmtMan(topV.views_week)}回）` : ''));
+      const g   = gain(topV);
+      // ⚠ 今週公開した動画に「前週から +10.7万回」と書くと、前週にもあったように読めます。
+      //   今週公開ぶんは「今週公開」とだけ書きます。
+      const sfx = newIds.has(topV.video_id)
+        ? `（今週 ${fmtMan(topV.views_week)}回・今週公開）`
+        : `（今週 ${fmtMan(topV.views_week)}回・前週から ${g >= 0 ? '+' : '−'}${fmtMan(Math.abs(g))}回）`;
+      l2.push(`視聴回数が上振れた1本は${day ? ` ${day}公開の` : ''}${nm}${sfx}`);
     }
     if (topV && newAvg && newRows.length >= 2 && newIds.has(topV.video_id)) {
       l2.push(`今週公開した ${newRows.length}本の1本あたり平均は ${fmtMan(newAvg)}回で、`
@@ -216,7 +235,8 @@
             + (newSum ? `今週公開したぶんを合わせると ${(newSum / views * 100).toFixed(1)}%` : ''));
     }
     l2.push(`この1本を除いた前週比は ${(V.baselinePct >= 0 ? '+' : '') + V.baselinePct.toFixed(1)}%`);
-    rows.push({ head: `最大の1本を除いても${V.dirBase}`, lines: l2 });
+    const vb = V.dirBase === '増加' ? '増えています' : V.dirBase === '減少' ? '減っています' : 'ほぼ横ばいです';
+    rows.push({ head: `視聴回数が上振れた1本を除いても${vb}`, lines: l2 });
     return rows;
   }
 
