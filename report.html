@@ -46,6 +46,12 @@
   /* 節の通し番号（2026-08-28 レビュー指摘 B-4）。長い1ページなので現在地の手がかりを置く */
   h2 .eyebrow .secn{color:var(--muted);margin-right:9px;letter-spacing:.02em}
   .lede{color:var(--ink-2);margin:0 0 12px}     /* 見出しの下の1行 */
+  /* ★ 見出しの根拠（2026-09-12 オーナーの指示）。主張ごとに数字を1行ずつ置く。 */
+  .whys{margin:-10px 0 18px;display:flex;flex-direction:column;gap:10px}
+  .why{border-left:3px solid var(--line,#ddd);padding:2px 0 2px 12px}
+  .whyh{font-size:13px;font-weight:700;color:var(--ink)}
+  .whyl{font-size:12.5px;color:var(--ink-2);margin-top:3px}
+  .whyl::before{content:"→ ";color:var(--muted)}
   /* ★ 補足文は2階層（2026-08-28 レビュー指摘 B-7）。
      .note      … 出典・条件・注意書き（薄く小さく）
      .note.key  … 分析上の意味がある補足（本文に近い濃さ）
@@ -957,7 +963,17 @@ function verdictBlock(rep, views, viewsPrev){
   //     ② 「運用変更：なし」は、種別（検証/分析/計測整備）が出ているので 04 を見れば分かります。
   //   ⚠ `ai_analysis.next_check` / `ops_change` はデータに残していますが、**表示していません。**
 
+  // ★ 2026-09-12 追加（オーナーの指示）。見出しの2つの主張に、それぞれ根拠の数字を添えます。
+  //   ⚠ 文言と判定は M.verdictWhy() が持ちます。**ここで数字を作り直さないこと。**
+  //   ⚠ 印刷にも出します（冒頭の結論の裏づけなので、紙で落ちると意味が変わります）。
+  const why = M.verdictWhy(rep, views, viewsPrev);
+  const whyBlock = (why && why.length) ? `<div class="whys">${why.map(w=>`<div class="why">
+<div class="whyh">${esc(w.head)}</div>
+${w.lines.map(l=>`<div class="whyl">${esc(l)}</div>`).join('')}
+</div>`).join('')}</div>` : '';
+
   return `<div class="verdict"><span class="lv">${esc(head)}</span></div>
+${whyBlock}
 ${ownerNotice(rep)}
 <div class="tiles">
 ${tile(fmtMan(views)+'回', '週間視聴回数', `前週比 ${(dp>=0?'+':'')+dp.toFixed(1)}%`)}
@@ -1235,7 +1251,7 @@ ${sumTable('')}
 ${c.subscribers_end!=null?`<div class="note key">週末時点の登録者数 ${fmtFull(Math.round(c.subscribers_end))}人。${planLine(rep, pp)}</div>`:''}
 <h2><span class="eyebrow">増減要因（全項目）と流入の全経路</span></h2>
 ${causeBlock(rep, views, viewsPrev)}
-<div class="note">上の棒はすべて左端が起点で、いちばん大きい要因を100%とした長さです。片側3本までを出し、残りは「その他」にまとめています。<b>その他は上位8本の外にある動画の増減を打ち消し合った正味の値</b>なので、個々の動画の増減より小さく見えることがあります。</div>
+<div class="note">上の棒はすべて左端が起点で、いちばん大きい要因を100%とした長さです。片側6本までを出し、残りは「その他」にまとめています（2026-09-12 にオーナーの指示で3本から増やしました）。<b>その他は上位10本の外にある動画の増減を打ち消し合った正味の値</b>なので、個々の動画の増減より小さく見えることがあります。<b>ここをさらに細かくするには、データ側で取る動画の本数を増やす必要があります。</b></div>
 ${trafficChart()}
 ${window._SPLIT?`<div class="note">${esc(window._SPLIT.nm)}は今週 ${fmtMan(window._SPLIT.now)}回（前週 ${fmtMan(window._SPLIT.p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「除いた残り」には6本目以降と過去動画が入ります</div>`:''}
 ${actListFull?`<h2><span class="eyebrow">次週のアクション（詳しい確認方法）</span></h2>

@@ -85,12 +85,19 @@
     const restRaw = tot - all.reduce((s, x) => s + x.d, 0);   // 上位8本の外にあるぶん（正味）
     const ups = all.filter(x => x.d > 0).sort((a, b) => b.d - a.d);
     const dns = all.filter(x => x.d < 0).sort((a, b) => a.d - b.d);
-    const upOther = ups.slice(3).reduce((s, x) => s + x.d, 0) + Math.max(0, restRaw);
-    const dnOther = dns.slice(3).reduce((s, x) => s + x.d, 0) + Math.min(0, restRaw);
+    // ★ 2026-09-12 オーナーの指示で 3本 → 6本 に増やしました。
+    //   「その他の増加要因」が大きすぎて中身が見えない、という指摘です。
+    //   実測（2026-08-29週）: 3本のとき その他 +17.5万回 → 6本で +8.2万回。
+    //   ⚠⚠ **これ以上増やしても「その他」はほとんど減りません。**残りの +6.9万回は
+    //     `top_videos`（上位10本）の外にある動画の正味で、データにその内訳がありません。
+    //     細かくしたいときは `fetch.py` が返す動画の本数を増やすのが先です。
+    const CAUSE_ROWS = 6;
+    const upOther = ups.slice(CAUSE_ROWS).reduce((s, x) => s + x.d, 0) + Math.max(0, restRaw);
+    const dnOther = dns.slice(CAUSE_ROWS).reduce((s, x) => s + x.d, 0) + Math.min(0, restRaw);
     // ⚠ ここで {t,d} だけに絞らないこと。short_title / published_at が落ちて、
     //   見出しが「最大の1本」に化けます（2026-08-28 に実際に起きた）。
-    const upRows = ups.slice(0, 3).map(x => ({ ...x }));
-    const dnRows = dns.slice(0, 3).map(x => ({ ...x }));
+    const upRows = ups.slice(0, CAUSE_ROWS).map(x => ({ ...x }));
+    const dnRows = dns.slice(0, CAUSE_ROWS).map(x => ({ ...x }));
     // ⚠ 両側に同じ名前の「その他」を出さないこと。同じ項目が両側にあるように見えます。
     if (upOther > 0) upRows.push({ t: 'その他の増加要因', d: upOther, other: true });
     if (dnOther < 0) dnRows.push({ t: 'その他の減少要因', d: dnOther, other: true });
@@ -162,6 +169,43 @@
         : `視聴回数は${dir(dp)}。ただし最大の1本を除くと${dir(base) === '横ばい' ? 'ほぼ横ばい' : dir(base)}`;
     return { tot, deltaPct: dp, baselinePct: base,
              dirAll: dir(dp), dirBase: dir(base), headline: head, top: S && S.top };
+  }
+
+  /* ── 見出しの根拠（2026-09-12 追加・オーナーの指示）────────────
+     なぜ: 見出しは「視聴回数は増加。最大の1本を除いても増加」と言い切るのに、
+     **その2つがそれぞれ何%なのかが冒頭に無く**、読み手が下まで探しにいく形でした。
+     オーナーから「見出しの各行に数字を添えてほしい」という指示です。
+     ⚠ 判定（増加/減少/横ばい）は verdict() が持ちます。ここでは**言い換えず**、
+       verdict() の語をそのまま使って根拠の数字だけを足します。
+     ⚠ 割合には必ず分母を書くこと（運用手順 §2-1）。分母を書けない数字は出しません。 */
+  function verdictWhy(rep, views, viewsPrev) {
+    const V = verdict(rep, views, viewsPrev);
+    if (!V) return null;
+    const newIds = new Set((rep.new_videos || []).map(v => v.video_id).filter(Boolean));
+    const newRows = (rep.top_videos || []).filter(v => newIds.has(v.video_id) && v.views_week > 0);
+    const newSum = newRows.reduce((s, v) => s + (v.views_week || 0), 0);
+    const newAvg = newRows.length ? newSum / newRows.length : null;
+    const topV = (rep.top_videos || []).slice()
+                   .sort((a, b) => (b.views_week || 0) - (a.views_week || 0))[0] || null;
+
+    const rows = [];
+    rows.push({
+      head: `視聴回数は${V.dirAll}`,
+      lines: [`前週比 ${pct(views, viewsPrev)}（今週 ${fmtMan(views)}回 ／ 前週 ${fmtMan(viewsPrev)}回）`]
+    });
+
+    const l2 = [];
+    if (topV && newAvg && newRows.length >= 2 && newIds.has(topV.video_id)) {
+      l2.push(`今週公開した ${newRows.length}本の1本あたり平均は ${fmtMan(newAvg)}回。`
+            + `最大の1本は ${fmtMan(topV.views_week)}回で、その平均の ${Math.round(topV.views_week / newAvg * 100)}%`);
+    }
+    if (topV && views) {
+      l2.push(`最大の1本は今週の視聴 ${fmtMan(views)}回のうち ${(topV.views_week / views * 100).toFixed(1)}%。`
+            + (newSum ? `今週公開したぶんを合わせると ${(newSum / views * 100).toFixed(1)}%` : ''));
+    }
+    l2.push(`その1本を除いた前週比は ${(V.baselinePct >= 0 ? '+' : '') + V.baselinePct.toFixed(1)}%`);
+    rows.push({ head: `最大の1本を除いても${V.dirBase}`, lines: l2 });
+    return rows;
   }
 
   /* ── オーナー判断 ────────────────────────────────────
@@ -616,7 +660,7 @@
   global.CDModel = {
     VERSION: MODEL_VERSION, TRAFFIC_LABEL, FLAT, OWNER_GATE_RANK, ACTION_KINDS,
     SRC, fmtFull, fmtMan, fmtDate, fmtMin, md, esc, pct, pctNum, median, stripLevel,
-    cause, trafficList, trafficRows, trafficSplit, verdict, ownerState, actions,
+    cause, trafficList, trafficRows, trafficSplit, verdict, verdictWhy, ownerState, actions,
     firstSpeed, coupon, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, PERIOD_API, build
   };
 })(window);
