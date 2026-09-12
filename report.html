@@ -516,9 +516,22 @@ function trafficSplitBlock(rep){
   //       ② 8.2万回は**その動画のこの経路からの流入**で、その動画の再生回数（10.7万回）ではない
   //     **何の数字かを毎回書くこと。**「除いた」だけで済ませないこと。
   //   ⚠⚠ タイトルを cut() で切らないこと。切るとタイトル自身の「」が閉じません（2026-09-12 に直した）。
+  // ★ 2026-09-12 追記: 見出しは**部長の言い方をそのまま使います**
+  //   （「今週再生数が一番多い1本のブラウジングを除いても、じゃないの？」）。
+  //   ⚠⚠ ただし**その言い方ができるのは、この経路からの流入がいちばん多い1本と、
+  //     今週いちばん再生された1本が同じ動画のときだけ**です。ここで選んでいるのは
+  //     「この経路からの流入がいちばん多い1本」で、再生数の1位とは限りません。
+  //     違う週にこの文を出すと事実と食い違うので、**一致するかを必ず確かめてから使うこと。**
+  const mostViewed = (rep.top_videos || []).slice()
+      .sort((a,b)=>(b.views_week||0)-(a.views_week||0))[0];
+  const sameAsMostViewed = !!(mostViewed && S.top && mostViewed.video_id === S.top.vid);
   const title = S.restBeatsPrev
-    ? `この1本ぶんを除いても${esc(S.nm)}は前週を上回ります`
-    : `${esc(S.nm)}の増加は、この1本によるものです`;
+    ? (sameAsMostViewed
+        ? `今週再生数が一番多い1本の${esc(S.nm)}を除いても前週を上回ります`
+        : `この1本ぶんを除いても${esc(S.nm)}は前週を上回ります`)
+    : (sameAsMostViewed
+        ? `${esc(S.nm)}の増加は、今週再生数が一番多い1本によるものです`
+        : `${esc(S.nm)}の増加は、この1本によるものです`);
   return `<div class="finding">
 <div class="ft">${title}</div>
 <div class="fb">${esc(S.nm)}からの流入がいちばん多い1本は ${esc(S.title)}で、この経路から <b>${fmtMan(S.top.v)}回</b>。
@@ -546,7 +559,7 @@ function trafficMobile(){
     return `<div class="fac"><div class="ft2"><span class="fn2"><b>${esc(TRAFFIC_LABEL[st]||t.source_type)}</b></span><span class="fv">${fmtMan(t.views)}回</span></div>
 <div class="fbar"><i style="width:${Math.max(2,Math.round(t.views/Math.max(1,list[0].views)*100))}%;background:${C_NOW}"></i></div>
 <div class="note" style="margin-top:3px">前週 ${pv!=null?fmtMan(pv)+'回':'—'}${moved?` ／ <b style="color:${cr<pr?C_UP:C_DOWN}">${pr}位→${cr}位</b>`:''}</div></div>`;
-  }).join('')}<div class="note">上位4経路。画面の広い端末では上位6経路を図で見られます</div></div>`;
+  }).join('')}<div class="note">ここに出しているのは流入の上位4経路です。画面の広い端末では上位6経路を図で見られます</div></div>`;
 }
 function trafficChart(){
   if(!window._TR || !window._TR.list.length) return '';
@@ -567,7 +580,7 @@ function trafficChart(){
             right: fmtMan(t.views)+'回',
             sub, subFill: moved ? (cr<pr ? C_UP : C_DOWN) : ''};
   }),{labelW:168,rightW:142,rowH:33})
-  + `<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV_FILL};border:1px solid ${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週（薄い塗り＋枠線）　／ 上位6経路　／ 右下の「2位→1位」は前週からの順位の動きです（上位3位に絡んだときだけ表示）</div></div>`
+  + `<div class="note"><span style="display:inline-block;width:9px;height:9px;background:${C_NOW};border-radius:2px;vertical-align:-1px"></span> 今週　<span style="display:inline-block;width:9px;height:9px;background:${C_PREV_FILL};border:1px solid ${C_PREV};border-radius:2px;vertical-align:-1px"></span> 前週（薄い塗り＋枠線）です　／ 出しているのは上位6経路です　／ 右下の「2位→1位」は前週からの順位の動きです（上位3位に絡んだときだけ出ます）</div></div>`
   + trafficMobile() + trafficPrint();
 }
 // ★ 紙の1ページ目に載せる、上位2経路だけの2行（2026-08-28 レビュー4回目 §1）。
@@ -579,7 +592,7 @@ function trafficPrint(){
     const st=String(t.source_type), pv=prev.get(st), pr=rk.get(st), cr=i+1;
     const moved = pr && pr!==cr;
     return `<div style="font-size:13px;line-height:1.75"><b>${esc(TRAFFIC_LABEL[st]||t.source_type)}</b>　今週 <b>${fmtMan(t.views)}回</b>｜前週 ${pv!=null?fmtMan(pv)+'回':'—'}${moved?`｜<b style="color:${cr<pr?C_UP:C_DOWN}">${pr}位→${cr}位</b>`:''}</div>`;
-  }).join('')}<div class="note" style="margin-top:2px">3位以下は「運用詳細」にあります</div></div>`;
+  }).join('')}<div class="note" style="margin-top:2px">流入経路の3位以下は、この下の詳細データにあります</div></div>`;
 }
 
 function trendBlock(rep){
@@ -775,7 +788,7 @@ function causeBlock(rep, views, viewsPrev){
 <div class="facwrap">${list(S.upRows, C_UP, '増えた要因')}${list(S.dnRows, C_DOWN, '減った要因')}</div>
 ${/* ⚠ 本編には短い1行だけ。詳しい集計条件は運用詳細（.facnote）に置きます
       （2026-08-28 レビュー4回目 §4-4）。 */''}
-<div class="note facnote">上位要因を表示。残りは「その他」に集約しています</div>`;
+<div class="note facnote">増えた要因と減った要因は、大きいものから順に出しています。それ以外は「その他」にまとめています</div>`;
 }
 
 // ── 新作の初速（公開2日間） ──────────────────────────────
@@ -799,7 +812,7 @@ function firstBlock(rep){
     ...(med*2<=mx ? [{v:med*2, label:'中央値の2倍', dash:'5 3', color:'#8f8878'}] : [])
   ] : null;
   return `${hbarSVG(rows,{labelW:LW, rightW:78, guides})}
-${wait?`<div class="note">ほか ${wait}本は公開2日を過ぎていないため出していません。</div>`:''}`;
+${wait?`<div class="note">今週公開した残り ${wait}本は、公開から2日たっていないため出していません。</div>`:''}`;
 }
 
 // ════════════════════════════════
@@ -987,7 +1000,10 @@ ${tile(fmtMan(views)+'回', '週間視聴回数', `前週比 ${(dp>=0?'+':'')+dp
 ${/* ⚠ ここに動画名を出さないこと。省略されたタイトル（「ブラフレイズに「ブラ…」）は
       内容の理解に役立たず、未完成な表示に見えます。動画名は 02 の増減要因で見せます
       （2026-08-28 レビュー4回目 §4-3）。 */''}
-${tile((base>=0?'+':'')+base.toFixed(1)+'%', '最大寄与1本を除いた前週比', '')}
+${/* ⚠ 2026-09-12: ラベルを「最大寄与1本」→「最大の1本」に。寄与は分析者の言葉で、
+        オーナーにそのままは通じません（運用手順 §7 の言い換え表）。
+        ⚠ report_brief.html の同じラベルも一緒に直すこと。片方だけだと2資料で食い違います。 */''}
+${tile((base>=0?'+':'')+base.toFixed(1)+'%', '最大の1本を除いた前週比', '')}
 ${tile(esc(String(t3v)), t3l, t3s)}
 </div>
 <div class="subline">${subLine(rep)}</div>
@@ -1085,7 +1101,7 @@ function renderReportPage(rep){
     const med = L.length%2 ? L[(L.length-1)/2] : (L[L.length/2-1]+L[L.length/2])/2;
     const over = L.filter(v=>v>=med*2).length;
     return over ? `新作の初速は中央値 ${fmtMan(med)}回で、そのうち ${over}本が中央値の2倍を超えました`
-                : `新作の初速は中央値 ${fmtMan(med)}回で、大きく外れた回はありません`;
+                : `新作の初速は中央値 ${fmtMan(med)}回で、大きく外れた1本はありません`;
   })();
   // ⚠ ここに割合（「増加分の87%」）を戻さないこと（2026-08-28 レビュー3回目 §2）。
   //   分母が純増（増加要因−減少要因）なので、純増が小さい週は200%・500%になり、
