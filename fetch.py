@@ -1057,6 +1057,49 @@ def fetch_channel_extra_analytics(access_token, days=28, shorts_ids=None):
     else:
         print("  [WARN] 日本国内 都市別データ取得失敗")
 
+    # ── デバイス別（2026-09-14 追加）──
+    data = analytics_get(access_token, {
+        "ids":        f"channel=={CHANNEL_ID}",
+        "dimensions": "deviceType",
+        "metrics":    "views,estimatedMinutesWatched",
+        "startDate":  start_date,
+        "endDate":    end_date,
+        "sort":       "-views",
+        "maxResults": 10,
+    })
+    if data and data.get("rows"):
+        result["devices"] = [
+            {"device": row[0], "views": int(float(row[1])), "watch_min": int(float(row[2]))}
+            for row in data["rows"]
+        ]
+        print(f"  デバイス別: {[r['device'] for r in result['devices'][:4]]}")
+    else:
+        print("  [WARN] デバイス別データ取得失敗")
+
+    # ── 年齢・性別（2026-09-14 追加）──
+    # ⚠⚠ **取れるのは割合（%）だけで、実数はありません。**
+    #   しかも母数は **Google にログインして視聴した人だけ** です。
+    #   ログアウト視聴・埋め込み・一部のショート視聴は入りません。
+    #   **「視聴者の◯%が男性」ではなく「判定できた視聴のうち◯%」**として読むこと。
+    #   週単位では母数が小さくブレるので、ここでは 28日集計としてだけ持ちます。
+    data = analytics_get(access_token, {
+        "ids":        f"channel=={CHANNEL_ID}",
+        "dimensions": "ageGroup,gender",
+        "metrics":    "viewerPercentage",
+        "startDate":  start_date,
+        "endDate":    end_date,
+        "sort":       "-viewerPercentage",
+        "maxResults": 50,
+    })
+    if data and data.get("rows"):
+        result["demographics"] = [
+            {"age": row[0], "gender": row[1], "pct": round(float(row[2]), 1)}
+            for row in data["rows"] if float(row[2]) > 0
+        ]
+        print(f"  年齢・性別: {len(result['demographics'])} 区分")
+    else:
+        print("  [WARN] 年齢・性別データ取得失敗（ログイン視聴が少ないと返りません）")
+
     # ── 新規 vs リピーター ──
     data = analytics_get(access_token, {
         "ids":        f"channel=={CHANNEL_ID}",
@@ -1267,6 +1310,23 @@ def fetch_week_traffic(access_token, start, end):
     })
     if data and data.get("rows"):
         out["subscribed_status"] = {row[0]: int(float(row[1])) for row in data["rows"]}
+    time.sleep(0.1)
+    # ── デバイス別（2026-09-14 追加）──
+    # ⚠ 取れなくても週次レポートは止めません。キーごと入らないだけです。
+    data = analytics_get(access_token, {
+        "ids":        f"channel=={CHANNEL_ID}",
+        "dimensions": "deviceType",
+        "metrics":    "views",
+        "startDate":  start,
+        "endDate":    end,
+        "sort":       "-views",
+        "maxResults": 10,
+    })
+    if data and data.get("rows"):
+        out["devices"] = [
+            {"device": row[0], "views": int(float(row[1]))}
+            for row in data["rows"]
+        ]
     time.sleep(0.1)
     return out
 
@@ -1598,6 +1658,39 @@ def build_weekly_report(week_start, week_end, *, daily, analytics_daily,
         "views_prev_week": vw_prev.get(vid, 0),
     } for vid in sorted(vw, key=vw.get, reverse=True)[:10]]
 
+    # ── 増減要因（全動画ぶん・2026-09-18 追加）──
+    # ★ なぜ要るか: 従来は `top_videos`（**その週の視聴が多い上位10本**）の差分しか持っておらず、
+    #   **落ちた動画は上位10本に入らないので、まるごと「その他の減少要因」に潰れていました。**
+    #   実測（2026-09-07週）: その他の減少 −16.5万回のうち、内訳が1本も出ていませんでした。
+    #   ⚠⚠ **行数を増やしても直りません。**並べ替えの軸が「視聴の多さ」で、「増減の大きさ」ではないからです。
+    #   ここでは video_daily（全動画×365日）から**全動画の週差分**を作り、増加・減少それぞれの上位を持ちます。
+    CAUSE_KEEP = 8
+    _ids = set(vw) | set(vw_prev)
+    _rows = []
+    for vid in _ids:
+        w, pv = vw.get(vid, 0), vw_prev.get(vid, 0)
+        _rows.append({
+            "id": vid,
+            "t":  vmeta.get(vid, {}).get("title", ""),
+            "pub": vmeta.get(vid, {}).get("published_at", ""),
+            "w": w, "p": pv, "d": w - pv,
+        })
+    _rows.sort(key=lambda x: x["d"], reverse=True)
+    _up = [x for x in _rows if x["d"] > 0]
+    _dn = [x for x in _rows if x["d"] < 0]
+    _dn.sort(key=lambda x: x["d"])
+    _sum_all = sum(x["d"] for x in _rows)
+    cause_videos = {
+        "up":   _up[:CAUSE_KEEP],
+        "down": _dn[:CAUSE_KEEP],
+        "up_other":   sum(x["d"] for x in _up[CAUSE_KEEP:]),
+        "down_other": sum(x["d"] for x in _dn[CAUSE_KEEP:]),
+        # チャンネル全体の純増と、動画別の合計との差。動画に割り当てられないぶん
+        # （削除された動画・集計のズレなど）。⚠ 0ではなく「割り当てられない」です。
+        "resid": (cur["views"] - prv["views"]) - _sum_all if cur and prv else 0,
+        "up_count": len(_up), "down_count": len(_dn),
+    }
+
     # 週内に公開された動画
     # 公開2日間の視聴回数（初速）。2026-08-17 追加。
     # ⚠ 週次レポートのグラフで使います。**2日そろっていない動画は None** にして「まだ出ない」と描き分けます
@@ -1656,15 +1749,22 @@ def build_weekly_report(week_start, week_end, *, daily, analytics_daily,
             "subscribers_end": _interp_cum(daily, "subscribers", we),
         },
         "top_videos": top_videos,
+        "cause_videos": cause_videos,
         "new_videos": new_videos,
         "post_plan":  {"planned": len(planned), "posted": posted_cnt, "items": planned},
     }
     if week_extra:
         report["traffic_sources"]   = week_extra.get("traffic_sources", [])
         report["subscribed_status"] = week_extra.get("subscribed_status", {})
+        # ⚠ 2026-09-14 より前に確定した週には入りません（作り直さないため）。
+        #   表示側は「無ければ出さない」で扱うこと。0件と読ませないこと。
+        if week_extra.get("devices"):
+            report["devices"] = week_extra["devices"]
     if prev_week_extra:
         report["traffic_sources_prev"]   = prev_week_extra.get("traffic_sources", [])
         report["subscribed_status_prev"] = prev_week_extra.get("subscribed_status", {})
+        if prev_week_extra.get("devices"):
+            report["devices_prev"] = prev_week_extra["devices"]
     return report
 
 def update_weekly_reports(weekly_reports, access_token, *, daily, analytics_daily,

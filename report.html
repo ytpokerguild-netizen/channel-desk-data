@@ -400,6 +400,7 @@ let REPORTS = [];
 //    ここの初期値は data.json を読めなかったときの保険です。⚠ 直書きに戻さないこと。
 let CHANNEL = '【LightTHREE】 -ポーカーメディア‐';
 let COUPON  = null;   // data.json の coupon（週ごとの節を出すのに使う）
+let EXTRA   = null;   // data.json の analytics_extra（直近28日。年齢・性別はここだけ）
 let TREND   = null;   // data.json の weekly_trend（直近26週のグラフ用）
 
 const fmtFull = M.fmtFull;   // ⚠ 実装は report_model.js。ここで定義し直さないこと
@@ -479,6 +480,82 @@ function trendAssert(rep){
   return r>=110 ? `今週の視聴回数は${T.length}週の中では上位（${rank}位・平均の${r}%）です`
        : r>=90  ? `今週の視聴回数は${T.length}週の平均とほぼ同じ水準（${rank}位・${r}%）です`
                 : `今週の視聴回数は${T.length}週の中では低め（${rank}位・平均の${r}%）です`;
+}
+
+// ════════════════════════════════
+// 視聴者の内訳（2026-09-14 追加）
+//   ★ デバイスは**実数**、年齢・性別は**割合だけ**です。性質が違うので節を分けて出します。
+//   ⚠⚠ 年齢・性別の母数は **Google にログインして視聴した人だけ** です。
+//     ログアウト視聴・埋め込みは入りません。**「視聴者の◯%」と書かないこと。**
+//     「判定できた視聴のうち◯%」です。週では母数が小さくブレるので 28日集計で出します。
+//   ⚠ デバイスは 2026-09-14 より前に確定した週には入っていません（週の値が無ければ
+//     直近28日のほうを出し、どちらを見ているかを必ず書きます）。**0件と読ませないこと。**
+// ════════════════════════════════
+const DEVICE_LABEL = {
+  MOBILE:'スマートフォン', DESKTOP:'パソコン', TABLET:'タブレット',
+  TV:'テレビ', GAME_CONSOLE:'ゲーム機', UNKNOWN_PLATFORM:'不明'
+};
+const AGE_LABEL = {
+  'age13-17':'13〜17歳','age18-24':'18〜24歳','age25-34':'25〜34歳','age35-44':'35〜44歳',
+  'age45-54':'45〜54歳','age55-64':'55〜64歳','age65-':'65歳以上'
+};
+const GENDER_LABEL = { male:'男性', female:'女性', user_specified:'その他', gender_other:'その他' };
+
+// 節の見出し文をデータから作る。⚠ 「スマホが中心です」のような決め打ちを書かないこと。
+function viewerLead(rep){
+  const wk = (rep.devices||[]);
+  const rows = wk.length ? wk : ((EXTRA && EXTRA.devices) || []);
+  const tot  = rows.reduce((a,r)=>a+(r.views||0),0);
+  if(rows.length && tot){
+    const t0 = rows.slice().sort((a,b)=>(b.views||0)-(a.views||0))[0];
+    const nm = DEVICE_LABEL[String(t0.device)] || String(t0.device);
+    const sh = (t0.views/tot*100).toFixed(1);
+    return `見られている端末は${esc(nm)}が最も多く、${wk.length?'この週':'直近28日'}の視聴のうち ${sh}%です`;
+  }
+  return ((EXTRA && EXTRA.demographics||[]).length) ? '年齢・性別は、判定できた視聴ぶんだけの割合です' : '';
+}
+
+function deviceBlock(rep){
+  const wk = (rep.devices||[]).slice();
+  const weekly = wk.length > 0;
+  const rows = weekly ? wk : ((EXTRA && EXTRA.devices) || []).slice();
+  if(!rows.length) return '';
+  const prev = new Map(((rep.devices_prev)||[]).map(r=>[String(r.device), r.views]));
+  const tot  = rows.reduce((a,r)=>a+(r.views||0),0);
+  if(!tot) return '';
+  const body = rows.map(r=>{
+    const nm = DEVICE_LABEL[String(r.device)] || String(r.device);
+    const p  = prev.get(String(r.device));
+    return `<tr><td>${esc(nm)}</td><td class="num">${fmtMan(r.views)}回</td>`
+         + `<td class="num">${(r.views/tot*100).toFixed(1)}%</td>`
+         + `<td class="num">${(weekly && p!=null) ? pct(r.views,p) : '—'}</td></tr>`;
+  }).join('');
+  return `<div class="scrollx"><table><thead><tr><th>デバイス</th><th class="num">${weekly?'今週':'直近28日'}</th><th class="num">割合</th><th class="num">前週比</th></tr></thead>
+<tbody>${body}</tbody></table></div>
+<div class="note">${weekly
+  ? `割合の分母は、この週の視聴 ${fmtMan(tot)}回です。`
+  : `<b>この週ぶんのデバイス別データはありません。</b>直近28日ぶん（${fmtMan(tot)}回）を出しています。週ごとの値は 2026-09-14 以降に確定する週から入ります。`}</div>`;
+}
+
+function demoBlock(){
+  const rows = (EXTRA && EXTRA.demographics) || [];
+  if(!rows.length) return '';
+  const ages = {}, genders = {};
+  let tot = 0;
+  rows.forEach(r=>{
+    const a = String(r.age), g = String(r.gender), p = Number(r.pct)||0;
+    ages[a] = (ages[a]||0) + p; genders[g] = (genders[g]||0) + p; tot += p;
+  });
+  if(!tot) return '';
+  const ord = Object.keys(AGE_LABEL);
+  const ageRows = ord.filter(a=>ages[a]).map(a=>
+    `<tr><td>${esc(AGE_LABEL[a])}</td><td class="num">${(ages[a]/tot*100).toFixed(1)}%</td></tr>`).join('');
+  const genderTxt = Object.keys(genders).sort((x,y)=>genders[y]-genders[x])
+    .map(g=>`${GENDER_LABEL[g]||g} ${(genders[g]/tot*100).toFixed(1)}%`).join('　／　');
+  return `<div class="scrollx"><table style="max-width:360px"><thead><tr><th>年齢</th><th class="num">割合</th></tr></thead>
+<tbody>${ageRows}</tbody></table></div>
+<div class="note key" style="margin-top:6px">性別の内訳: ${esc(genderTxt)}</div>
+<div class="note">この割合の母数は<b>Googleにログインして視聴した人だけ</b>です。ログアウトでの視聴や埋め込みでの視聴は入っていません。<b>「視聴者の◯%」ではなく「判定できた視聴のうち◯%」</b>として見てください。週では母数が小さく振れるため、直近28日（${esc(String((EXTRA&&EXTRA.start_date)||''))}〜${esc(String((EXTRA&&EXTRA.end_date)||''))}）の集計です。</div>`;
 }
 
 // 流入経路（横棒・今週/前週）
@@ -769,7 +846,7 @@ function causeBlock(rep, views, viewsPrev){
   const mx = Math.max(1, ...S.upRows.concat(S.dnRows).map(x=>Math.abs(x.d)));
   const list = (rows, color, title) => `<div class="facg"><h4>${title}</h4>${
     rows.length ? rows.map(r=>`<div class="fac">
-<div class="ft2"><span class="fn2">${r.other?'<span style="color:var(--muted)">':''}${esc(r.t)}${r.other?'</span>':''}</span><span class="fv" style="color:${color}">${r.d>=0?'+':'−'}${fmtMan(Math.abs(r.d))}回</span></div>
+<div class="ft2"><span class="fn2">${r.other?'<span style="color:var(--muted)">':''}${esc(r.t)}${(r.other&&r.tail)?`<span style="color:var(--muted)">（${r.tail}本ぶん・1本あたり ${r.d>=0?'+':'−'}${fmtFull(Math.round(Math.abs(r.d)/r.tail))}回）</span>`:''}${r.other?'</span>':''}</span><span class="fv" style="color:${color}">${r.d>=0?'+':'−'}${fmtMan(Math.abs(r.d))}回</span></div>
 <div class="fbar"><i style="width:${Math.max(2,Math.round(Math.abs(r.d)/mx*100))}%;background:${color}"></i></div></div>`).join('')
               : '<div class="facnone">該当なし</div>'}</div>`;
   // ⚠ 表示は万単位に丸めるので、画面上の「増加−減少」が「差し引き」と1目盛りずれることがあります。
@@ -788,7 +865,9 @@ function causeBlock(rep, views, viewsPrev){
 <div class="facwrap">${list(S.upRows, C_UP, '増えた要因')}${list(S.dnRows, C_DOWN, '減った要因')}</div>
 ${/* ⚠ 本編には短い1行だけ。詳しい集計条件は運用詳細（.facnote）に置きます
       （2026-08-28 レビュー4回目 §4-4）。 */''}
-<div class="note facnote">増えた要因と減った要因は、大きいものから順に出しています。それ以外は「その他」にまとめています</div>`;
+<div class="note facnote">${S.full
+  ? '増えた要因と減った要因は、<b>全動画</b>の中から増減の大きいものを順に出しています。「その他」は残りの動画をまとめたもので、何本ぶんかを添えています'
+  : '増えた要因と減った要因は、大きいものから順に出しています。それ以外は「その他」にまとめています'}</div>`;
 }
 
 // ── 新作の初速（公開2日間） ──────────────────────────────
@@ -1308,7 +1387,7 @@ ${sumTable('')}
 ${c.subscribers_end!=null?`<div class="note key">週末時点の登録者数 ${fmtFull(Math.round(c.subscribers_end))}人。${planLine(rep, pp)}</div>`:''}
 <h2><span class="eyebrow">増減要因（全項目）と流入の全経路</span></h2>
 ${causeBlock(rep, views, viewsPrev)}
-<div class="note">上の棒はすべて左端が起点で、いちばん大きい要因を100%とした長さです。片側6本までを出し、残りは「その他」にまとめています（2026-09-12 にオーナーの指示で3本から増やしました）。<b>その他は上位10本の外にある動画の増減を打ち消し合った正味の値</b>なので、個々の動画の増減より小さく見えることがあります。<b>ここをさらに細かくするには、データ側で取る動画の本数を増やす必要があります。</b></div>
+<div class="note">上の棒はすべて左端が起点で、いちばん大きい要因を100%とした長さです。増えた側・減った側それぞれ8本までを名前つきで出し、残りは「その他」にまとめています。<b>2026-09-18 から、並べる対象を「その週によく見られた上位10本」ではなく<u>全動画</u>に変えました。</b>それ以前は、落ちた動画が上位10本に入らないため<b>まるごと「その他の減少要因」に潰れていました</b>（2026-09-07週の実測で −16.5万回ぶんの内訳が1本も出ていませんでした）。「その他」には何本ぶんが入っているかと1本あたりの平均を添えています。<b>そこが大きい週は、特定の1本ではなく多数の動画が少しずつ動いた週です。</b></div>
 ${trafficChart()}
 ${window._SPLIT?`<div class="note">${esc(window._SPLIT.nm)}は今週 ${fmtMan(window._SPLIT.now)}回（前週 ${fmtMan(window._SPLIT.p0)}回）。※ 動画ごとの内訳は上位5本ぶんだけです。「この1本ぶんを除いた残り」には6本目以降と過去動画が入ります</div>`:''}
 ${actListFull?`<h2><span class="eyebrow">次週のアクション（詳しい確認方法）</span></h2>
@@ -1324,6 +1403,13 @@ ${firstBlock(rep)}
 
 ${cpLead?sec('クーポン', cpLead, ''):''}
 ${couponBlock(rep)}
+
+${/* ★ 2026-09-14 追加。デバイスは実数、年齢・性別は割合だけなので、同じ節の中で分けています。 */''}
+${(()=>{ const dv=deviceBlock(rep), dm=demoBlock();
+  if(!dv && !dm) return '';
+  const lead = viewerLead(rep);
+  return `${sec('視聴者の内訳', '', lead)}${dv}${dm?`<div style="margin-top:14px">${dm}</div>`:''}`;
+})()}
 
 ${TREND&&TREND.length>=4?sec(`参考：${TREND.length}週の中での位置`, trendAssert(rep), '前週比だけでは「前週がどんな週だったか」で見え方が変わります。'):''}
 ${trendBlock(rep)}
@@ -1401,6 +1487,7 @@ async function loadReport(){
     RAWDATA = data;
     REPORTS = (data.weekly_reports||[]).slice().sort((a,b)=>b.week_start.localeCompare(a.week_start));
     COUPON  = data.coupon || null;
+    EXTRA   = data.analytics_extra || null;
     TREND   = data.weekly_trend || null;
     if(data.meta && data.meta.channel_title){
       CHANNEL = data.meta.channel_title;

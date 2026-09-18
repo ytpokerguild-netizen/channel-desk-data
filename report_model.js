@@ -76,6 +76,31 @@
      ⚠ 「増加分の87%を1本が占める」という割合は出さないこと。分母が純増なので、
        純増が小さい週は200%や500%になり、純減の週は意味が成立しません。 */
   function cause(rep, views, viewsPrev) {
+    // ★ 2026-09-18: `cause_videos`（全動画の週差分）があればそちらを使います。
+    //   従来は `top_videos`（**その週の視聴が多い上位10本**）の差分しか無く、
+    //   **落ちた動画は上位10本に入らないので、まるごと「その他の減少要因」に潰れていました。**
+    //   ⚠⚠ **行数を増やしても直りません。**並べ替えの軸が「視聴の多さ」で「増減の大きさ」ではないためです。
+    //   ⚠ `cause_videos` は 2026-09-18 以降に作られた週と、`backfill_cause_videos.py` で
+    //     後から埋めた週にだけ入ります。**無い週は従来の計算に落ちます。**
+    const cv = rep.cause_videos;
+    if (viewsPrev != null && cv && ((cv.up || []).length || (cv.down || []).length)) {
+      const tot   = views - viewsPrev;
+      const resid = cv.resid || 0;
+      const mk = x => ({ t: x.t, short: '', pub: x.pub, d: x.d });
+      const upRows = (cv.up || []).map(mk);
+      const dnRows = (cv.down || []).map(mk);
+      const upOther = (cv.up_other || 0) + Math.max(0, resid);
+      const dnOther = (cv.down_other || 0) + Math.min(0, resid);
+      // 「その他」に何本ぶんが入っているか。⚠ 本数を伏せると「1本の大きな要因」に見えます。
+      const upTail = Math.max(0, (cv.up_count || 0) - upRows.length);
+      const dnTail = Math.max(0, (cv.down_count || 0) - dnRows.length);
+      if (upOther > 0) upRows.push({ t: 'その他の増加要因', d: upOther, other: true, tail: upTail });
+      if (dnOther < 0) dnRows.push({ t: 'その他の減少要因', d: dnOther, other: true, tail: dnTail });
+      return { tot, upRows, dnRows,
+               upSum: upRows.reduce((s, x) => s + x.d, 0),
+               dnSum: dnRows.reduce((s, x) => s + x.d, 0),
+               views, viewsPrev, top: upRows[0] || null, full: true };
+    }
     const all = (rep.top_videos || []).map(v => ({
       t: v.title, short: v.short_title || '', pub: v.published_at || '',
       d: (v.views_week || 0) - (v.views_prev_week || 0)
