@@ -499,7 +499,11 @@ const AGE_LABEL = {
   'age13-17':'13〜17歳','age18-24':'18〜24歳','age25-34':'25〜34歳','age35-44':'35〜44歳',
   'age45-54':'45〜54歳','age55-64':'55〜64歳','age65-':'65歳以上'
 };
-const GENDER_LABEL = { male:'男性', female:'女性', user_specified:'その他', gender_other:'その他' };
+// ⚠ 実データで返ってきたキーは `genderUserSpecified` でした（2026-09-19 に確認）。
+//   キャメルケースとスネークケースの両方を持たせています。**未知のキーはそのまま出ます**ので、
+//   画面に英語が出ていたらここに足してください。
+const GENDER_LABEL = { male:'男性', female:'女性',
+  genderUserSpecified:'その他', user_specified:'その他', gender_other:'その他' };
 
 // 節の見出し文をデータから作る。⚠ 「スマホが中心です」のような決め打ちを書かないこと。
 function viewerLead(rep){
