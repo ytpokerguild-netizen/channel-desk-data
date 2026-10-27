@@ -427,11 +427,16 @@ function page2(m, t){
         + (a.lead ? `<p>${esc(a.lead)}</p>` : '') + `</div>`).join('')
     : `<p class="note">この週の提案はありません。</p>`;
 
+  /* ★ 2026-10-27 運営者の指示: 「オーナー判断：判断不要」の囲みは出しません。
+     オーナーにしてほしいことが無い週に、何も言っていない1枠が残るためです。
+     ⚠⚠ **要確認・要承認は引き続き出します。**ここまで消すと、オーナーが決めないと
+       進められない件が資料のどこにも出なくなります（運用手順 §7-1 の役割分担）。
+     ⚠ 未設定も出しません（§7-1「未設定＝何も表示しない」のまま）。 */
   const o = m.owner;
-  const oTxt = { none: '判断不要', confirm: '要確認', approve: '要承認', unset: '未設定' }[o.level] || '未設定';
-  const owner = o.level === 'unset'
-    ? `<div class="owner"><b>オーナー判断</b>未設定です。</div>`
-    : `<div class="owner ${o.level}"><b>オーナー判断：${oTxt}</b>${esc(M.stripLevel(o.text))}</div>`;
+  const oTxt = { confirm: '要確認', approve: '要承認' }[o.level];
+  const owner = oTxt
+    ? `<div class="owner ${o.level}"><b>オーナー判断：${oTxt}</b>${esc(M.stripLevel(o.text))}</div>`
+    : '';
 
   return pageWrap(2, '今週の分析と、次の一手', m, t, `
     <div class="sec" style="margin-top:20px"><span class="n">01</span><h3>今週の分析</h3></div>
