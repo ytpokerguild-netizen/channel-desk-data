@@ -85,12 +85,13 @@ a{color:var(--teal)}
 .badge.ok{background:var(--teal-bg);color:#0c6b61}
 
 .headline{font-size:clamp(21px,4vw,29px);font-weight:900;margin-top:22px;letter-spacing:-.01em}
-.lead{margin-top:12px;font-size:13.5px;color:var(--ink-2);max-width:66ch}
+.headline.sm{font-size:clamp(18px,3vw,23px)}
+.lead{margin-top:11px;font-size:13px;color:var(--ink-2);max-width:60ch;line-height:1.85}
 
 .hero{margin-top:20px;background:var(--navy);color:#fff;border-radius:9px;padding:22px 24px}
 .hero .chip{display:inline-block;font-size:11px;font-weight:700;background:rgba(255,255,255,.14);
   border-radius:3px;padding:2px 9px;letter-spacing:.04em}
-.hero h3{font-size:clamp(17px,3.1vw,23px);font-weight:900;margin-top:11px;line-height:1.5}
+.hero h3{font-size:clamp(16px,2.6vw,20px);font-weight:900;margin-top:11px;line-height:1.65}
 .hero p{margin-top:11px;font-size:12.5px;color:#cfdde3;line-height:1.75}
 .hero p b{color:#fff}
 
@@ -127,10 +128,10 @@ a{color:var(--teal)}
 
 .summary{margin-top:16px;border-left:3px solid var(--sand);padding:9px 0 9px 14px;font-size:13px;color:var(--ink-2)}
 .summary b{color:var(--ink)}
-.foot{margin-top:14px;font-size:10.5px;color:var(--ink-3);line-height:1.7}
+.foot{margin-top:16px;font-size:10.5px;color:var(--ink-3);line-height:1.7;max-width:76ch}
 
 .card{background:var(--paper);border:1px solid var(--rule);border-radius:7px;padding:16px 18px;min-width:0}
-.card > h4{font-size:13.5px}
+.card > h4{font-size:12.5px;color:var(--ink-3);letter-spacing:.02em;margin-bottom:9px}
 .g2{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .g32{margin-top:16px;display:grid;grid-template-columns:1.25fr 1fr;gap:12px}
 
@@ -151,25 +152,32 @@ a{color:var(--teal)}
 .row .s{flex:none;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;min-width:52px;text-align:right}
 .bar{height:7px;border-radius:4px;background:var(--navy);min-width:2px}
 .bar.t2{background:var(--teal)} .bar.c2{background:var(--coral)} .bar.s2{background:var(--sand)}
-.barrow{display:grid;grid-template-columns:minmax(96px,1.2fr) 1fr auto;gap:10px;align-items:center;font-size:12.5px}
-.barrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.barrow .vv{font-weight:700;font-variant-numeric:tabular-nums;font-size:12.5px}
+.barrow{display:grid;grid-template-columns:minmax(132px,1.1fr) 1fr auto;gap:12px;align-items:center;
+  font-size:12.5px;padding:3px 0}
+.barrow .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2)}
+.barrow .vv{font-weight:700;font-variant-numeric:tabular-nums;font-size:12.5px;white-space:nowrap}
+.barrow .vv em{font-style:normal;font-weight:400;color:var(--ink-3);font-size:11.5px;margin-left:2px}
 
 table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:10px}
-th,td{border-bottom:1px solid var(--rule);padding:7px 8px;text-align:left;vertical-align:top}
+th,td{border-bottom:1px solid var(--rule);padding:8px 8px;text-align:left;vertical-align:middle}
+td{font-size:12px}
 th{font-size:11px;color:var(--ink-3);font-weight:700;white-space:nowrap}
 td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .scrollx{overflow-x:auto}
 
 /* 分析本文・提案 */
-.body p{font-size:13px;color:var(--ink-2);margin-top:10px;max-width:70ch}
-.act{border:1px solid var(--rule);border-radius:7px;padding:13px 15px;margin-top:10px;background:var(--paper)}
-.act .hd{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
-.act .no{background:var(--navy);color:#fff;font-size:11px;font-weight:700;border-radius:4px;padding:2px 7px}
+/* 分析本文は2段組み。1段のままだと右側が大きく空いて読みにくくなります */
+.body{margin-top:12px;column-count:2;column-gap:30px}
+.body p{font-size:12.5px;color:var(--ink-2);margin-top:12px;line-height:1.95;
+  break-inside:avoid;page-break-inside:avoid}
+.body p:first-child{margin-top:0}
+.acts{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.act{border:1px solid var(--rule);border-radius:7px;padding:12px 14px;background:var(--paper)}
+.act .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.act .no{background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 7px}
 .act .kind{font-size:10.5px;font-weight:700;border-radius:3px;padding:1px 8px;background:var(--teal-bg);color:#0c6b61}
-.act h4{font-size:13.5px}
-.act ul{margin:8px 0 0;padding-left:18px;font-size:12px;color:var(--ink-2)}
-.act li{margin-top:4px}
+.act h4{font-size:13px;flex:1 1 100%}
+.act p{margin-top:6px;font-size:11.5px;color:var(--ink-3);line-height:1.7}
 .owner{margin-top:16px;border-radius:7px;padding:13px 16px;font-size:12.5px;
   background:var(--navy-bg);border:1px solid #d8e3e8}
 .owner.confirm{background:var(--sand-bg);border-color:#ecdfbe}
@@ -177,11 +185,13 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .owner b{display:block;font-size:12px;margin-bottom:3px}
 
 .trend{margin-top:12px;width:100%;height:120px;display:block}
-.note{margin-top:9px;font-size:10.5px;color:var(--ink-3);line-height:1.7}
+.note{margin-top:10px;font-size:10.5px;color:var(--ink-3);line-height:1.75}
 
 /* ── 画面が狭いとき。⚠ `screen and` を外さないこと（紙に効いてしまいます） ── */
 @media screen and (max-width:860px){
   .kpis{grid-template-columns:repeat(2,1fr)}
+  .acts{grid-template-columns:1fr}
+  .body{column-count:1}
   .cols,.g2,.g32{grid-template-columns:1fr}
   .page{padding:22px 18px 40px}
   .pageno{right:18px}
@@ -227,11 +237,11 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   .card{padding:11px 13px}
   .card > h4{font-size:12.5px}
   .g2,.g32{margin-top:10px;gap:8px}
-  .body p{font-size:11px;margin-top:5px;line-height:1.6}
-  .act{padding:8px 10px;margin-top:6px}
-  .act h4{font-size:12px}
-  .act ul{font-size:10px;margin-top:4px;padding-left:15px}
-  .act li{margin-top:3px}
+  .body{column-gap:24px}
+  .body p{font-size:10.5px;margin-top:8px;line-height:1.8}
+  .act{padding:8px 10px}
+  .act h4{font-size:11.5px}
+  .act p{font-size:10px;margin-top:4px;line-height:1.6}
   .owner{margin-top:8px;padding:8px 11px;font-size:11px}
   .barrow,.row{font-size:11px}
   .barrow .vv{font-size:11px}
@@ -314,76 +324,70 @@ function rankWord(t){
   return q <= 0.25 ? '26週の中では上位' : q >= 0.75 ? '26週の中では下位' : '水準はふだんの範囲';
 }
 
+/* 長いタイトルは切ります。⚠ 切るときは必ず「…」を付けること。
+   途中で切れたタイトルが「」で閉じずに出る不具合が過去にありました。 */
+const cut = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
+const vlabel = (v, n) => `${v.published_at ? md(v.published_at) + ' ' : ''}${cut(v.title || v.t, n || 20)}`;
+
 /* ═══ ページ1: ひと目でわかる今週の結果 ═══ */
 function page1(m, t){
   const mt = m.metrics, ns = m.newShare, cp = m.couponWeek;
   const head = `再生数は${Math.abs(mt.deltaPct).toFixed(1)}%${mt.deltaPct >= 0 ? '増' : '減'}。`
     + (t ? `<br>ただし直近${t.n}週中${t.rank}位で、${rankWord(t)}` : '');
   const lead = [
-    `今週の視聴は${man(m.metrics.views)}回で、前週の${man(m.metrics.viewsPrev)}回から${pct(mt.views, mt.viewsPrev)}。`,
-    t ? `${t.n}週平均の${p1(t.pctOfAvg)}にあたります。` : '',
-    ns && ns.count ? `${nsLabel(ns)}の合計は${man(ns.sum)}回で、今週の視聴の${p1(ns.pct)}を占めます。` : '',
-    `いちばん上振れた1本を除いた前週比は${sign(mt.baselinePct)}です。`
+    `いちばん上振れた1本を除いた前週比は${sign(mt.baselinePct)}です。`,
+    ns && ns.count ? `${nsLabel(ns)}は合計${man(ns.sum)}回で、今週の視聴の${p1(ns.pct)}を占めます。` : ''
   ].filter(Boolean).join('');
 
   const ai = (m.rep.ai_analysis || {});
-  const heroHead = ai.headline ? esc(ai.headline) : esc(m.verdict ? m.verdict.headline : '');
   const heroP = [
-    `視聴は${man(mt.views)}回で前週比${pct(mt.views, mt.viewsPrev)}。`,
-    `上振れた1本を除くと${sign(mt.baselinePct)}。`,
     mt.subsPer10k != null ? `視聴1万回あたりの新規登録は<b>${mt.subsPer10k.toFixed(2)}人</b>`
       + (mt.subsPer10kPrev != null ? `（前週${mt.subsPer10kPrev.toFixed(2)}人）` : '') + '。' : '',
-    mt.firstMedian != null ? `公開48時間の視聴は中央値${man(mt.firstMedian)}回`
+    mt.firstMedian != null ? `公開48時間の視聴は中央値<b>${man(mt.firstMedian)}回</b>`
       + (mt.firstMedianPrev != null ? `（前週${man(mt.firstMedianPrev)}回）` : '') + '。' : ''
   ].filter(Boolean).join('');
 
   const kpi = [
-    ['1週間の再生数', man(mt.views) + '<s>回</s>',
-     `前週より${pct(mt.views, mt.viewsPrev)}`, cls(mt.deltaPct)],
+    ['1週間の再生数', man(mt.views) + '<s>回</s>', `前週より${pct(mt.views, mt.viewsPrev)}`, cls(mt.deltaPct)],
     ['総再生時間', mt.watchHours != null ? fmtFull(mt.watchHours) + '<s>時間</s>' : '—',
      mt.watchPct != null ? `前週より${sign(mt.watchPct)}` : '—', cls(mt.watchPct)],
     ['登録者（公開値の差）', (mt.subsNet >= 0 ? '+' : '') + fmtFull(mt.subsNet) + '<s>人</s>',
-     `Analytics実数は新規${fmtFull(mt.subsGained)}・解除${fmtFull(mt.subsLost)}`, ''],
+     `新規${fmtFull(mt.subsGained)} ／ 解除${fmtFull(mt.subsLost)}`, ''],
     ['公開した動画', fmtFull(mt.newCount) + '<s>本</s>',
-     ns && ns.count ? `週内の視聴は${man(ns.sum)}回` : '', '']
+     ns && ns.count ? `週内の視聴 ${man(ns.sum)}回` : '', '']
   ].map(([k, v, d, c]) => `<div class="kpi"><div class="k">${k}</div><div class="v">${v}</div>`
     + `<div class="d ${c}">${d}</div></div>`).join('');
 
-  /* 事実 / 機会 / クーポン の3列。⚠ 「次の一手」はページ2のアクションに置いています */
+  const d1 = mt.views - mt.viewsPrev;
   const factItems = [
-    item(mt.deltaPct >= 0, `視聴 ${mt.views - mt.viewsPrev >= 0 ? '+' : '−'}${man(Math.abs(mt.views - mt.viewsPrev))}回`,
+    item(mt.deltaPct >= 0, `視聴 ${d1 >= 0 ? '+' : '−'}${man(Math.abs(d1))}回`,
          `${man(mt.viewsPrev)}回 → ${man(mt.views)}回`),
-    mt.watchHours != null ? item(mt.watchPct >= 0,
-         `再生時間 ${mt.watchHours - mt.watchHoursPrev >= 0 ? '+' : '−'}${fmtFull(Math.abs(mt.watchHours - mt.watchHoursPrev))}時間`,
-         `${fmtFull(mt.watchHoursPrev)}時間 → ${fmtFull(mt.watchHours)}時間`) : '',
     item(mt.baselinePct >= 0, `上振れた1本を除くと ${sign(mt.baselinePct)}`,
          m.verdict && m.verdict.top ? `除いたのは ${md(m.verdict.top.pub)}公開の1本` : '')
-  ].filter(Boolean).join('');
+  ].join('');
 
   const oppItems = [
-    ns && ns.count ? item(true, `新作が週の${p1(ns.pct)}を占めた`,
-        `${nsLabel(ns)}で${man(ns.sum)}回`) : '',
-    mt.subsPer10k != null ? item(mt.subsPer10kPrev == null || mt.subsPer10k >= mt.subsPer10kPrev,
-        `1万再生あたり新規登録 ${mt.subsPer10k.toFixed(2)}人`,
-        mt.subsPer10kPrev != null ? `前週 ${mt.subsPer10kPrev.toFixed(2)}人` : '') : '',
+    ns && ns.count ? item(true, `新作が週の${p1(ns.pct)}を占めた`, `${nsLabel(ns)}で${man(ns.sum)}回`) : '',
     mt.firstMedian != null ? item(mt.firstMedianPct == null || mt.firstMedianPct >= 0,
-        `公開48時間の視聴 中央値${man(mt.firstMedian)}回`,
+        `48時間の視聴 中央値${man(mt.firstMedian)}回`,
         `${m.first.count}本で測った値`
-        + (mt.firstMedianPrev != null ? `／前週 ${man(mt.firstMedianPrev)}回（${m.first.prevCount}本）` : '')) : ''
+        + (mt.firstMedianPrev != null ? `／前週 ${man(mt.firstMedianPrev)}回` : '')) : ''
   ].filter(Boolean).join('');
 
   const cpItems = (cp && COUPON) ? [
     item(null, `今週の入力 ${fmtFull(cp.entries)}件`,
-         `入力のあった日は${cp.days}日。1日あたり ${cp.perDay != null ? cp.perDay.toFixed(1) : '—'}件`
+         `1日あたり ${cp.perDay != null ? cp.perDay.toFixed(1) : '—'}件`
          + (cp.daysPrev ? `（前週 ${cp.perDayPrev.toFixed(1)}件）` : '')),
-    item(null, `通算 ${fmtFull(COUPON.total)}件・${fmtFull(COUPON.people)}人`,
-         `うち${fmtFull(COUPON.used)}件が使用済み（${p1(COUPON.used / COUPON.total * 100)}）`)
-  ].join('') : `<div class="item no"><div class="ic">—</div><div><b>この週のクーポン入力はありません</b></div></div>`;
+    item(null, `通算 ${fmtFull(COUPON.total)}件`,
+         `${fmtFull(COUPON.used)}件が使用済み（${p1(COUPON.used / COUPON.total * 100)}）`)
+  ].join('') : `<div class="item no"><div class="ic">—</div><div><b>今週の入力はありません</b></div></div>`;
 
   return pageWrap(1, 'ひと目でわかる今週の結果', m, t, `
     <div class="headline">${head}</div>
     <p class="lead">${lead}</p>
-    <div class="hero"><span class="chip">今週の結論</span><h3>${heroHead}</h3><p>${heroP}</p></div>
+    <div class="hero"><span class="chip">今週の結論</span>
+      <h3>${esc(ai.headline || (m.verdict ? m.verdict.headline : ''))}</h3>
+      ${heroP ? `<p>${heroP}</p>` : ''}</div>
     <div class="kpis">${kpi}</div>
     <div class="sec"><span class="n">01</span><h3>今週わかった3つのこと</h3></div>
     <div class="cols">
@@ -391,10 +395,7 @@ function page1(m, t){
       <div class="col opp"><span class="tag">機会</span><h4>伸びているところ</h4><div class="items">${oppItems}</div></div>
       <div class="col next"><span class="tag">クーポン</span><h4>入力と使われ方</h4><div class="items">${cpItems}</div></div>
     </div>
-    <div class="summary">${esc(m.verdict ? m.verdict.headline : '')}。
-      ${ns && ns.count ? `週内公開の動画が今週の視聴の${p1(ns.pct)}を占めています。` : ''}</div>
-    <p class="foot">この資料の数字は <code>data.json</code> の実測で、推測値は含みません。
-      割合には分母を書いています。確定日数の違う週どうしは引き算していません。</p>`);
+    <p class="foot">数字は <code>data.json</code> の実測です。割合には分母を書いています。</p>`);
 }
 /* 週内公開の本数の書き方。⚠ 拾えた本数と公開本数が違う週があるので、違うときは必ず両方書く */
 function nsLabel(ns){
@@ -417,206 +418,179 @@ function page2(m, t){
     : `<p class="note">${ai.analysis ? 'この週の分析本文は、いまの計算方法・運用方針と食い違うため表示していません。'
         : 'この週の分析はまだ書かれていません。'}</p>`;
 
+  /* ⚠ アクションは「何をするか」の1行までにしています。詳しい手順は data.json の提案に入っています。
+     ⚠ オーナー判断はアクションと別物です。混ぜると check_consistency.js が落ちます。 */
   const acts = m.actions.length
     ? m.actions.map(a => `<div class="act"><div class="hd"><span class="no">${a.n}</span>`
         + (a.kind ? `<span class="kind">${esc(a.kind)}</span>` : '')
         + `<h4>${esc(a.title)}</h4></div>`
-        + (a.lead ? `<ul><li>${esc(a.lead)}</li>${a.details.map(d => `<li>${esc(d)}</li>`).join('')}</ul>` : '')
-        + `</div>`).join('')
+        + (a.lead ? `<p>${esc(a.lead)}</p>` : '') + `</div>`).join('')
     : `<p class="note">この週の提案はありません。</p>`;
 
-  /* ⚠ オーナー判断はアクションと別物です。混ぜると check_consistency.js が落ちます */
   const o = m.owner;
   const oTxt = { none: '判断不要', confirm: '要確認', approve: '要承認', unset: '未設定' }[o.level] || '未設定';
   const owner = o.level === 'unset'
     ? `<div class="owner"><b>オーナー判断</b>未設定です。</div>`
-    : `<div class="owner ${o.level}"><b>オーナー判断：${oTxt}</b>${esc(M.stripLevel(o.text))}
-       ${o.derived ? '<span class="note">（アクションの重さから集約した値です）</span>' : ''}</div>`;
+    : `<div class="owner ${o.level}"><b>オーナー判断：${oTxt}</b>${esc(M.stripLevel(o.text))}</div>`;
 
   return pageWrap(2, '今週の分析と、次の一手', m, t, `
-    <div class="headline" style="font-size:clamp(18px,3.2vw,24px)">${esc(ai.headline || (m.verdict ? m.verdict.headline : ''))}</div>
+    <div class="sec" style="margin-top:20px"><span class="n">01</span><h3>今週の分析</h3></div>
     ${body}
     <div class="sec"><span class="n">02</span><h3>次の一手（${m.actions.length}件）</h3></div>
     <div class="acts">${acts}</div>
-    ${owner}
-    <p class="foot">提案は data.json の週次AI分析をそのまま出しています。
-      種別は 実行／検証／分析／計測整備 の4つです。</p>`);
+    ${owner}`);
 }
 
 /* ═══ ページ3: 前週からどう変わったか ═══ */
 function page3(m, t){
   const c = m.cause;
   if(!c) return '';
-  /* ⚠ upRows / dnRows には「その他の増加要因」の行が入っています（本数は tail）。
-     upSum / dnSum はそれを含んだ合計で、足すと今週と前週の差になります。二重に足さないこと。 */
+  /* ⚠ upRows / dnRows には「その他」の行が入っています（本数は tail）。
+     upSum / dnSum はそれを含んだ合計です。二重に足さないこと。 */
   const up = c.upSum, dn = c.dnSum;
   const bridge = [
-    ['prev', '前週', man(c.viewsPrev), '回'],
-    ['plus', '増えたぶん', '+' + man(up), '回'],
-    ['minus', '減ったぶん', '−' + man(Math.abs(dn)), '回'],
-    ['now', '今週', man(c.views), '回']
-  ].map(([k, l, v, u]) => `<div class="bx ${k}"><div class="l">${l}</div><div class="v">${v}</div><div class="u">${u}</div></div>`).join('');
+    ['prev', '前週', man(c.viewsPrev)], ['plus', '増えたぶん', '+' + man(up)],
+    ['minus', '減ったぶん', '−' + man(Math.abs(dn))], ['now', '今週', man(c.views)]
+  ].map(([k, l, v]) => `<div class="bx ${k}"><div class="l">${l}</div><div class="v">${v}</div><div class="u">回</div></div>`).join('');
 
   const mx = Math.max(...c.upRows.map(r => Math.abs(r.d)), ...c.dnRows.map(r => Math.abs(r.d)), 1);
-  const list = (rows, kind) => rows.map(r => `<div class="barrow">
-      <span class="nm" title="${esc(r.t)}">${esc(r.t)}${r.other && r.tail ? `（ほか${fmtFull(r.tail)}本）` : ''}</span>
-      <span class="bar ${kind}" style="width:${Math.max(2, Math.abs(r.d) / mx * 100)}%;${r.other ? 'opacity:.45' : ''}"></span>
+  const list = (rows, kind) => rows.slice(0, 6).map(r => `<div class="barrow">
+      <span class="nm" title="${esc(r.t)}">${r.other ? esc(r.t) + (r.tail ? `（${fmtFull(r.tail)}本）` : '') : vlabel(r, 18)}</span>
+      <span class="bar ${kind}" style="width:${Math.max(2, Math.abs(r.d) / mx * 100)}%;${r.other ? 'opacity:.4' : ''}"></span>
       <span class="vv ${r.d >= 0 ? 'up' : 'dn'}">${r.d >= 0 ? '+' : '−'}${man(Math.abs(r.d))}</span>
     </div>`).join('');
 
   const top = m.verdict && m.verdict.top;
   return pageWrap(3, '前週からどう変わったか', m, t, `
-    <div class="headline" style="font-size:clamp(18px,3.2vw,24px)">${
-      c.tot >= 0 ? `増加は${man(Math.abs(c.tot))}回。` : `減少は${man(Math.abs(c.tot))}回。`}
-      ${c.upCount + c.dnCount ? `動いた動画は${fmtFull(c.upCount + c.dnCount)}本` : ''}</div>
-    <p class="lead">増えた動画は${fmtFull(c.upCount)}本、減った動画は${fmtFull(c.dnCount)}本です。
-      増加分と減少分を足すと今週と前週の差（${c.tot >= 0 ? '+' : '−'}${man(Math.abs(c.tot))}回）になります。</p>
+    <div class="headline sm">${c.tot >= 0 ? '増加' : '減少'}は${man(Math.abs(c.tot))}回。動いた動画は${fmtFull(c.upCount + c.dnCount)}本</div>
+    <p class="lead">増えた動画が${fmtFull(c.upCount)}本、減った動画が${fmtFull(c.dnCount)}本。
+      足すと今週と前週の差（${c.tot >= 0 ? '+' : '−'}${man(Math.abs(c.tot))}回）になります。</p>
     <div class="bridge">${bridge}</div>
     <div class="g2">
-      <div class="card"><h4>増えた動画（合計 +${man(up)}回）</h4>${list(c.upRows, 't2')}
-        <p class="note">薄い棒は、表に出していない動画をまとめたものです。</p></div>
-      <div class="card"><h4>減った動画（合計 −${man(Math.abs(dn))}回）</h4>${list(c.dnRows, 'c2')}
-        <p class="note">薄い棒は、表に出していない動画をまとめたものです。</p></div>
+      <div class="card"><h4>増えた動画　合計 +${man(up)}回</h4>${list(c.upRows, 't2')}</div>
+      <div class="card"><h4>減った動画　合計 −${man(Math.abs(dn))}回</h4>${list(c.dnRows, 'c2')}</div>
     </div>
-    <p class="foot">注: 「増加がいちばん大きい1本を除く」と前週比は ${sign(m.metrics.baselinePct)} です。
-      ${top ? `除いたのは ${md(top.pub)} 公開の1本（${esc(top.t)}）。` : ''}
-      減少がいちばん大きい1本を除いた数字とは**別の計算**です。比べるときは、どちらを除いた数字かを必ず書いてください。</p>`);
+    <p class="foot">薄い棒は、表に出していない動画をまとめたものです。
+      「増加がいちばん大きい1本を除く」と前週比は ${sign(m.metrics.baselinePct)}
+      ${top ? `（除いたのは ${md(top.pub)}公開の1本）` : ''}。減少側の1本を除いた数字とは別の計算です。</p>`);
 }
 
 /* ═══ ページ4: 視聴者がどこから来たか ═══ */
 function page4(m, t){
   const rows = m.traffic.rows, sp = m.traffic.split;
   if(!rows.length) return '';
-  const tot = rows[0].total;
-  const mx = rows[0].now || 1;
+  const tot = rows[0].total, mx = rows[0].now || 1;
   const bars = rows.map(r => `<div class="barrow">
       <span class="nm">${esc(r.nm)}${r.moved ? `<span class="badge">${r.prank}位→${r.rank}位</span>` : ''}</span>
       <span class="bar" style="width:${Math.max(2, r.now / mx * 100)}%"></span>
-      <span class="vv">${man(r.now)}<span class="s" style="color:var(--ink-3);font-weight:400"> ／ ${p1(r.share)}</span></span>
+      <span class="vv">${man(r.now)}<em>／${p1(r.share)}</em></span>
     </div>`).join('');
 
-  const tbl = rows.map(r => `<tr><td>${esc(r.nm)}</td>
+  const tbl = rows.slice(0, 4).map(r => `<tr><td>${esc(r.nm)}</td>
       <td class="n">${fmtFull(r.prev)} → ${fmtFull(r.now)}</td>
       <td class="n ${cls(pctNum(r.now, r.prev))}">${r.prev ? pct(r.now, r.prev) : '—'}</td>
       <td class="n">${p1(r.sharePrev)} → ${p1(r.share)}</td></tr>`).join('');
 
   return pageWrap(4, '視聴者がどこから来たか', m, t, `
-    <div class="headline" style="font-size:clamp(18px,3.2vw,24px)">いちばん多い入口は${esc(rows[0].nm)}で${man(rows[0].now)}回。
-      今週の流入の${p1(rows[0].share)}</div>
-    <p class="lead">流入経路は実数と順位で見ます。括弧の割合は、その週の流入経路の合計
-      ${fmtFull(tot)}回を分母にした値で、週の視聴回数（${fmtFull(m.metrics.views)}回）とは分母が違います。</p>
-    <div class="card" style="margin-top:16px"><h4>今週どこから見られたか（実数 ／ 割合）</h4>${bars}</div>
-    <div class="card" style="margin-top:12px"><h4>前週からどう変わったか</h4>
+    <div class="headline sm">いちばん多い入口は${esc(rows[0].nm)}。${man(rows[0].now)}回で、流入の${p1(rows[0].share)}</div>
+    <p class="lead">割合の分母は、その週の流入経路の合計 ${fmtFull(tot)}回です。
+      週の視聴回数（${fmtFull(m.metrics.views)}回）とは分母が違います。</p>
+    <div class="card" style="margin-top:18px"><h4>今週どこから見られたか　実数 ／ 割合</h4>${bars}</div>
+    <div class="card" style="margin-top:12px"><h4>前週からどう変わったか（上位4経路）</h4>
       <div class="scrollx"><table><thead><tr><th>経路</th><th class="n">前週 → 今週</th>
         <th class="n">前週比</th><th class="n">割合</th></tr></thead><tbody>${tbl}</tbody></table></div>
-      <p class="note">割合が上がった経路は「減り方が浅かった」という意味のことがあります。
-        増えたかどうかは必ず実数で見てください。</p></div>
+      <p class="note">割合が上がっても実数では減っていることがあります。増減は実数で見てください。</p></div>
     ${sp ? `<div class="card" style="margin-top:12px"><h4>1本の動画に頼りすぎていないか</h4>
-      <p class="note" style="font-size:12.5px;color:var(--ink-2)">
-        ${esc(sp.nm)}の今週${man(sp.now)}回のうち、いちばん多い1本（${esc(sp.title)}）は${man(sp.top.v)}回です。
-        その1本を除くと${man(sp.rest)}回で、前週の${man(sp.p0)}回を
-        ${sp.restBeatsPrev ? '上回ります' : '下回ります'}。</p>
-      <p class="note">動画別の流入内訳は上位5本ぶんしかありません。残りの動画については分かりません。</p></div>` : ''}
-    <p class="foot">経路の呼び方は YouTube Studio の表記に揃えています
-      （ブラウジング機能／ショートフィード／YouTube検索など）。</p>`);
+      <p class="lead" style="margin-top:6px">${esc(sp.nm)}の${man(sp.now)}回のうち、いちばん多い1本は${man(sp.top.v)}回。
+        除いた残りは${man(sp.rest)}回で、前週の${man(sp.p0)}回を${sp.restBeatsPrev ? '上回ります' : '下回ります'}。</p>
+      <p class="note">動画別の流入内訳は上位5本ぶんしかありません。残りは分かりません。</p></div>` : ''}`);
 }
 
 /* ═══ ページ5: 新作と過去動画の結果 ═══ */
 function page5(m, t){
   const F = m.first, ns = m.newShare;
-  const speed = F.list.length ? F.list.map(v => {
-    const mx = F.list[0].first2d || 1;
-    return `<div class="barrow"><span class="nm">${md(v.published_at)} ${esc(v.title || '')}</span>
-      <span class="bar t2" style="width:${Math.max(2, v.first2d / mx * 100)}%"></span>
-      <span class="vv">${man(v.first2d)}</span></div>`;
-  }).join('') : '<p class="note">この週の新作には、48時間が経ったものがありません。</p>';
+  const mxf = F.list.length ? F.list[0].first2d || 1 : 1;
+  const speed = F.list.length ? F.list.map(v => `<div class="barrow">
+      <span class="nm" title="${esc(v.title)}">${vlabel(v, 18)}</span>
+      <span class="bar t2" style="width:${Math.max(2, v.first2d / mxf * 100)}%"></span>
+      <span class="vv">${man(v.first2d)}</span></div>`).join('')
+    : '<p class="note">この週の新作には、48時間が経ったものがありません。</p>';
 
-  const tv = (m.rep.top_videos || []).slice(0, 6).map(v => `<tr>
-      <td>${esc(v.title)}<span class="badge ${v.views_prev_week ? '' : 'ok'}">${v.views_prev_week ? md(v.published_at) : '新規'}</span></td>
+  const tv = (m.rep.top_videos || []).slice(0, 5).map(v => `<tr>
+      <td title="${esc(v.title)}">${cut(v.title, 22)}${v.views_prev_week ? '' : '<span class="badge ok">新規</span>'}</td>
       <td class="n">${man(v.views_week)}</td>
       <td class="n">${v.views_prev_week ? man(v.views_prev_week) : '—'}</td></tr>`).join('');
 
   const why = ns && ns.top ? M.videoTraffic(m.rep, ns.top.video_id) : null;
   return pageWrap(5, '新作と過去動画の結果', m, t, `
-    <div class="headline" style="font-size:clamp(18px,3.2vw,24px)">${
-      ns && ns.count ? `週内公開の${ns.count}本が、今週の視聴の${p1(ns.pct)}を占めた`
-                     : '今週は、数字を拾えた新作がありません'}</div>
-    <p class="lead">${ns && ns.count ? `公開は${ns.total}本で、週内の視聴を拾えたのは${ns.count}本です。
-      いちばん多い1本は${man(ns.top.views_week)}回で、今週の視聴の${p1(ns.topPct)}にあたります。` : ''}
-      ${why ? `その1本は流入の${p1(why.topPct)}が${esc(why.topName)}からでした。` : ''}
-      ${ns && ns.count < ns.total ? `残り${ns.total - ns.count}本は、週内の視聴を拾えていません。` : ''}</p>
+    <div class="headline sm">${ns && ns.count ? `週内公開の${ns.count}本が、今週の視聴の${p1(ns.pct)}を占めた`
+                                               : '今週は、数字を拾えた新作がありません'}</div>
+    <p class="lead">${ns && ns.count ? `いちばん多い1本は${man(ns.top.views_week)}回で、今週の視聴の${p1(ns.topPct)}。` : ''}
+      ${why ? `その1本は流入の${p1(why.topPct)}が${esc(why.topName)}からでした。` : ''}</p>
     <div class="g32">
       <div class="card"><h4>新作の公開48時間の視聴</h4>${speed}
-        <p class="note">中央値 ${man(F.median)}回（${F.count}本で測った値）。
-          ${F.medianPrev != null ? `前週は ${man(F.medianPrev)}回（${F.prevCount}本）。` : ''}
-          48時間が経っていない本は入れていません。本数の違う中央値どうしなので、差は目安です。</p></div>
-      <div class="card"><h4>よく見られた動画（今週 / 前週）</h4>
+        <p class="note">中央値 ${man(F.median)}回（${F.count}本で測った値）${F.medianPrev != null ? `／前週 ${man(F.medianPrev)}回（${F.prevCount}本）` : ''}。
+          48時間が経っていない本は入れていません。</p></div>
+      <div class="card"><h4>よく見られた動画</h4>
         <div class="scrollx"><table><thead><tr><th>動画</th><th class="n">今週</th><th class="n">前週</th></tr></thead>
-        <tbody>${tv}</tbody></table></div></div>
-    </div>
-    <p class="foot">「新規」は、その週に公開した動画です。前週の数字が無いため、前週比は出していません。</p>`);
+        <tbody>${tv}</tbody></table></div>
+        <p class="note">「新規」はその週に公開した動画です。前週の数字が無いため前週比は出していません。</p></div>
+    </div>`);
 }
 
 /* ═══ ページ6: 見ている人と、26週の中での位置 ═══ */
 function page6(m, t){
   const dev = (m.rep.devices && m.rep.devices.length) ? m.rep.devices : ((EXTRA && EXTRA.devices) || []);
   const devTot = dev.reduce((s, d) => s + (d.views || 0), 0);
-  const DEV = { MOBILE: 'スマートフォン', DESKTOP: 'パソコン', TABLET: 'タブレット', TV: 'テレビ', GAME_CONSOLE: 'ゲーム機', UNKNOWN_PLATFORM: '不明' };
-  const devRows = dev.slice().sort((a, b) => b.views - a.views).map(d => `<div class="barrow">
+  const DEV = { MOBILE: 'スマートフォン', DESKTOP: 'パソコン', TABLET: 'タブレット', TV: 'テレビ',
+                GAME_CONSOLE: 'ゲーム機', UNKNOWN_PLATFORM: '不明' };
+  const ds = dev.slice().sort((a, b) => b.views - a.views);
+  const devRows = ds.map(d => `<div class="barrow">
       <span class="nm">${DEV[d.device] || esc(d.device)}</span>
-      <span class="bar" style="width:${Math.max(2, d.views / (dev[0].views || 1) * 100)}%"></span>
-      <span class="vv">${man(d.views)} <span style="color:var(--ink-3);font-weight:400">／ ${p1(d.views / devTot * 100)}</span></span>
-    </div>`).join('');
+      <span class="bar" style="width:${Math.max(2, d.views / (ds[0].views || 1) * 100)}%"></span>
+      <span class="vv">${man(d.views)}<em>／${p1(d.views / devTot * 100)}</em></span></div>`).join('');
 
   /* 年代・性別。⚠ 母数は Google にログインして視聴した人だけです。
      「視聴者の◯%が男性」と書かないこと。「判定できた視聴のうち◯%」です。 */
   const demo = (EXTRA && EXTRA.demographics) || [];
   const AGE = { 'age13-17': '13〜17', 'age18-24': '18〜24', 'age25-34': '25〜34', 'age35-44': '35〜44',
                 'age45-54': '45〜54', 'age55-64': '55〜64', 'age65-': '65以上' };
-  const byAge = {};
-  demo.forEach(d => { byAge[d.age] = (byAge[d.age] || 0) + (d.pct || 0); });
+  const byAge = {}; demo.forEach(d => { byAge[d.age] = (byAge[d.age] || 0) + (d.pct || 0); });
   const ageKeys = Object.keys(AGE).filter(k => byAge[k] != null);
   const ageMax = Math.max(...ageKeys.map(k => byAge[k]), 1);
   const ageRows = ageKeys.map(k => `<div class="barrow"><span class="nm">${AGE[k]}</span>
       <span class="bar s2" style="width:${Math.max(2, byAge[k] / ageMax * 100)}%"></span>
       <span class="vv">${byAge[k].toFixed(1)}%</span></div>`).join('');
-  const byGen = {};
-  demo.forEach(d => { byGen[d.gender] = (byGen[d.gender] || 0) + (d.pct || 0); });
+  const byGen = {}; demo.forEach(d => { byGen[d.gender] = (byGen[d.gender] || 0) + (d.pct || 0); });
   const GEN = { male: '男性', female: '女性', user_specified: 'その他' };
-  const genTxt = Object.keys(byGen).map(g => `${GEN[g] || g} ${byGen[g].toFixed(1)}%`).join(' ／ ');
+  const genTxt = Object.keys(byGen).map(g => `${GEN[g] || g} ${byGen[g].toFixed(1)}%`).join('／');
 
-  /* 26週のグラフ。⚠ 表示だけです */
   let chart = '';
   if(t && t.win.length){
-    const W = 760, H = 110, n = t.win.length, bw = W / n * .7, gap = W / n;
+    const W = 760, H = 110, n = t.win.length, gap = W / n, bw = gap * .7;
     const mx = Math.max(...t.win.map(d => d.views), 1);
     chart = `<svg class="trend" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
       aria-label="直近${n}週の視聴回数">`
-      + t.win.map((d, i) => {
-          const h = Math.max(1, d.views / mx * (H - 14)), x = i * gap + (gap - bw) / 2;
+      + t.win.map((d, i) => { const h = Math.max(1, d.views / mx * (H - 10));
           const on = d.week_start === m.period.start;
-          return `<rect x="${x.toFixed(1)}" y="${(H - h).toFixed(1)}" width="${bw.toFixed(1)}" height="${h.toFixed(1)}"
-            rx="2" fill="${on ? 'var(--coral)' : 'var(--navy-bg)'}"><title>${fmtDate(d.week_start)} ${fmtFull(d.views)}回</title></rect>`;
-        }).join('')
-      + `</svg>`;
+          return `<rect x="${(i * gap + (gap - bw) / 2).toFixed(1)}" y="${(H - h).toFixed(1)}" width="${bw.toFixed(1)}"
+            height="${h.toFixed(1)}" rx="2" fill="${on ? 'var(--coral)' : '#dde6ea'}"><title>${fmtDate(d.week_start)} ${fmtFull(d.views)}回</title></rect>`;
+        }).join('') + `</svg>`;
   }
 
   return pageWrap(6, '見ている人と、26週の中での位置', m, t, `
-    <div class="headline" style="font-size:clamp(18px,3.2vw,24px)">${
-      t ? `今週は直近${t.n}週で${t.rank}位。${t.n}週平均の${p1(t.pctOfAvg)}` : '26週の比較はありません'}</div>
-    <p class="lead">前週より${m.metrics.deltaPct >= 0 ? '増えました' : '減りました'}が、
-      ${t ? `${t.n}週の分布の中では${rankWord(t)}です。` : ''}
-      直前の週が高かったことと、今週の水準がどこにあるかは分けて見てください。</p>
-    <div class="card" style="margin-top:16px"><h4>直近${t ? t.n : 26}週の視聴回数</h4>${chart}
-      <p class="note">赤い棒が今週です。${t ? `${t.n}週平均は ${man(t.avg)}回、今週は ${man(t.cur)}回。` : ''}
-        このグラフは weekly_trend の値で、主要数字（${man(m.metrics.views)}回）とは系列が違うことがあります。</p></div>
+    <div class="headline sm">${t ? `今週は直近${t.n}週で${t.rank}位。${t.n}週平均の${p1(t.pctOfAvg)}`
+                                 : '26週の比較はまだありません'}</div>
+    <p class="lead">直前の週が高かったことと、今週の水準がどこにあるかは分けて見てください。</p>
+    <div class="card" style="margin-top:18px"><h4>直近${t ? t.n : 26}週の視聴回数</h4>${chart}
+      <p class="note">赤い棒が今週です。${t ? `${t.n}週平均 ${man(t.avg)}回／今週 ${man(t.cur)}回。` : ''}
+        このグラフは weekly_trend の値で、主要数字とは系列が違うことがあります。</p></div>
     <div class="g2">
-      <div class="card"><h4>どの端末で見られたか（今週）</h4>${devRows || '<p class="note">この週の端末別はありません。</p>'}
+      <div class="card"><h4>どの端末で見られたか</h4>${devRows || '<p class="note">この週の端末別はありません。</p>'}
         <p class="note">分母は端末別の合計 ${fmtFull(devTot)}回です。</p></div>
       <div class="card"><h4>年代（判定できた視聴のうち）</h4>${ageRows || '<p class="note">年代のデータがありません。</p>'}
-        <p class="note">性別は ${genTxt || '—'}。<b>この割合の母数は、Googleにログインして視聴した人だけです。</b>
-          ログアウト視聴や埋め込みは入りません。「視聴者の◯%が男性」ではなく「判定できた視聴のうち◯%」です。
-          週単位では母数が小さく振れるため、直近28日の集計で見ています。</p></div>
+        <p class="note">性別は ${genTxt || '—'}。<b>母数はGoogleにログインして視聴した人だけ</b>で、直近28日の集計です。
+          「視聴者の◯%」ではなく「判定できた視聴のうち◯%」です。</p></div>
     </div>`);
 }
 
@@ -624,11 +598,11 @@ function page6(m, t){
 function page7(m, t){
   const cp = m.couponWeek, C = COUPON;
   if(!C) return '';
-  const codes = (C.by_code || []).slice().sort((a, b) => b.entries - a.entries).map(c => `<tr>
-      <td>${esc(c.code)}</td><td class="n">${fmtFull(c.entries)}件</td>
+  const codes = (C.by_code || []).slice().sort((a, b) => b.entries - a.entries).slice(0, 6).map(c => `<tr>
+      <td>${esc(c.code)}</td><td class="n">${fmtFull(c.entries)}</td>
       <td class="n">${c.entries ? p1(c.used / c.entries * 100) : '—'}</td></tr>`).join('');
-  const wk = (C.weekly || []).slice(-8).map(w => `<tr><td>${fmtDate(w.week_start).slice(5)}週</td>
-      <td class="n">${fmtFull(w.entries)}件</td><td class="n">${fmtFull(w.people)}人</td></tr>`).join('');
+  const wk = (C.weekly || []).slice(-6).map(w => `<tr><td>${fmtDate(w.week_start).slice(5)}週</td>
+      <td class="n">${fmtFull(w.entries)}</td><td class="n">${fmtFull(w.people)}</td></tr>`).join('');
   const sg = C.signup_lag_buckets || [];
   const known = sg.filter(b => b.label !== '不明').reduce((s, b) => s + b.count, 0);
   const isNew = sg.filter(b => /同時|当日/.test(b.label)).reduce((s, b) => s + b.count, 0);
@@ -637,50 +611,42 @@ function page7(m, t){
   const rlYes = (rl.find(b => b.label === 'あり') || {}).count || 0;
 
   return pageWrap(7, 'クーポンコードの結果', m, t, `
-    <div class="headline" style="font-size:clamp(18px,3.2vw,24px)">通算${fmtFull(C.total)}件が入力され、
-      ${p1(C.used / C.total * 100)}が使われた</div>
-    <p class="lead">通算${fmtFull(C.total)}件・${fmtFull(C.people)}人が入力し、${fmtFull(C.used)}件が使われています。
-      ${cp ? `この週（${period(m)}）の入力は${fmtFull(cp.entries)}件で、入力のあった日は${cp.days}日、
-      1日あたり${cp.perDay != null ? cp.perDay.toFixed(1) : '—'}件でした（前週は${fmtFull(cp.entriesPrev)}件・${cp.daysPrev}日・1日あたり${cp.perDayPrev != null ? cp.perDayPrev.toFixed(1) : '—'}件）。
+    <div class="headline sm">通算${fmtFull(C.total)}件が入力され、${p1(C.used / C.total * 100)}が使われた</div>
+    <p class="lead">${cp ? `今週の入力は${fmtFull(cp.entries)}件（前週${fmtFull(cp.entriesPrev)}件）。
       コードの発行日と掲出日が記録されていないため、この増減の理由は分かりません。` : ''}</p>
     <div class="g2">
-      <div class="card"><h4>コード別の入力と使用（通算）</h4>
+      <div class="card"><h4>コード別（通算・上位6）</h4>
         <div class="scrollx"><table><thead><tr><th>コード</th><th class="n">入力</th><th class="n">使用率</th></tr></thead>
         <tbody>${codes}</tbody></table></div>
-        <p class="note">新しいコードほど使用率が低く出ます。まだ使う時間が経っていないためで、
-          「使われていない」とは読めません。</p></div>
-      <div class="card"><h4>週ごとの入力件数</h4>
+        <p class="note">新しいコードほど使用率が低く出ます。使う時間がまだ経っていないためです。</p></div>
+      <div class="card"><h4>週ごとの入力（土〜金）</h4>
         <div class="scrollx"><table><thead><tr><th>週</th><th class="n">入力</th><th class="n">人数</th></tr></thead>
         <tbody>${wk}</tbody></table></div>
-        <p class="note"><b>クーポンの週区切りは土〜金で、このレポートの週（月〜日）とは期間が違います。</b>
-          直接は比べられません。いちばん新しい週は集計の途中です。</p></div>
+        <p class="note"><b>この表だけ区切りが土〜金</b>で、レポートの週（月〜日）とは期間が違います。</p></div>
     </div>
     <div class="card" style="margin-top:12px"><h4>入力した人の内訳</h4>
       <div class="scrollx"><table><thead><tr><th>見ているもの</th><th class="n">値</th><th>分母</th></tr></thead><tbody>
-        <tr><td>新規（アカウント作成から24時間以内）</td><td class="n">${known ? p1(isNew / known * 100) : '—'}</td>
-            <td>作成日が判定できた${fmtFull(known)}件（不明は除外）</td></tr>
+        <tr><td>新規（作成から24時間以内）</td><td class="n">${known ? p1(isNew / known * 100) : '—'}</td>
+            <td>作成日が判定できた${fmtFull(known)}件</td></tr>
         <tr><td>再ログインあり</td><td class="n">${rlJudged ? p1(rlYes / rlJudged * 100) : '—'}</td>
-            <td>判定が出た${fmtFull(rlJudged)}件（判定期間前は除外）</td></tr>
+            <td>判定が出た${fmtFull(rlJudged)}件</td></tr>
       </tbody></table></div>
-      <p class="note">先に登録して後日コードを入れた人は「既存」に入るため、新規は少なめに出ます。
-        いちばん古いアカウント作成日は ${fmtDate(C.account_oldest || '')} で、それ以前に登録した人は区別できません。
-        この表にはコードを入れた人しか載らないので、動画の新規獲得力の測定ではありません。</p></div>
-    <p class="foot">取得の健全性: 読めたコードは${(C.codes_read || []).length}件、読めなかったタブは
-      ${(C.read_errors || []).length}件、タブの自動列挙は${C.tabs_auto ? '有効' : '無効'}です。
-      スナップショットは ${fmtDate(C.snapshot_date || '')} 時点。
-      取得日の直前に入力されたぶんは、まだ使う時間が経っていません。</p>`);
+      <p class="note">先に登録して後日入れた人は「既存」に入るため、新規は少なめに出ます。
+        いちばん古い作成日は ${fmtDate(C.account_oldest || '')} で、それ以前は区別できません。
+        コードを入れた人しか載らないので、新規獲得力の測定ではありません。</p></div>
+    <p class="foot">読めたコード ${(C.codes_read || []).length}件／読めなかったタブ ${(C.read_errors || []).length}件／
+      スナップショット ${fmtDate(C.snapshot_date || '')}。</p>`);
 }
 
 /* ═══ 枠 ═══ */
 let PAGES = 0;
 function pageWrap(no, eyebrow, m, t, inner){
-  const fin = m.final
-    ? `<span class="badge ok">確定</span>`
-    : `<span class="badge warn">速報（確定 ${m.confirmedDays}/7日）</span>`;
+  const fin = m.final ? `<span class="badge ok">確定</span>`
+                      : `<span class="badge warn">速報（確定 ${m.confirmedDays}/7日）</span>`;
   return `<section class="page">
     <div class="ph">
       <div><div class="eyebrow">${esc(eyebrow)}</div><div class="ph-t">${esc(CHANNEL)}</div></div>
-      <div class="ph-r">対象期間${t ? `／直近${t.n}週での順位` : ''}<b>${period(m)}${t ? `・${t.rank}位 / ${t.n}` : ''}</b>${fin}</div>
+      <div class="ph-r">${period(m)}${t ? ` ・${t.rank}位 / ${t.n}` : ''} ${fin}</div>
     </div>
     ${inner}
     <div class="pageno">${String(no).padStart(2, '0')} / ${String(PAGES).padStart(2, '0')}</div>
