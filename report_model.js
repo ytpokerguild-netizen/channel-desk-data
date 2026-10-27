@@ -23,7 +23,7 @@
 (function (global) {
   'use strict';
 
-  const MODEL_VERSION = 4;
+  const MODEL_VERSION = 5;
 
   // YouTube Studio の表記に準拠（APIの値 → Studio の日本語ラベル）
   // ⚠ これを両方のHTMLに複製しないこと。ラベルがずれると別経路に見えます。
@@ -99,6 +99,7 @@
       return { tot, upRows, dnRows,
                upSum: upRows.reduce((s, x) => s + x.d, 0),
                dnSum: dnRows.reduce((s, x) => s + x.d, 0),
+               upCount: cv.up_count || upRows.length, dnCount: cv.down_count || dnRows.length,
                views, viewsPrev, top: upRows[0] || null, full: true };
     }
     const all = (rep.top_videos || []).map(v => ({
@@ -128,7 +129,8 @@
     if (dnOther < 0) dnRows.push({ t: 'その他の減少要因', d: dnOther, other: true });
     const upSum = upRows.reduce((s, x) => s + x.d, 0);
     const dnSum = dnRows.reduce((s, x) => s + x.d, 0);
-    return { tot, upRows, dnRows, upSum, dnSum, views, viewsPrev, top: ups[0] || null };
+    return { tot, upRows, dnRows, upSum, dnSum, upCount: ups.length, dnCount: dns.length,
+             views, viewsPrev, top: ups[0] || null };
   }
 
   /* ── 流入 ────────────────────────────────────────── */
@@ -140,11 +142,23 @@
     return { list, prev, prevRank };
   }
   // 順位つきの読みやすい形（ブリーフ用。report.html は list/prev をそのまま使います）
+  /* ★ 2026-10-27: 構成比（share / sharePrev）を足しました。運営者の判断で、流入経路に
+     割合を併記する形に変更したためです（それまでは「実数と順位のまま」＝2026-08-17 の
+     決定⑩で、`check_consistency.js` が構成比の混入を違反として数えていました）。
+     ⚠ **実数と順位を消さないこと。**割合だけにすると「増えた／減った」が逆に読めます。
+       実際、2026-10-05 週は3経路とも実数では減っているのに、割合はショートと検索が上がります。
+     ⚠ 分母は**その週の流入経路の合計**で、週の視聴回数とは一致しません。表示側に分母を必ず書くこと。 */
   function trafficRows(rep, n) {
     const { list, prev, prevRank } = trafficList(rep);
+    const tot  = list.reduce((s, t) => s + (t.views || 0), 0);
+    const totP = [...prev.values()].reduce((s, v) => s + (v || 0), 0);
     return list.slice(0, n || 5).map((t, i) => {
       const st = String(t.source_type), pr = prevRank.get(st) ?? null, rank = i + 1;
-      return { st, nm: SRC(st), now: t.views, prev: prev.get(st) ?? null, rank, prank: pr,
+      const pv = prev.get(st) ?? null;
+      return { st, nm: SRC(st), now: t.views, prev: pv, rank, prank: pr,
+               total: tot, totalPrev: totP,
+               share:     tot  ? t.views / tot  * 100 : null,
+               sharePrev: (pv != null && totP) ? pv / totP * 100 : null,
                moved: !!(pr && pr !== rank && (rank <= 3 || pr <= 3)) };
     });
   }
@@ -265,6 +279,45 @@
     return rows;
   }
 
+  /* ── 週内公開の動画が、その週の視聴に占める割合（2026-09-12 オーナーの指示）──
+     > 「好調な動画が全体の◯%を占めている。なんでそれが伸びたのかの分析結果」
+     ⚠ 分母は**その週の視聴回数**です。「増加分の◯%」にしないこと
+       （純増が分母だと、純増の小さい週で200%・500%になり、純減の週は成立しません）。
+     ⚠ 拾えるのは `top_videos`（上位10本）に入った新作だけです。**週内公開の全本数とは一致しません。**
+       表示側は「上位に入った N 本」と書くこと（`count` と `total` の両方を返しています）。 */
+  function newShare(rep, views) {
+    const ids  = new Set((rep.new_videos || []).map(v => v.video_id).filter(Boolean));
+    const got  = new Map();
+    // ① その週の視聴が多い上位10本（`top_videos`）から
+    (rep.top_videos || []).forEach(v => {
+      if (ids.has(v.video_id) && (v.views_week || 0) > 0)
+        got.set(v.video_id, { video_id: v.video_id, title: v.title, published_at: v.published_at,
+                              views_week: v.views_week });
+    });
+    // ② 増減要因（`cause_videos.up`）からも拾う。⚠ 新作は前週が0なので、増加分＝その週の視聴です。
+    //   ここを足さないと、上位10本に入らなかった新作が落ちて、割合が小さく出ます。
+    ((rep.cause_videos || {}).up || []).forEach(v => {
+      if (!v.id || got.has(v.id) || !ids.has(v.id)) return;
+      if ((v.p || 0) === 0 && (v.d || 0) > 0)
+        got.set(v.id, { video_id: v.id, title: v.t, published_at: v.pub, views_week: v.d });
+    });
+    const rows = [...got.values()].sort((a, b) => (b.views_week || 0) - (a.views_week || 0));
+    const sum  = rows.reduce((s, v) => s + (v.views_week || 0), 0);
+    return { rows, count: rows.length, total: (rep.new_videos || []).length, sum,
+             pct: views ? sum / views * 100 : null,
+             top: rows[0] || null,
+             topPct: (views && rows[0]) ? rows[0].views_week / views * 100 : null };
+  }
+
+  /* その動画の流入内訳（上位5本ぶんしかありません。残りは「分からない」です）。 */
+  function videoTraffic(rep, vid) {
+    const rows = ((rep.video_traffic || {})[vid] || []).slice().sort((a, b) => b.views - a.views);
+    const tot  = rows.reduce((s, r) => s + (r.views || 0), 0);
+    if (!tot) return null;
+    const t0 = rows[0];
+    return { tot, rows, topName: SRC(t0.source_type), topPct: t0.views / tot * 100 };
+  }
+
   /* ── オーナー判断 ────────────────────────────────────
      ⚠⚠ 値が無いときに「判断不要」を既定にしないこと。入力漏れが
        「オーナーのやることは無い」としてそのまま提出される事故になります。 */
@@ -340,6 +393,29 @@
              daily, days: daily.length, peak, snapshot: C.snapshot_date || '' };
   }
 
+  /* ★ 2026-10-27 追加: レポートの週（月〜日）でのクーポン入力。
+     ⚠ `coupon.weekly` の週区切りは**土〜金のまま**で、2026-09-07 以降のレポート週（月〜日）とは
+       揃っていません。そのため `coupon()` はレポート週では毎回 null を返します。ここは
+       `coupon.daily` を**レポートの週で数え直した**値です。**2つを足し引きしないこと。**
+     ⚠ 増減の理由は割り当てられません。コードの発行日・掲出日が記録されていないためです
+       （動画アーカイブの掲出日列が空のまま）。「増えた／減った」の理由を書かないこと。 */
+  function couponWeek(data, rep) {
+    const C = data.coupon;
+    if (!C || C.error || !C.daily) return null;
+    const pick = (a, b) => (C.daily || []).filter(r => r.date >= a && r.date <= b && r.entries > 0);
+    const back = n => { const d = new Date(rep.week_start + 'T00:00:00Z');
+                        d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+    const cur = pick(rep.week_start, rep.week_end);
+    const prv = pick(back(7), back(1));
+    const sum  = rs => rs.reduce((s, r) => s + (r.entries || 0), 0);
+    const used = rs => rs.reduce((s, r) => s + (r.used || 0), 0);
+    const per  = rs => rs.length ? sum(rs) / rs.length : null;
+    return { entries: sum(cur), used: used(cur), days: cur.length, daily: cur, perDay: per(cur),
+             entriesPrev: sum(prv), daysPrev: prv.length, perDayPrev: per(prv),
+             peak: cur.slice().sort((a, b) => b.entries - a.entries)[0] || null,
+             snapshot: C.snapshot_date || '' };
+  }
+
   /* ── SIGNAL & LIMITS ───────────────────────────────
      ★ レビュー6回目 §4。「事実 / 示唆 / このデータからは言えないこと / 次の対応」の4つに分けます。
      ⚠⚠ クーポン専用の固定画面にしないこと。クーポンは運用詳細の話題で、
@@ -407,6 +483,11 @@
         subsNet: c.subs_net, subsNetPrev: c.subs_net_prev,
         subsGained: c.subs_gained, subsLost: c.subs_lost, subscribersEnd: c.subscribers_end,
         newCount: (rep.new_videos || []).length,
+        // 視聴1万回あたりの新規登録。⚠ 純増（新規−解除）ではなく**新規登録**です。
+        //   純増は解除の振れを含むので、どちらを使ったかを表示側で必ず書くこと。
+        subsPer10k:     views     ? (c.subs_gained || 0) / views     * 10000 : null,
+        subsPer10kPrev: viewsPrev && prevRep && prevRep.channel
+                        ? (prevRep.channel.subs_gained || 0) / viewsPrev * 10000 : null,
         planned: pp.planned, posted: pp.posted,
         firstMedian: F.median, firstMedianPrev: F.medianPrev, firstMedianPct: F.medianPct
       },
@@ -414,7 +495,9 @@
       cause: cause(rep, views, viewsPrev),
       traffic: { rows: trafficRows(rep, 6), split: trafficSplit(rep) },
       first: F,
+      newShare: newShare(rep, views),
       coupon: coupon(data, rep),
+      couponWeek: couponWeek(data, rep),
       signal: signal(data, rep),
       actions: actions(rep),          // ⚠ オーナー判断はここに入れないこと
       owner: ownerState(rep)          // ⚠ アクションとは別物
@@ -718,6 +801,6 @@
     VERSION: MODEL_VERSION, TRAFFIC_LABEL, FLAT, OWNER_GATE_RANK, ACTION_KINDS,
     SRC, fmtFull, fmtMan, fmtDate, fmtMin, md, esc, pct, pctNum, median, stripLevel,
     cause, trafficList, trafficRows, trafficSplit, verdict, verdictWhy, ownerState, actions,
-    firstSpeed, coupon, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, PERIOD_API, build
+    firstSpeed, newShare, videoTraffic, coupon, couponWeek, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, PERIOD_API, build
   };
 })(window);
