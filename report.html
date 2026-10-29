@@ -168,14 +168,14 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 /* 分析本文・提案 */
 /* 分析本文は2段組み。1段のままだと右側が大きく空いて読みにくくなります */
 .body{margin-top:12px;column-count:2;column-gap:30px}
-.body p{font-size:12.5px;color:var(--ink-2);margin-top:12px;line-height:1.95;
-  break-inside:avoid;page-break-inside:avoid}
+.body p{font-size:12.5px;color:var(--ink-2);margin-top:12px;line-height:1.95}
 .body p:first-child{margin-top:0}
 .acts{margin-top:12px;display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .act{border:1px solid var(--rule);border-radius:7px;padding:12px 14px;background:var(--paper)}
 .act .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .act .no{background:var(--navy);color:#fff;font-size:10.5px;font-weight:700;border-radius:4px;padding:1px 7px}
 .act .kind{font-size:10.5px;font-weight:700;border-radius:3px;padding:1px 8px;background:var(--teal-bg);color:#0c6b61}
+.act .kind.plan{background:var(--sand-bg);color:#876a1d}
 .act h4{font-size:13px;flex:1 1 100%}
 .act p{margin-top:6px;font-size:11.5px;color:var(--ink-3);line-height:1.7}
 .owner{margin-top:16px;border-radius:7px;padding:13px 16px;font-size:12.5px;
@@ -504,6 +504,7 @@ function page2(m, t){
      ⚠ オーナー判断はアクションと別物です。混ぜると check_consistency.js が落ちます。 */
   const acts = m.actions.length
     ? m.actions.map(a => `<div class="act"><div class="hd"><span class="no">${a.n}</span>`
+        + `<span class="kind plan">案</span>`
         + (a.kind ? `<span class="kind">${esc(a.kind)}</span>` : '')
         + `<h4>${esc(a.title)}</h4></div>`
         + (a.lead ? `<p>${esc(a.lead)}</p>` : '') + `</div>`).join('')
@@ -523,7 +524,8 @@ function page2(m, t){
   return pageWrap(2, '今週の分析と、次の一手', m, t, `
     <div class="sec" style="margin-top:20px"><span class="n">01</span><h3>今週の分析</h3></div>
     ${body}
-    <div class="sec"><span class="n">02</span><h3>次の一手（${m.actions.length}件）</h3></div>
+    <div class="sec"><span class="n">02</span><h3>次の一手（案・${m.actions.length}件）</h3></div>
+    <p class="note" style="margin-top:6px">ここから下は<b>提案</b>です。やるかどうかは決まっていません。</p>
     <div class="acts">${acts}</div>
     ${owner}`);
 }
@@ -625,48 +627,6 @@ function page5(m, t){
     </div>`);
 }
 
-/* ═══ ページ6: 見ている人と、26週の中での位置 ═══ */
-function page6(m, t){
-  const dev = (m.rep.devices && m.rep.devices.length) ? m.rep.devices : ((EXTRA && EXTRA.devices) || []);
-  const devTot = dev.reduce((s, d) => s + (d.views || 0), 0);
-  const DEV = { MOBILE: 'スマートフォン', DESKTOP: 'パソコン', TABLET: 'タブレット', TV: 'テレビ',
-                GAME_CONSOLE: 'ゲーム機', UNKNOWN_PLATFORM: '不明' };
-  const ds = dev.slice().sort((a, b) => b.views - a.views);
-  const devRows = ds.map(d => `<div class="barrow">
-      <span class="nm">${DEV[d.device] || esc(d.device)}</span>
-      <span class="bar" style="width:${Math.max(2, d.views / (ds[0].views || 1) * 100)}%"></span>
-      <span class="vv">${man(d.views)}<em>／${p1(d.views / devTot * 100)}</em></span></div>`).join('');
-
-  /* 年代・性別。⚠ 母数は Google にログインして視聴した人だけです。
-     「視聴者の◯%が男性」と書かないこと。「判定できた視聴のうち◯%」です。 */
-  const demo = (EXTRA && EXTRA.demographics) || [];
-  const AGE = { 'age13-17': '13〜17', 'age18-24': '18〜24', 'age25-34': '25〜34', 'age35-44': '35〜44',
-                'age45-54': '45〜54', 'age55-64': '55〜64', 'age65-': '65以上' };
-  const byAge = {}; demo.forEach(d => { byAge[d.age] = (byAge[d.age] || 0) + (d.pct || 0); });
-  const ageKeys = Object.keys(AGE).filter(k => byAge[k] != null);
-  const ageMax = Math.max(...ageKeys.map(k => byAge[k]), 1);
-  const ageRows = ageKeys.map(k => `<div class="barrow"><span class="nm">${AGE[k]}</span>
-      <span class="bar s2" style="width:${Math.max(2, byAge[k] / ageMax * 100)}%"></span>
-      <span class="vv">${byAge[k].toFixed(1)}%</span></div>`).join('');
-  const byGen = {}; demo.forEach(d => { byGen[d.gender] = (byGen[d.gender] || 0) + (d.pct || 0); });
-  const GEN = { male: '男性', female: '女性', user_specified: 'その他' };
-  const genTxt = Object.keys(byGen).map(g => `${GEN[g] || g} ${byGen[g].toFixed(1)}%`).join('／');
-
-  return pageWrap(6, '見ている人と、26週の中での位置', m, t, `
-    <div class="headline sm">${t ? `今週は直近${t.n}週で${t.rank}位。${t.n}週平均の${p1(t.pctOfAvg)}`
-                                 : '26週の比較はまだありません'}</div>
-    <p class="lead">直前の週が高かったことと、今週の水準がどこにあるかは分けて見てください。</p>
-    <p class="note" style="margin-top:14px">${t ? `${t.n}週平均は ${man(t.avg)}回、今週は ${man(t.cur)}回です。
-      推移のグラフは1ページ目にあります（「半年」に切り替えてください）。` : ''}</p>
-    <div class="g2">
-      <div class="card"><h4>どの端末で見られたか</h4>${devRows || '<p class="note">この週の端末別はありません。</p>'}
-        <p class="note">分母は端末別の合計 ${fmtFull(devTot)}回です。</p></div>
-      <div class="card"><h4>年代（判定できた視聴のうち）</h4>${ageRows || '<p class="note">年代のデータがありません。</p>'}
-        <p class="note">性別は ${genTxt || '—'}。<b>母数はGoogleにログインして視聴した人だけ</b>で、直近28日の集計です。
-          「視聴者の◯%」ではなく「判定できた視聴のうち◯%」です。</p></div>
-    </div>`);
-}
-
 /* ═══ ページ7: クーポンコードの結果 ═══ */
 function page7(m, t){
   const cp = m.couponWeek, C = COUPON;
@@ -712,8 +672,11 @@ function page7(m, t){
 }
 
 /* ═══ 枠 ═══ */
-let PAGES = 0;
+let PAGES = 0, PNO = 0;
+/* ⚠ ページ番号は「何枚目か」を数えて出します。各ページ関数が渡す番号は使いません。
+   ページを1枚減らしたときに「07 / 06」と出る事故が実際に起きました（2026-10-29）。 */
 function pageWrap(no, eyebrow, m, t, inner){
+  no = ++PNO;
   const fin = m.final ? `<span class="badge ok">確定</span>`
                       : `<span class="badge warn">速報（確定 ${m.confirmedDays}/7日）</span>`;
   return `<section class="page">
@@ -730,8 +693,11 @@ function renderReportPage(rep){
   const m = M.build(RAWDATA, rep.week_start);
   if(!m){ document.getElementById('sheet').innerHTML = '<p class="msg">この週のモデルを作れませんでした。</p>'; return; }
   const t = trend26(rep.week_start);
-  const makers = [page1, page2, page3, page4, page5, page6, page7];
-  PAGES = makers.length;
+  /* ⚠ 2026-10-29: 「見ている人と、26週の中での位置」のページは運営者の判断で削除しました。
+     端末別と年代・性別もここで一緒に落ちています。戻すときはデータの注記ごと戻すこと
+     （年代・性別は**ログイン視聴者が母数**です）。 */
+  const makers = [page1, page2, page3, page4, page5, page7];
+  PAGES = makers.length; PNO = 0;
   const html = makers.map((f, i) => { try { return f(m, t, i + 1); } catch(e){
     console.error('page' + (i + 1), e); return `<section class="page"><p class="note">このページを描けませんでした: ${esc(e.message)}</p></section>`; } });
   document.getElementById('sheet').innerHTML = html.join('');
