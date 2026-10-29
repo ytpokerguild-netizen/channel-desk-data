@@ -416,6 +416,23 @@
              snapshot: C.snapshot_date || '' };
   }
 
+  /* ★ 2026-10-29 追加: レポート週の日次（グラフ用）。
+     ⚠ `analytics_daily` は Analytics の確定値で **2〜4日遅れます**。速報の週は後ろの日が欠けます
+       （`days` が7未満なら欠けています）。**欠けた日を0として読まないこと。**
+     ⚠ 日次の合計は `channel.views`（スナップショット系列）とは少しずれます。同じ数字として扱わないこと。 */
+  function dailyWeek(data, rep) {
+    const all  = data.analytics_daily || [];
+    const pick = (a, b) => all.filter(r => r.date >= a && r.date <= b)
+                              .sort((x, y) => x.date.localeCompare(y.date));
+    const back = n => { const d = new Date(rep.week_start + 'T00:00:00Z');
+                        d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+    const rows = pick(rep.week_start, rep.week_end);
+    const prev = pick(back(7), back(1));
+    const sum  = rs => rs.reduce((s, r) => s + (r.views || 0), 0);
+    return { rows, prev, sum: sum(rows), prevSum: sum(prev), days: rows.length,
+             peak: rows.slice().sort((a, b) => b.views - a.views)[0] || null };
+  }
+
   /* ── SIGNAL & LIMITS ───────────────────────────────
      ★ レビュー6回目 §4。「事実 / 示唆 / このデータからは言えないこと / 次の対応」の4つに分けます。
      ⚠⚠ クーポン専用の固定画面にしないこと。クーポンは運用詳細の話題で、
@@ -498,6 +515,7 @@
       newShare: newShare(rep, views),
       coupon: coupon(data, rep),
       couponWeek: couponWeek(data, rep),
+      daily: dailyWeek(data, rep),
       signal: signal(data, rep),
       actions: actions(rep),          // ⚠ オーナー判断はここに入れないこと
       owner: ownerState(rep)          // ⚠ アクションとは別物
@@ -801,6 +819,6 @@
     VERSION: MODEL_VERSION, TRAFFIC_LABEL, FLAT, OWNER_GATE_RANK, ACTION_KINDS,
     SRC, fmtFull, fmtMan, fmtDate, fmtMin, md, esc, pct, pctNum, median, stripLevel,
     cause, trafficList, trafficRows, trafficSplit, verdict, verdictWhy, ownerState, actions,
-    firstSpeed, newShare, videoTraffic, coupon, couponWeek, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, PERIOD_API, build
+    firstSpeed, newShare, videoTraffic, coupon, couponWeek, dailyWeek, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, PERIOD_API, build
   };
 })(window);

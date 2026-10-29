@@ -184,7 +184,27 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .owner.approve{background:var(--coral-bg);border-color:#f3cfc7}
 .owner b{display:block;font-size:12px;margin-bottom:3px}
 
-.trend{margin-top:12px;width:100%;height:120px;display:block}
+.trend{margin-top:10px;width:100%;height:120px;display:block}
+
+/* 見出し下の再生回数グラフ（1週間 / 半年の切り替え）。
+   ⚠ 切り替えはCSSだけで動かしています（ラジオ＋兄弟セレクタ）。JSに移さないこと。
+   ⚠ 紙では両方を出します。印刷したPDFは切り替えられないためです。 */
+.chartbox{margin-top:18px;background:var(--paper);border:1px solid var(--rule);border-radius:7px;padding:14px 16px 12px}
+.chartbox > input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.ctabs{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ctabs .lbl{font-size:12.5px;color:var(--ink-3);margin-right:4px}
+.ctabs label{font-size:11.5px;font-weight:700;padding:3px 12px;border-radius:999px;cursor:pointer;
+  border:1px solid var(--rule);color:var(--ink-2);background:var(--paper);user-select:none}
+#crw:checked ~ .ctabs label[for=crw],
+#crh:checked ~ .ctabs label[for=crh]{background:var(--navy);border-color:var(--navy);color:#fff}
+.cpane{display:none;margin-top:10px}
+#crw:checked ~ .cpane.w{display:block}
+#crh:checked ~ .cpane.h{display:block}
+.cpane .xlab{display:flex;margin-top:5px}
+.cpane .xlab span{flex:1 1 0;min-width:0;text-align:center;font-size:9.5px;color:var(--ink-3);
+  white-space:nowrap;overflow:hidden}
+.cpane .cnote{margin-top:8px;font-size:10.5px;color:var(--ink-3);line-height:1.7}
+.cpane .cnote b{color:var(--ink)}
 .note{margin-top:10px;font-size:10.5px;color:var(--ink-3);line-height:1.75}
 
 /* ── 画面が狭いとき。⚠ `screen and` を外さないこと（紙に効いてしまいます） ── */
@@ -252,6 +272,16 @@ td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   .bx{padding:9px 7px}
   .bx .v{font-size:17px!important}
   .trend{height:78px;margin-top:8px}
+  /* 紙では1週間と半年の両方を出します（印刷したPDFは切り替えられないため）。
+     ⚠ グラフの高さの !important を外さないこと。インラインの height に負けて、
+       01ページが A4 1枚に収まらなくなります（実測で47px 溢れました）。 */
+  .chartbox{margin-top:10px;padding:9px 12px 7px}
+  .ctabs{display:none}
+  .cpane{display:block!important;margin-top:4px}
+  .cpane + .cpane{margin-top:8px;padding-top:7px;border-top:1px solid var(--rule)}
+  .cpane .trend{height:52px!important;margin-top:4px}
+  .cpane .xlab span{font-size:8.5px}
+  .cpane .cnote{margin-top:4px;font-size:9.5px;line-height:1.6}
   /* 提案は紙では2段に。⚠ 件数が増えても、ここを1段に戻すと2ページ目へ溢れます */
   .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
   .acts .act{margin-top:0}
@@ -326,6 +356,23 @@ function rankWord(t){
 
 /* 長いタイトルは切ります。⚠ 切るときは必ず「…」を付けること。
    途中で切れたタイトルが「」で閉じずに出る不具合が過去にありました。 */
+/* 棒グラフ。⚠ 表示だけの部品です。数字は report_model.js が確定させたものを渡してください。
+   ⚠ `preserveAspectRatio="none"` で横に伸ばすので、SVGの中に文字を置かないこと（つぶれます）。
+      目盛りは下のHTML側（.xlab）で出しています。 */
+function barSVG(rows, h){
+  const W = 760, H = h || 118, n = rows.length || 1, gap = W / n, bw = Math.max(2, gap * .62);
+  const mx = Math.max(...rows.map(r => r.v), 1);
+  return `<svg class="trend" style="height:${H}px" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none"
+      role="img" aria-label="再生回数の推移">`
+    + rows.map((r, i) => {
+        const bh = Math.max(1, r.v / mx * (H - 8));
+        return `<rect x="${(i * gap + (gap - bw) / 2).toFixed(1)}" y="${(H - bh).toFixed(1)}"
+          width="${bw.toFixed(1)}" height="${bh.toFixed(1)}" rx="2"
+          fill="${r.on ? 'var(--coral)' : '#dde6ea'}"><title>${esc(r.t)}</title></rect>`;
+      }).join('') + `</svg>`;
+}
+const xlab = rows => `<div class="xlab">${rows.map(r => `<span>${esc(r.x || '')}</span>`).join('')}</div>`;
+
 const cut = (s, n) => { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; };
 const vlabel = (v, n) => `${v.published_at ? md(v.published_at) + ' ' : ''}${cut(v.title || v.t, n || 20)}`;
 
@@ -385,6 +432,7 @@ function page1(m, t){
   return pageWrap(1, 'ひと目でわかる今週の結果', m, t, `
     <div class="headline">${head}</div>
     <p class="lead">${lead}</p>
+    ${viewsChart(m, t)}
     <div class="hero"><span class="chip">今週の結論</span>
       <h3>${esc(ai.headline || (m.verdict ? m.verdict.headline : ''))}</h3>
       ${heroP ? `<p>${heroP}</p>` : ''}</div>
@@ -397,6 +445,40 @@ function page1(m, t){
     </div>
     <p class="foot">数字は <code>data.json</code> の実測です。割合には分母を書いています。</p>`);
 }
+/* ═══ 見出し下の再生回数グラフ（1週間 ⇄ 半年） ═══
+   1週間 = レポート週の日次（`analytics_daily`）／半年 = 直近26週（`weekly_trend`）。
+   ⚠ 2つは**集計のもとが違います。**日次の合計と週次の値は少しずれるので、足し引きしないこと。 */
+function viewsChart(m, t){
+  const D = m.daily;
+  const wk = (D && D.rows.length) ? D.rows.map(r => ({
+        v: r.views, on: false, x: md(r.date),
+        t: `${fmtDate(r.date)}（${wd(r.date)}） ${fmtFull(r.views)}回`
+      })) : null;
+  if(wk && wk.length){ const mxi = wk.reduce((b, r, i) => r.v > wk[b].v ? i : b, 0); wk[mxi].on = true; }
+
+  const hy = (t && t.win.length) ? t.win.map((d, i) => ({
+        v: d.views, on: d.week_start === m.period.start,
+        x: (i % 4 === 0 || i === t.win.length - 1) ? fmtDate(d.week_start).slice(5) : '',
+        t: `${fmtDate(d.week_start)}〜 ${fmtFull(d.views)}回`
+      })) : null;
+  if(!wk && !hy) return '';
+
+  const wPane = wk ? `<div class="cpane w">${barSVG(wk)}${xlab(wk)}
+      <p class="cnote">この週の日次です。いちばん多い日は<b>${md(D.peak.date)}の${fmtFull(D.peak.views)}回</b>、
+        7日の合計は<b>${fmtFull(D.sum)}回</b>（前週${fmtFull(D.prevSum)}回）。
+        ${D.days < 7 ? `確定しているのは${D.days}日ぶんで、残りはまだ入っていません。` : ''}</p></div>` : '';
+  const hPane = hy ? `<div class="cpane h">${barSVG(hy)}${xlab(hy)}
+      <p class="cnote">直近${t.n}週です。赤い棒が今週で、<b>${t.n}週平均は${fmtFull(Math.round(t.avg))}回</b>、
+        今週は<b>${fmtFull(t.cur)}回</b>（${t.n}週中${t.rank}位）。</p></div>` : '';
+
+  return `<div class="chartbox">
+    <input type="radio" name="crange" id="crw"${wk ? ' checked' : ''}>
+    <input type="radio" name="crange" id="crh"${wk ? '' : ' checked'}>
+    <div class="ctabs"><span class="lbl">再生回数</span>
+      ${wk ? '<label for="crw">1週間</label>' : ''}${hy ? `<label for="crh">${t.n >= 24 ? '半年' : '直近' + t.n + '週'}</label>` : ''}</div>
+    ${wPane}${hPane}</div>`;
+}
+
 /* 週内公開の本数の書き方。⚠ 拾えた本数と公開本数が違う週があるので、違うときは必ず両方書く */
 function nsLabel(ns){
   return ns.count === ns.total ? `週内に公開した${ns.total}本`
@@ -570,26 +652,12 @@ function page6(m, t){
   const GEN = { male: '男性', female: '女性', user_specified: 'その他' };
   const genTxt = Object.keys(byGen).map(g => `${GEN[g] || g} ${byGen[g].toFixed(1)}%`).join('／');
 
-  let chart = '';
-  if(t && t.win.length){
-    const W = 760, H = 110, n = t.win.length, gap = W / n, bw = gap * .7;
-    const mx = Math.max(...t.win.map(d => d.views), 1);
-    chart = `<svg class="trend" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img"
-      aria-label="直近${n}週の視聴回数">`
-      + t.win.map((d, i) => { const h = Math.max(1, d.views / mx * (H - 10));
-          const on = d.week_start === m.period.start;
-          return `<rect x="${(i * gap + (gap - bw) / 2).toFixed(1)}" y="${(H - h).toFixed(1)}" width="${bw.toFixed(1)}"
-            height="${h.toFixed(1)}" rx="2" fill="${on ? 'var(--coral)' : '#dde6ea'}"><title>${fmtDate(d.week_start)} ${fmtFull(d.views)}回</title></rect>`;
-        }).join('') + `</svg>`;
-  }
-
   return pageWrap(6, '見ている人と、26週の中での位置', m, t, `
     <div class="headline sm">${t ? `今週は直近${t.n}週で${t.rank}位。${t.n}週平均の${p1(t.pctOfAvg)}`
                                  : '26週の比較はまだありません'}</div>
     <p class="lead">直前の週が高かったことと、今週の水準がどこにあるかは分けて見てください。</p>
-    <div class="card" style="margin-top:18px"><h4>直近${t ? t.n : 26}週の視聴回数</h4>${chart}
-      <p class="note">赤い棒が今週です。${t ? `${t.n}週平均 ${man(t.avg)}回／今週 ${man(t.cur)}回。` : ''}
-        このグラフは weekly_trend の値で、主要数字とは系列が違うことがあります。</p></div>
+    <p class="note" style="margin-top:14px">${t ? `${t.n}週平均は ${man(t.avg)}回、今週は ${man(t.cur)}回です。
+      推移のグラフは1ページ目にあります（「半年」に切り替えてください）。` : ''}</p>
     <div class="g2">
       <div class="card"><h4>どの端末で見られたか</h4>${devRows || '<p class="note">この週の端末別はありません。</p>'}
         <p class="note">分母は端末別の合計 ${fmtFull(devTot)}回です。</p></div>
