@@ -393,6 +393,40 @@
              daily, days: daily.length, peak, snapshot: C.snapshot_date || '' };
   }
 
+  /* ★ 2026-10-30 追加: コード別の一覧を**全件**・新しい順に並べて返す（運営者の指示）。
+     ⚠⚠ **`data.json` にはコードごとの日付がありません。**`by_code` は `code` / `entries` /
+       `used` / `people` だけで、`fetch.py` はコード名で並べ替えているだけです。
+       そのため「新しい順」は**コード名から読んだ日付**で並べています。置いた前提は次の2つです。
+       ⑴ 週次コードは `L` + 月日2桁（`L1022` = 10月22日）という命名である
+       ⑵ その月日は、スナップショット日から見ていちばん近い過去の同じ月日である
+         （年またぎのため。1月に `L1231` を見たら前年の12月31日と読みます）
+     ⚠ **命名に合わないコードは日付が分からないので、並べません。**`REPOKER03` や `L3123` は
+       パターンから外れるため、**日付のあるコードより後ろに、入力件数の多い順で**置きます。
+       ⚠ **ここを「古いコードだから下」と読まないこと。**「日付が読めなかった」だけです。
+     ⚠ コードごとの入力日が `data.json` に入ったら、**この名前の解釈はやめてその日付で並べること。**
+       `coupon.weekly[].codes` は使えません（`L0924` のように、どの週にも出てこないコードがあります）。
+     ⚠ 件数は毎週1つ増えます。紙が溢れそうになったら運営者に相談すること（全件のままにするか相談する、
+       という 2026-10-30 の判断です。黙って上位N件に戻さないこと）。 */
+  function couponCodes(data) {
+    const C = data.coupon;
+    if (!C || C.error) return [];
+    const snap = C.snapshot_date || '';
+    const sy = Number((snap || '').slice(0, 4)) || new Date().getUTCFullYear();
+    const dateOf = code => {
+      const m = /^L(\d{2})(\d{2})$/.exec(String(code || ''));
+      if (!m) return null;
+      const mo = Number(m[1]), dy = Number(m[2]);
+      if (mo < 1 || mo > 12 || dy < 1 || dy > 31) return null;
+      const mk = y => `${y}-${m[1]}-${m[2]}`;
+      // スナップショット日より後になるなら前年のものと読む（年またぎ）
+      return (snap && mk(sy) > snap) ? mk(sy - 1) : mk(sy);
+    };
+    const rows = (C.by_code || []).map(b => ({ ...b, date: dateOf(b.code) }));
+    const dated   = rows.filter(r => r.date).sort((a, b) => b.date.localeCompare(a.date));
+    const undated = rows.filter(r => !r.date).sort((a, b) => b.entries - a.entries);
+    return dated.concat(undated);
+  }
+
   /* ★ 2026-10-27 追加: レポートの週（月〜日）でのクーポン入力。
      ⚠ `coupon.weekly` の週区切りは**土〜金のまま**で、2026-09-07 以降のレポート週（月〜日）とは
        揃っていません。そのため `coupon()` はレポート週では毎回 null を返します。ここは
@@ -819,6 +853,6 @@
     VERSION: MODEL_VERSION, TRAFFIC_LABEL, FLAT, OWNER_GATE_RANK, ACTION_KINDS,
     SRC, fmtFull, fmtMan, fmtDate, fmtMin, md, esc, pct, pctNum, median, stripLevel,
     cause, trafficList, trafficRows, trafficSplit, verdict, verdictWhy, ownerState, actions,
-    firstSpeed, newShare, videoTraffic, coupon, couponWeek, dailyWeek, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, PERIOD_API, build
+    firstSpeed, newShare, videoTraffic, coupon, couponWeek, couponCodes, dailyWeek, signal, periodReport, periodRank, periodNotes, noteHtml, monthSeries, PERIOD_API, build
   };
 })(window);

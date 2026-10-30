@@ -636,7 +636,11 @@ function page5(m, t){
 function page7(m, t){
   const cp = m.couponWeek, C = COUPON;
   if(!C) return '';
-  const codes = (C.by_code || []).slice().sort((a, b) => b.entries - a.entries).slice(0, 6).map(c => `<tr>
+  /* ★ 2026-10-30: 上位6件 → **全件**（運営者の指示）。並びは新しい順。
+     ⚠ 並べ方の前提は `report_model.js` の `couponCodes()` に書いてあります（コード名から日付を読む）。
+     ⚠ **黙って上位N件に戻さないこと。**紙が溢れそうになったら運営者に相談する、という判断です。 */
+  const codeRows = M.couponCodes(RAWDATA);
+  const codes = codeRows.map(c => `<tr>
       <td>${esc(c.code)}</td><td class="n">${fmtFull(c.entries)}</td>
       <td class="n">${c.entries ? p1(c.used / c.entries * 100) : '—'}</td></tr>`).join('');
   const wk = (C.weekly || []).slice(-6).map(w => `<tr><td>${fmtDate(w.week_start).slice(5)}週</td>
@@ -653,7 +657,7 @@ function page7(m, t){
     <p class="lead">${cp ? `今週の入力は${fmtFull(cp.entries)}件（前週${fmtFull(cp.entriesPrev)}件）。
       コードの発行日と掲出日が記録されていないため、この増減の理由は分かりません。` : ''}</p>
     <div class="g2">
-      <div class="card"><h4>コード別（通算・上位6）</h4>
+      <div class="card"><h4>コード別（通算・全${codeRows.length}件・新しい順）</h4>
         <div class="scrollx"><table><thead><tr><th>コード</th><th class="n">入力</th><th class="n">使用率</th></tr></thead>
         <tbody>${codes}</tbody></table></div>
         <p class="note">新しいコードほど使用率が低く出ます。使う時間がまだ経っていないためです。</p></div>
