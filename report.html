@@ -500,15 +500,18 @@ function page2(m, t){
     : `<p class="note">${ai.analysis ? 'この週の分析本文は、いまの計算方法・運用方針と食い違うため表示していません。'
         : 'この週の分析はまだ書かれていません。'}</p>`;
 
-  /* ⚠ アクションは「何をするか」の1行までにしています。詳しい手順は data.json の提案に入っています。
-     ⚠ オーナー判断はアクションと別物です。混ぜると check_consistency.js が落ちます。 */
-  const acts = m.actions.length
-    ? m.actions.map(a => `<div class="act"><div class="hd"><span class="no">${a.n}</span>`
-        + `<span class="kind plan">案</span>`
-        + (a.kind ? `<span class="kind">${esc(a.kind)}</span>` : '')
-        + `<h4>${esc(a.title)}</h4></div>`
-        + (a.lead ? `<p>${esc(a.lead)}</p>` : '') + `</div>`).join('')
-    : `<p class="note">この週の提案はありません。</p>`;
+  /* ★ 2026-10-31 運営者の指示: 「次の一手（NA）」の節は **このレポートには出しません。**
+     ⚠⚠ **提案そのものをやめたのではありません。**`data.json` の `ai_analysis.suggestions` は
+       これまでどおり書き続けます（運用手順 §7 の「具体的な提案2〜4個」は有効）。
+       **ダッシュボードのAI分析タブ（`index.html`）と `report_brief.html` には引き続き出ます。**
+       レポートに出す／出さないの話です（2026-10-29 に「上位5本の注記」を外したのと同じ扱い）。
+     ⚠ **`report_model.js` の `actions()` は消していません。**`check_consistency.js` の検査D
+       （アクションの件数が `suggestions` と一致するか）が `m.actions` を見ているためです。
+       **モデル側を消すと検査が落ちます。**
+     ⚠ **`.acts` / `.act` の CSS は残してあります**（戻すときのため）。使っていません。
+     ⚠ **節が1つだけになったので `01` / `02` の番号と「今週の分析」の見出しも外しました。**
+       ページ上部の見出しが「今週の分析」なので、同じ文が2回出ます（2026-10-27 に
+       「02の大見出しが01と重複」で消したのと同じ理由）。**戻すときは番号ごと戻すこと。** */
 
   /* ★ 2026-10-27 運営者の指示: 「オーナー判断：判断不要」の囲みは出しません。
      オーナーにしてほしいことが無い週に、何も言っていない1枠が残るためです。
@@ -521,12 +524,8 @@ function page2(m, t){
     ? `<div class="owner ${o.level}"><b>オーナー判断：${oTxt}</b>${esc(M.stripLevel(o.text))}</div>`
     : '';
 
-  return pageWrap(2, '今週の分析と、次の一手', m, t, `
-    <div class="sec" style="margin-top:20px"><span class="n">01</span><h3>今週の分析</h3></div>
-    ${body}
-    <div class="sec"><span class="n">02</span><h3>次の一手（案・${m.actions.length}件）</h3></div>
-    <p class="note" style="margin-top:6px">ここから下は<b>提案</b>です。やるかどうかは決まっていません。</p>
-    <div class="acts">${acts}</div>
+  return pageWrap(2, '今週の分析', m, t, `
+    <div style="margin-top:20px">${body}</div>
     ${owner}`);
 }
 
