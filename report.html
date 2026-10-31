@@ -490,7 +490,7 @@ function item(good, b, s){
   return `<div class="item ${c}"><div class="ic">${ic}</div><div><b>${b}</b>${s ? `<span>${s}</span>` : ''}</div></div>`;
 }
 
-/* ═══ ページ2: 今週の分析と、次の一手 ═══ */
+/* ═══ ページ2: 今週の分析 ═══ */
 function page2(m, t){
   const ai = m.rep.ai_analysis || {};
   const showBody = ai.analysis && ai.generated_at && ai.generated_at >= AI_BODY_FROM;
