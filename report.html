@@ -108,7 +108,9 @@ a{color:var(--teal)}
   padding:3px 8px;flex:none;letter-spacing:.04em}
 .sec h3{font-size:16px;font-weight:900}
 
-.cols{margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+/* ⚠ 2026-11-13: クーポン列を外して **2列** になりました（運営者の指示）。
+   列を足すときは、ここの数と 01ページの見出し「今週わかった◯つのこと」を一緒に直すこと。 */
+.cols{margin-top:14px;display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
 .col{border:1px solid var(--rule);border-radius:7px;padding:15px 16px;min-width:0}
 .col.fact{background:var(--paper)} .col.opp{background:var(--teal-bg);border-color:#cfe6e0}
 .col.next{background:var(--sand-bg);border-color:#ecdfbe}
@@ -381,7 +383,7 @@ const vlabel = (v, n) => `${v.published_at ? md(v.published_at) + ' ' : ''}${cut
 
 /* ═══ ページ1: ひと目でわかる今週の結果 ═══ */
 function page1(m, t){
-  const mt = m.metrics, ns = m.newShare, cp = m.couponWeek;
+  const mt = m.metrics, ns = m.newShare;
   /* ⚠ 2026-11-13 運営者の指示: **26週中の順位を先に出す。**
      前は「再生数は10.9%減。ただし直近26週中18位で、水準はふだんの範囲」でした。
      ⚠⚠ 順位が無い週（`weekly_trend` に無い＝7日そろっていない週）は、前と同じく再生数だけを出します。 */
@@ -427,13 +429,14 @@ function page1(m, t){
         + (mt.firstMedianPrev != null ? `／前週 ${man(mt.firstMedianPrev)}回` : '')) : ''
   ].filter(Boolean).join('');
 
-  const cpItems = (cp && COUPON) ? [
-    item(null, `今週の入力 ${fmtFull(cp.entries)}件`,
-         `1日あたり ${cp.perDay != null ? cp.perDay.toFixed(1) : '—'}件`
-         + (cp.daysPrev ? `（前週 ${cp.perDayPrev.toFixed(1)}件）` : '')),
-    item(null, `通算 ${fmtFull(COUPON.total)}件`,
-         `${fmtFull(COUPON.used)}件が使用済み（${p1(COUPON.used / COUPON.total * 100)}）`)
-  ].join('') : `<div class="item no"><div class="ic">—</div><div><b>今週の入力はありません</b></div></div>`;
+  /* ⚠ 2026-11-13 運営者の指示: **クーポンの列は今後も出しません。**
+     「クーポンのセクションを削除」→「消して今後表示しないようにしてほしい」。
+     クーポンのページ（`page7`）を外したのに続く対応で、**01ページの3列目もやめました。**
+     ⚠⚠ **クーポンの集計をやめたのではありません。** `data.json` の `coupon` と
+       `report_model.js` の `couponWeek()` / `couponCodes()` はそのままで、
+       `index.html` のクーポンタブと `report_brief.html` には引き続き出ます（今回も触っていません）。
+     ⚠ 戻すときは ⑴ここに列を足す ⑵`.cols` の `repeat(2,1fr)` を3に戻す
+       ⑶見出しの「2つのこと」を「3つのこと」に戻す ⑷`m.couponWeek` を受け直す、の4点セットで。 */
 
   return pageWrap(1, 'ひと目でわかる今週の結果', m, t, `
     <div class="headline">${head}</div>
@@ -443,11 +446,10 @@ function page1(m, t){
       <h3>${esc(ai.headline || (m.verdict ? m.verdict.headline : ''))}</h3>
       ${heroP ? `<p>${heroP}</p>` : ''}</div>
     <div class="kpis">${kpi}</div>
-    <div class="sec"><span class="n">01</span><h3>今週わかった3つのこと</h3></div>
+    <div class="sec"><span class="n">01</span><h3>今週わかった2つのこと</h3></div>
     <div class="cols">
       <div class="col fact"><span class="tag">事実</span><h4>全体の数字</h4><div class="items">${factItems}</div></div>
       <div class="col opp"><span class="tag">機会</span><h4>伸びているところ</h4><div class="items">${oppItems}</div></div>
-      <div class="col next"><span class="tag">クーポン</span><h4>入力と使われ方</h4><div class="items">${cpItems}</div></div>
     </div>
     <p class="foot">数字は <code>data.json</code> の実測です。割合には分母を書いています。</p>`);
 }
