@@ -318,7 +318,7 @@ const DEBUG = new URLSearchParams(location.search).get('debug') === '1';
      この日付を動かすこと。日付だけ下げないこと。** */
 const AI_BODY_FROM = '2026-09-11';
 
-let RAWDATA = null, REPORTS = [], COUPON = null, EXTRA = null, TREND = null;
+let RAWDATA = null, REPORTS = [], COUPON = null, EXTRA = null, TREND = null, TITLEDUR = null;
 let CHANNEL = '【LightTHREE】 -ポーカーメディア‐';   // ⚠ 直書きに戻さないこと（data.json の meta.channel_title が正）
 
 /* ⚠ 実装はすべて report_model.js。ここで定義し直さないこと */
@@ -679,6 +679,49 @@ function page7(m, t){
       スナップショット ${fmtDate(C.snapshot_date || '')}。</p>`);
 }
 
+/* ═══ ページ8: 尺とタイトルの文言（過去半年） ═══
+   ⚠ `title_duration.json` が無い週・読めない週は **ページごと出しません**（本体は描きます）。
+   ⚠ 出す週は `title_duration.json` の `weeks` で決めます。足すときは build_title_duration.py を流し直すこと。
+   ⚠⚠ これは 2026-11-06 の「サムネイルと尺の関係」の作り直しです。元版は**サムネイルの文言**で測っていましたが、
+      その `thumb_text.json`（145本を目視で書き写したもの）は失われ、サムネイル画像の取得経路も塞がれています。
+      **この版はタイトルの文言で代用しています。サムネとタイトルは別物で、同じものを測ってはいません。**
+      注記をページから外さないこと。 */
+function page8(m, t){
+  const T = TITLEDUR;
+  if(!T || !(T.weeks || []).includes(m.rep.week_start)) return '';
+  const x = (v) => v == null ? '—' : v.toFixed(2) + '倍';
+  const row = (d) => !d || !d.n ? '' : `<tr><td>${esc(d.band)}</td><td class="n">${d.n}</td><td class="n">${x(d.median)}</td></tr>`;
+  const all  = (T.duration_all || []).map(row).join('');
+  const ctrl = (T.duration_controlled || []).map(row).join('');
+  const words = (T.words || []).map(w => `<tr>
+      <td>${esc(w.word)}</td>
+      <td class="n">${w.yes.n}</td><td class="n">${x(w.yes.median)}</td>
+      <td class="n">${w.no.n}</td><td class="n">${x(w.no.median)}</td></tr>`).join('');
+  const top = (T.words || [])[0];
+  return pageWrap(8, '尺とタイトルの文言（過去半年）', m, t, `
+    <div class="headline sm">${top ? `伸びに効いていたのは尺ではなくタイトルの文言。${esc(top.word)}が入った回は${x(top.yes.median)}` : '尺では差が出なかった'}</div>
+    <p class="lead">倍率は「公開から28日の視聴 ÷ 同じ公開月の中央値」です。1.00倍がその月の真ん中。
+      対象は${esc(T.range.from)}〜${esc(T.range.to)}に公開し、28日が経った${T.n}本です。</p>
+    <div class="g2">
+      <div class="card"><h4>尺の区分（全${T.n}本）</h4>
+        <div class="scrollx"><table><thead><tr><th>尺</th><th class="n">本数</th><th class="n">倍率の中央値</th></tr></thead>
+        <tbody>${all}</tbody></table></div>
+        <p class="note">尺と倍率の順位相関は ${T.spearman_duration}。ほぼ関係がありません。</p></div>
+      <div class="card"><h4>中身をそろえた場合（${T.controlled_n}本）</h4>
+        <div class="scrollx"><table><thead><tr><th>尺</th><th class="n">本数</th><th class="n">倍率の中央値</th></tr></thead>
+        <tbody>${ctrl}</tbody></table></div>
+        <p class="note">${(T.control_off || []).join('・')}をタイトルに含まない回だけで比べた値です。
+          左の表で46〜60秒が高く出るのは、尺ではなく中身の違いによるものでした。</p></div>
+    </div>
+    <div class="card" style="margin-top:12px"><h4>タイトルの文言（全${T.n}本・倍率の中央値）</h4>
+      <div class="scrollx"><table><thead><tr><th>文言</th><th class="n">有・本数</th><th class="n">有・倍率</th>
+        <th class="n">無・本数</th><th class="n">無・倍率</th></tr></thead><tbody>${words}</tbody></table></div>
+      <p class="note">1本に複数の型がつきます。${T.recent_month}公開ぶんは28日が経ったものが${T.recent_month_n}本しかなく、
+        その月の中央値は不安定です。</p></div>
+    <p class="foot">測っているのは<b>タイトルの文言</b>です。サムネイルの文言は画像からしか読めず、取得できないため測っていません。
+      月の中央値で割っているので、月をまたいだ水準の比較には使えません。集計 ${esc(T.generated_at)}。</p>`);
+}
+
 /* ═══ 枠 ═══ */
 let PAGES = 0, PNO = 0;
 /* ⚠ ページ番号は「何枚目か」を数えて出します。各ページ関数が渡す番号は使いません。
@@ -704,10 +747,16 @@ function renderReportPage(rep){
   /* ⚠ 2026-10-29: 「見ている人と、26週の中での位置」のページは運営者の判断で削除しました。
      端末別と年代・性別もここで一緒に落ちています。戻すときはデータの注記ごと戻すこと
      （年代・性別は**ログイン視聴者が母数**です）。 */
-  const makers = [page1, page2, page3, page4, page5, page7];
-  PAGES = makers.length; PNO = 0;
-  const html = makers.map((f, i) => { try { return f(m, t, i + 1); } catch(e){
-    console.error('page' + (i + 1), e); return `<section class="page"><p class="note">このページを描けませんでした: ${esc(e.message)}</p></section>`; } });
+  const makers = [page1, page2, page3, page4, page5, page7, page8];
+  /* ⚠ 出ないページがあります（クーポンが無い週は page7、`weeks` に入っていない週は page8 が空を返す）。
+     makers.length を分母にすると「06 / 07」と出るので、**先に空でないページを数えてから**描きます。
+     ページ関数は読むだけなので2回呼んで差し支えありません（2026-11-13）。 */
+  const build = (i, f) => { try { return f(m, t, i + 1); } catch(e){
+    console.error('page' + (i + 1), e); return `<section class="page"><p class="note">このページを描けませんでした: ${esc(e.message)}</p></section>`; } };
+  PAGES = 0; PNO = 0;
+  PAGES = makers.map((f, i) => build(i, f)).filter(s => s).length;
+  PNO = 0;
+  const html = makers.map((f, i) => build(i, f));
   document.getElementById('sheet').innerHTML = html.join('');
   document.title = `週次レポート ${fmtDate(m.period.start)}週 — ${CHANNEL}`;
   if(DEBUG) console.log('model', m);
@@ -758,6 +807,11 @@ async function loadReport(){
     COUPON  = data.coupon || null;
     EXTRA   = data.analytics_extra || null;
     TREND   = data.weekly_trend || null;
+    /* 尺とタイトルの文言のページ用。⚠ 無くても本体は描くので、失敗しても止めないこと。 */
+    try {
+      const rt = await fetch('title_duration.json', { cache: 'no-cache' });
+      if(rt.ok) TITLEDUR = await rt.json();
+    } catch(e){ console.warn('title_duration.json を読めませんでした', e); }
     if(data.meta && data.meta.channel_title) CHANNEL = data.meta.channel_title;
     document.getElementById('loadMsg').style.display = 'none';
     if(!REPORTS.length){
