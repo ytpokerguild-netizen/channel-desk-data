@@ -347,11 +347,14 @@ function trend26(ws){
   const rank = win.slice().sort((a, b) => b.views - a.views).findIndex(d => d.week_start === ws) + 1;
   return { cur, avg, rank, n: win.length, pctOfAvg: avg ? cur / avg * 100 : null, win };
 }
-/* 順位を言葉にする。⚠ 目標ではありません。26週の中での位置の説明です */
+/* 順位を言葉にする。⚠ 目標ではありません。26週の中での位置の説明です。
+   ⚠ 2026-11-13: 見出しが「直近N週中R位で、」に続く形になったため、
+      文言から「26週の中では」を外しました（「直近26週中5位で、26週の中では上位」と二重になるため）。
+      ⚠⚠ ここだけで使っています。前に戻すなら page1 の見出しの語順も一緒に戻すこと。 */
 function rankWord(t){
   if(!t) return '';
   const q = t.rank / t.n;
-  return q <= 0.25 ? '26週の中では上位' : q >= 0.75 ? '26週の中では下位' : '水準はふだんの範囲';
+  return q <= 0.25 ? '上位です' : q >= 0.75 ? '下位です' : '水準はふだんの範囲です';
 }
 
 /* 長いタイトルは切ります。⚠ 切るときは必ず「…」を付けること。
@@ -379,8 +382,11 @@ const vlabel = (v, n) => `${v.published_at ? md(v.published_at) + ' ' : ''}${cut
 /* ═══ ページ1: ひと目でわかる今週の結果 ═══ */
 function page1(m, t){
   const mt = m.metrics, ns = m.newShare, cp = m.couponWeek;
-  const head = `再生数は${Math.abs(mt.deltaPct).toFixed(1)}%${mt.deltaPct >= 0 ? '増' : '減'}。`
-    + (t ? `<br>ただし直近${t.n}週中${t.rank}位で、${rankWord(t)}` : '');
+  /* ⚠ 2026-11-13 運営者の指示: **26週中の順位を先に出す。**
+     前は「再生数は10.9%減。ただし直近26週中18位で、水準はふだんの範囲」でした。
+     ⚠⚠ 順位が無い週（`weekly_trend` に無い＝7日そろっていない週）は、前と同じく再生数だけを出します。 */
+  const head = (t ? `直近${t.n}週中${t.rank}位で、${rankWord(t)}<br>` : '')
+    + `再生数は${Math.abs(mt.deltaPct).toFixed(1)}%${mt.deltaPct >= 0 ? '増' : '減'}`;
   const lead = [
     `いちばん上振れた1本を除いた前週比は${sign(mt.baselinePct)}です。`,
     ns && ns.count ? `${nsLabel(ns)}は合計${man(ns.sum)}回で、今週の視聴の${p1(ns.pct)}を占めます。` : ''
